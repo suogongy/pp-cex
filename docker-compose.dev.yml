@@ -1,0 +1,383 @@
+version: '3.8'
+
+services:
+  # Database
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: cex_db
+      MYSQL_USER: cex_user
+      MYSQL_PASSWORD: cex_password
+    volumes:
+      - mysql-dev-data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - cex-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: redis-dev
+    command: redis-server --appendonly yes --protected-mode no
+    volumes:
+      - redis-dev-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - cex-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 5s
+      retries: 5
+
+  # RocketMQ
+  rocketmq-nameserver:
+    image: apache/rocketmq:4.9.4
+    container_name: rocketmq-nameserver-dev
+    ports:
+      - "9876:9876"
+    volumes:
+      - rocketmq-nameserver-logs:/home/rocketmq/logs
+    networks:
+      - cex-network
+    command: sh mqnamesrv
+
+  rocketmq-broker:
+    image: apache/rocketmq:4.9.4
+    container_name: rocketmq-broker-dev
+    ports:
+      - "10911:10911"
+      - "10909:10909"
+    volumes:
+      - rocketmq-broker-logs:/home/rocketmq/logs
+      - rocketmq-broker-store:/home/rocketmq/store
+      - ./scripts/rocketmq/broker-dev.conf:/home/rocketmq/conf/broker.conf
+    networks:
+      - cex-network
+    depends_on:
+      - rocketmq-nameserver
+    command: sh mqbroker -c /home/rocketmq/conf/broker.conf
+    environment:
+      NAMESRV_ADDR: rocketmq-nameserver:9876
+
+  # Nacos
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: nacos-dev
+    environment:
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_DB_NAME: nacos
+      MYSQL_SERVICE_USER: cex_user
+      MYSQL_SERVICE_PASSWORD: cex_password
+      NACOS_AUTH_ENABLE: true
+      NACOS_AUTH_TOKEN: SecretKey012345678901234567890123456789012345678901234567890123456789
+    volumes:
+      - nacos-logs:/home/nacos/logs
+    ports:
+      - "8848:8848"
+    networks:
+      - cex-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # Application Services
+  gateway-service:
+    build:
+      context: ./backend/gateway-service
+      dockerfile: Dockerfile
+    container_name: gateway-service-dev
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - nacos
+    volumes:
+      - ./backend/gateway-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    container_name: user-service-dev
+    ports:
+      - "8001:8001"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+      - redis
+      - rocketmq-nameserver
+    volumes:
+      - ./backend/user-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/user/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  trade-service:
+    build:
+      context: ./backend/trade-service
+      dockerfile: Dockerfile
+    container_name: trade-service-dev
+    ports:
+      - "8002:8002"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+      - redis
+      - rocketmq-nameserver
+    volumes:
+      - ./backend/trade-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/trade/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  wallet-service:
+    build:
+      context: ./backend/wallet-service
+      dockerfile: Dockerfile
+    container_name: wallet-service-dev
+    ports:
+      - "8003:8003"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+      - redis
+      - rocketmq-nameserver
+    volumes:
+      - ./backend/wallet-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/wallet/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  market-service:
+    build:
+      context: ./backend/market-service
+      dockerfile: Dockerfile
+    container_name: market-service-dev
+    ports:
+      - "8004:8004"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+      - redis
+      - rocketmq-nameserver
+    volumes:
+      - ./backend/market-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/market/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  match-service:
+    build:
+      context: ./backend/match-service
+      dockerfile: Dockerfile
+    container_name: match-service-dev
+    ports:
+      - "8005:8005"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+      - redis
+      - rocketmq-nameserver
+    volumes:
+      - ./backend/match-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/match/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  finance-service:
+    build:
+      context: ./backend/finance-service
+      dockerfile: Dockerfile
+    container_name: finance-service-dev
+    ports:
+      - "8006:8006"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+      - redis
+      - rocketmq-nameserver
+    volumes:
+      - ./backend/finance-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/finance/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  risk-service:
+    build:
+      context: ./backend/risk-service
+      dockerfile: Dockerfile
+    container_name: risk-service-dev
+    ports:
+      - "8007:8007"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+      - redis
+      - rocketmq-nameserver
+    volumes:
+      - ./backend/risk-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/risk/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  notify-service:
+    build:
+      context: ./backend/notify-service
+      dockerfile: Dockerfile
+    container_name: notify-service-dev
+    ports:
+      - "8008:8008"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+      NACOS_NAMESPACE: cex-dev
+      NACOS_GROUP: DEFAULT_GROUP
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+      - redis
+      - rocketmq-nameserver
+    volumes:
+      - ./backend/notify-service/src/main/resources:/app/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/notify/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_WS_URL: ws://localhost:8080
+      NEXT_PUBLIC_CHAIN_ID: 1
+      NEXT_PUBLIC_NETWORK_ID: 1
+      NODE_ENV: development
+    networks:
+      - cex-network
+    depends_on:
+      - gateway-service
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      timeout: 10s
+      retries: 5
+
+  # Redis Management UI
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander-dev
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - cex-network
+    depends_on:
+      - redis
+
+  # Database Management UI
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin-dev
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: cex_user
+      PMA_PASSWORD: cex_password
+    ports:
+      - "8082:80"
+    networks:
+      - cex-network
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-dev-data:
+  redis-dev-data:
+  rocketmq-nameserver-logs:
+  rocketmq-broker-logs:
+  rocketmq-broker-store:
+  nacos-logs:
+
+networks:
+  cex-network:
+    driver: bridge

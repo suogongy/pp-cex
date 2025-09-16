@@ -1,0 +1,224 @@
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+target/
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+.mvn/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+.node_repl_history
+.coverage
+.nyc_output
+dist/
+build/
+.next/
+
+# Docker
+.dockerignore
+.dockerignore.bak
+docker-compose.override.yml
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+log/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+.nyc_output
+
+# Backup files
+*.bak
+*.backup
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Secrets
+secrets/
+secrets.*
+
+# Configuration files with sensitive data
+config/application.yml
+config/application-*.yml
+config/application*.properties
+
+# Test files
+test-results/
+test-output/
+
+# Documentation build
+docs/_build/
+docs/site/
+
+# Package manager
+composer.phar
+/vendor/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env.bak/
+.venv/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Kubernetes
+*.kubeconfig
+*.kubecfg
+
+# Helm
+charts/*.tgz
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+*.tfvars
+
+# Ansible
+*.retry
+inventory/
+
+# Monitoring
+*.rrd
+*.jmx
+
+# Backup and temporary files
+*.backup
+*.old
+*.orig
+*.rej
+
+# Cache
+.cache/
+.cache/
+.phpunit.result.cache
+
+# Uploads
+uploads/
+media/
+files/
+
+# Sessions
+sessions/
+cookies/
+
+# Locks
+*.lock
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Docker volumes
+data/
+logs/
+volumes/
+
+# Kubernetes secrets
+secrets.*
+
+# Application specific
+wallet/
+keys/
+certificates/
+backups/
+temp/
+tmp/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore

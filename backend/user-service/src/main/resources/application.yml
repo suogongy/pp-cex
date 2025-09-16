@@ -1,0 +1,222 @@
+spring:
+  profiles:
+    active: ${APP_ENV:dev}
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cex_db}?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:cex_user}
+    password: ${MYSQL_PASSWORD:cex123}
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 50
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+      pool-name: UserHikariCP
+
+  # Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 10
+          min-idle: 0
+
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  # MyBatis Plus配置
+  mybatis-plus:
+    mapper-locations: classpath:mapper/*.xml
+    type-aliases-package: com.cex.user.entity
+    configuration:
+      map-underscore-to-camel-case: true
+      cache-enabled: true
+      lazy-loading-enabled: true
+      multiple-result-sets-enabled: true
+      use-column-label: true
+      use-generated-keys: false
+      auto-mapping-behavior: partial
+      default-statement-timeout: 25000
+    global-config:
+      db-config:
+        id-type: auto
+        table-underline: true
+        logic-delete-field: deleted
+        logic-delete-value: 1
+        logic-not-delete-value: 0
+
+  # Redisson配置
+  redisson:
+    address: redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 10000
+    connectionPoolSize: 64
+    connectionMinimumIdleSize: 24
+    slaveConnectionMinimumIdleSize: 24
+    slaveConnectionPoolSize: 64
+    masterConnectionPoolSize: 64
+    idleConnectionTimeout: 10000
+    pingConnectionInterval: 30000
+    pingTimeout: 1000
+    connectTimeout: 10000
+    timeout: 3000
+    retryAttempts: 3
+    retryInterval: 1500
+    reconnectionTimeout: 3000
+    failedAttempts: 3
+    subscriptionsPerConnection: 5
+    subscriptionConnectionMinimumIdleSize: 1
+    subscriptionConnectionPoolSize: 50
+    monitorInterval: 3000
+
+# RocketMQ配置
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER_ADDR:localhost:9876}
+  producer:
+    group: user-producer-group
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 3
+    max-message-size: 4194304
+    compress-message-body-threshold: 4096
+  consumer:
+    # 用户消息消费者
+    user-consumer:
+      group: user-consumer-group
+      topic: user-topic
+      selector-expression: "*"
+      consume-thread-min: 20
+      consume-thread-max: 64
+      pull-batch-size: 32
+
+# Sentinel配置
+spring:
+  cloud:
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:localhost:8858}
+        port: 8719
+      datasource:
+        ds:
+          nacos:
+            server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+            data-id: sentinel-user-service
+            group-id: DEFAULT_GROUP
+            rule-type: flow
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
+  expiration: 86400000 # 24小时
+  refresh-expiration: 604800000 # 7天
+
+# 安全配置
+security:
+  # 允许的路径
+  permit-all:
+    - /user/auth/**
+    - /user/public/**
+    - /doc.html
+    - /swagger-ui/**
+    - /v3/api-docs/**
+    - /actuator/**
+    - /favicon.ico
+    - /error
+
+  # 跨域配置
+  cors:
+    allowed-origins: "*"
+    allowed-methods: "*"
+    allowed-headers: "*"
+    exposed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+
+# 业务配置
+cex:
+  user:
+    # 密码加密盐值
+    password-salt: ${PASSWORD_SALT:default-salt-value}
+    # 默认密码
+    default-password: ${DEFAULT_PASSWORD:User123456}
+    # 注册奖励
+    register-reward: 0
+    # 邀请奖励
+    invite-reward: 0
+    # KYC审核时间（小时）
+    kyc-audit-hours: 24
+    # 最大登录失败次数
+    max-login-fail-times: 5
+    # 登录锁定时间（分钟）
+    login-lock-minutes: 30
+    # 谷歌验证器配置
+    google-auth:
+      enabled: ${GOOGLE_AUTH_ENABLED:true}
+      issuer: ${GOOGLE_AUTH_ISSUE:CEX}
+      window-size: 3
+      code-digits: 6
+    # 邮箱验证
+    email-verification:
+      enabled: ${EMAIL_VERIFICATION_ENABLED:true}
+      expire-minutes: 30
+    # 手机验证
+    phone-verification:
+      enabled: ${PHONE_VERIFICATION_ENABLED:true}
+      expire-minutes: 10
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.cex.user: ${LOG_LEVEL:INFO}
+    com.cex.common: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/user-service.log
+    max-size: 100MB
+    max-history: 30
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 1GB
+      clean-history-on-start: false
