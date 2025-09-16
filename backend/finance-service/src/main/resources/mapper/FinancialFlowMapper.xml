@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.finance.repository.FinancialFlowRepository">
+
+    <resultMap id="BaseResultMap" type="com.ppcex.finance.entity.FinancialFlow">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="flow_no" property="flowNo" jdbcType="VARCHAR"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="coin_id" property="coinId" jdbcType="VARCHAR"/>
+        <result column="coin_name" property="coinName" jdbcType="VARCHAR"/>
+        <result column="business_type" property="businessType" jdbcType="INTEGER"/>
+        <result column="amount" property="amount" jdbcType="DECIMAL"/>
+        <result column="balance_before" property="balanceBefore" jdbcType="DECIMAL"/>
+        <result column="balance_after" property="balanceAfter" jdbcType="DECIMAL"/>
+        <result column="fee" property="fee" jdbcType="DECIMAL"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="remark" property="remark" jdbcType="VARCHAR"/>
+        <result column="ref_order_no" property="refOrderNo" jdbcType="VARCHAR"/>
+        <result column="ref_tx_hash" property="refTxHash" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, flow_no, user_id, coin_id, coin_name, business_type, amount, balance_before,
+        balance_after, fee, status, remark, ref_order_no, ref_tx_hash, create_time, update_time
+    </sql>
+
+    <select id="getTotalAmountByUserAndCoin" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM financial_flow
+        WHERE user_id = #{userId} AND coin_id = #{coinId} AND status = 1
+    </select>
+
+    <select id="getTotalFeeByTimeRange" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(fee), 0)
+        FROM financial_flow
+        WHERE business_type = 5 AND status = 1
+        AND create_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <select id="getTotalAmountByBusinessTypeAndTimeRange" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM financial_flow
+        WHERE business_type = #{businessType} AND status = 1
+        AND create_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <select id="getUserRecentFlows" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM financial_flow
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="getFlowByOrderNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM financial_flow
+        WHERE ref_order_no = #{orderNo}
+    </select>
+
+    <select id="getUserFlowCountSince" resultType="java.lang.Long">
+        SELECT COALESCE(COUNT(*), 0)
+        FROM financial_flow
+        WHERE user_id = #{userId} AND create_time >= #{since}
+    </select>
+
+</mapper>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.wallet.mapper.RechargeRecordMapper">
+
+    <!-- 获取充值记录列表 -->
+    <select id="getRechargeRecordPage" resultType="com.ppcex.wallet.entity.RechargeRecord">
+        SELECT * FROM recharge_record
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="coinId != null and coinId != ''">
+                AND coin_id = #{coinId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="startTime != null">
+                AND create_time >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND create_time &lt;= #{endTime}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据交易哈希查询充值记录 -->
+    <select id="getByTxHash" resultType="com.ppcex.wallet.entity.RechargeRecord">
+        SELECT * FROM recharge_record WHERE tx_hash = #{txHash}
+    </select>
+
+    <!-- 更新充值确认数 -->
+    <update id="updateConfirmations">
+        UPDATE recharge_record
+        SET confirmations = #{confirmations},
+            status = #{status},
+            update_time = NOW(),
+            <if test="status == 2">
+                confirm_time = NOW()
+            </if>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 获取待确认的充值记录 -->
+    <select id="getPendingConfirmRecords" resultType="com.ppcex.wallet.entity.RechargeRecord">
+        SELECT * FROM recharge_record
+        WHERE status = 1
+        <if test="coinId != null and coinId != ''">
+            AND coin_id = #{coinId}
+        </if>
+        ORDER BY create_time ASC
+    </select>
+
+    <!-- 统计用户充值总额 -->
+    <select id="getTotalRechargeAmount" resultType="java.lang.Double">
+        SELECT COALESCE(SUM(amount), 0) FROM recharge_record
+        WHERE user_id = #{userId}
+        <if test="coinId != null and coinId != ''">
+            AND coin_id = #{coinId}
+        </if>
+        AND status = 2
+    </select>
+
+</mapper>

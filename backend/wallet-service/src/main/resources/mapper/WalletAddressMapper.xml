@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.wallet.mapper.WalletAddressMapper">
+
+    <!-- 获取可用热钱包地址 -->
+    <select id="getAvailableHotWallets" resultType="com.ppcex.wallet.entity.WalletAddress">
+        SELECT * FROM wallet_address
+        WHERE coin_id = #{coinId}
+        AND address_type = 1
+        AND status = 1
+        AND balance >= min_balance
+        ORDER BY balance DESC
+    </select>
+
+    <!-- 更新钱包余额 -->
+    <update id="updateWalletBalance">
+        UPDATE wallet_address
+        SET balance = #{balance}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 获取钱包地址列表 -->
+    <select id="getWalletAddressPage" resultType="com.ppcex.wallet.entity.WalletAddress">
+        SELECT * FROM wallet_address
+        <where>
+            <if test="coinId != null and coinId != ''">
+                AND coin_id = #{coinId}
+            </if>
+            <if test="addressType != null">
+                AND address_type = #{addressType}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据地址查询钱包 -->
+    <select id="getByAddress" resultType="com.ppcex.wallet.entity.WalletAddress">
+        SELECT * FROM wallet_address WHERE address = #{address}
+    </select>
+
+    <!-- 获取余额低于阈值的热钱包 -->
+    <select id="getLowBalanceHotWallets" resultType="com.ppcex.wallet.entity.WalletAddress">
+        SELECT * FROM wallet_address
+        WHERE address_type = 1
+        AND status = 1
+        AND balance &lt; #{threshold}
+        ORDER BY balance ASC
+    </select>
+
+</mapper>

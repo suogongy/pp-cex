@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cex.trade.mapper.TradeDetailMapper">
+
+    <resultMap id="TradeDetailVOMap" type="com.cex.trade.dto.TradeDetailVO">
+        <id column="id" property="id"/>
+        <result column="trade_no" property="tradeNo"/>
+        <result column="symbol" property="symbol"/>
+        <result column="pair_name" property="pairName"/>
+        <result column="maker_order_id" property="makerOrderId"/>
+        <result column="taker_order_id" property="takerOrderId"/>
+        <result column="maker_user_id" property="makerUserId"/>
+        <result column="taker_user_id" property="takerUserId"/>
+        <result column="price" property="price"/>
+        <result column="amount" property="amount"/>
+        <result column="value" property="value"/>
+        <result column="maker_fee" property="makerFee"/>
+        <result column="taker_fee" property="takerFee"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="selectTradeDetailVOPage" resultMap="TradeDetailVOMap">
+        SELECT
+            td.id, td.trade_no, td.symbol, tp.pair_name,
+            td.maker_order_id, td.taker_order_id, td.maker_user_id, td.taker_user_id,
+            td.price, td.amount, td.value, td.maker_fee, td.taker_fee, td.create_time
+        FROM trade_detail td
+        LEFT JOIN trade_pair tp ON td.symbol = tp.symbol
+        <where>
+            <if test="userId != null">
+                AND (td.maker_user_id = #{userId} OR td.taker_user_id = #{userId})
+            </if>
+            <if test="symbol != null and symbol != ''">
+                AND td.symbol = #{symbol}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND td.create_time >= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND td.create_time <= #{endTime}
+            </if>
+        </where>
+        ORDER BY td.create_time DESC
+    </select>
+
+    <select id="selectRecentTradesBySymbol" resultMap="TradeDetailVOMap">
+        SELECT
+            td.id, td.trade_no, td.symbol, tp.pair_name,
+            td.maker_order_id, td.taker_order_id, td.maker_user_id, td.taker_user_id,
+            td.price, td.amount, td.value, td.maker_fee, td.taker_fee, td.create_time
+        FROM trade_detail td
+        LEFT JOIN trade_pair tp ON td.symbol = tp.symbol
+        WHERE td.symbol = #{symbol}
+        ORDER BY td.create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectUserTrades" resultMap="TradeDetailVOMap">
+        SELECT
+            td.id, td.trade_no, td.symbol, tp.pair_name,
+            td.maker_order_id, td.taker_order_id, td.maker_user_id, td.taker_user_id,
+            td.price, td.amount, td.value, td.maker_fee, td.taker_fee, td.create_time
+        FROM trade_detail td
+        LEFT JOIN trade_pair tp ON td.symbol = tp.symbol
+        WHERE (td.maker_user_id = #{userId} OR td.taker_user_id = #{userId})
+        <if test="symbol != null and symbol != ''">
+            AND td.symbol = #{symbol}
+        </if>
+        ORDER BY td.create_time DESC
+    </select>
+
+</mapper>

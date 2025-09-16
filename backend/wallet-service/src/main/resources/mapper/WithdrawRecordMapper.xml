@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.wallet.mapper.WithdrawRecordMapper">
+
+    <!-- 获取提现记录列表 -->
+    <select id="getWithdrawRecordPage" resultType="com.ppcex.wallet.entity.WithdrawRecord">
+        SELECT * FROM withdraw_record
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="coinId != null and coinId != ''">
+                AND coin_id = #{coinId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="startTime != null">
+                AND create_time >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND create_time &lt;= #{endTime}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 获取待审核的提现记录 -->
+    <select id="getPendingAuditRecords" resultType="com.ppcex.wallet.entity.WithdrawRecord">
+        SELECT * FROM withdraw_record
+        WHERE status = 1
+        <if test="coinId != null and coinId != ''">
+            AND coin_id = #{coinId}
+        </if>
+        <if test="amountThreshold != null">
+            AND amount >= #{amountThreshold}
+        </if>
+        ORDER BY create_time ASC
+    </select>
+
+    <!-- 更新提现状态 -->
+    <update id="updateWithdrawStatus">
+        UPDATE withdraw_record
+        SET status = #{status},
+            update_time = NOW(),
+            <if test="txHash != null and txHash != ''">
+                tx_hash = #{txHash},
+            </if>
+            <if test="auditUser != null and auditUser != ''">
+                audit_user = #{auditUser},
+                audit_time = NOW(),
+            </if>
+            <if test="auditRemark != null and auditRemark != ''">
+                audit_remark = #{auditRemark},
+            </if>
+            <if test="status == 5">
+                complete_time = NOW()
+            </if>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 统计用户提现总额 -->
+    <select id="getTotalWithdrawAmount" resultType="java.lang.Double">
+        SELECT COALESCE(SUM(amount), 0) FROM withdraw_record
+        WHERE user_id = #{userId}
+        <if test="coinId != null and coinId != ''">
+            AND coin_id = #{coinId}
+        </if>
+        <if test="startTime != null">
+            AND create_time >= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND create_time &lt;= #{endTime}
+        </if>
+        AND status IN (2, 4, 5) -- 已通过、处理中、已完成
+    </select>
+
+    <!-- 获取待处理的提现记录 -->
+    <select id="getProcessingRecords" resultType="com.ppcex.wallet.entity.WithdrawRecord">
+        SELECT * FROM withdraw_record
+        WHERE status IN (2, 4) -- 已通过、处理中
+        ORDER BY create_time ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,47 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'gateway-service'
+    static_configs:
+      - targets: ['gateway-service:8080']
+
+  - job_name: 'user-service'
+    static_configs:
+      - targets: ['user-service:8001']
+
+  - job_name: 'trade-service'
+    static_configs:
+      - targets: ['trade-service:8002']
+
+  - job_name: 'wallet-service'
+    static_configs:
+      - targets: ['wallet-service:8003']
+
+  - job_name: 'market-service'
+    static_configs:
+      - targets: ['market-service:8004']
+
+  - job_name: 'match-service'
+    static_configs:
+      - targets: ['match-service:8005']
+
+  - job_name: 'finance-service'
+    static_configs:
+      - targets: ['finance-service:8006']
+
+  - job_name: 'risk-service'
+    static_configs:
+      - targets: ['risk-service:8007']
+
+  - job_name: 'notify-service'
+    static_configs:
+      - targets: ['notify-service:8008']

@@ -146,11 +146,11 @@ deploy() {
     print_status "Starting deployment..."
 
     # Stop existing services
-    docker-compose -f docker-compose.${ENV}.yml down
+    docker-compose -f backend/docker-compose.${ENV}.yml down
 
     # Build and start services
-    docker-compose -f docker-compose.${ENV}.yml build
-    docker-compose -f docker-compose.${ENV}.yml up -d
+    docker-compose -f backend/docker-compose.${ENV}.yml build
+    docker-compose -f backend/docker-compose.${ENV}.yml up -d
 
     # Wait for services to be ready
     print_status "Waiting for services to be ready..."
@@ -171,23 +171,23 @@ deploy() {
 # Stop services
 stop() {
     print_status "Stopping services..."
-    docker-compose -f docker-compose.${ENV}.yml down
+    docker-compose -f backend/docker-compose.${ENV}.yml down
     print_status "Services stopped"
 }
 
 # Restart services
 restart() {
     print_status "Restarting services..."
-    docker-compose -f docker-compose.${ENV}.yml restart
+    docker-compose -f backend/docker-compose.${ENV}.yml restart
     print_status "Services restarted"
 }
 
 # View logs
 logs() {
     if [ -z "$3" ]; then
-        docker-compose -f docker-compose.${ENV}.yml logs -f
+        docker-compose -f backend/docker-compose.${ENV}.yml logs -f
     else
-        docker-compose -f docker-compose.${ENV}.yml logs -f "$3"
+        docker-compose -f backend/docker-compose.${ENV}.yml logs -f "$3"
     fi
 }
 

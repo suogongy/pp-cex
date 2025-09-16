@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.wallet.mapper.CoinConfigMapper">
+
+    <!-- 获取启用的币种配置 -->
+    <select id="getEnabledCoins" resultType="com.ppcex.wallet.entity.CoinConfig">
+        SELECT * FROM coin_config
+        WHERE status = 1
+        ORDER BY sort_order ASC
+    </select>
+
+    <!-- 根据币种ID获取配置 -->
+    <select id="getByCoinId" resultType="com.ppcex.wallet.entity.CoinConfig">
+        SELECT * FROM coin_config WHERE coin_id = #{coinId}
+    </select>
+
+    <!-- 获取支持充值的币种 -->
+    <select id="getRechargeEnabledCoins" resultType="com.ppcex.wallet.entity.CoinConfig">
+        SELECT * FROM coin_config
+        WHERE status = 1 AND recharge_enabled = 1
+        ORDER BY sort_order ASC
+    </select>
+
+    <!-- 获取支持提现的币种 -->
+    <select id="getWithdrawEnabledCoins" resultType="com.ppcex.wallet.entity.CoinConfig">
+        SELECT * FROM coin_config
+        WHERE status = 1 AND withdraw_enabled = 1
+        ORDER BY sort_order ASC
+    </select>
+
+    <!-- 根据链ID获取币种配置 -->
+    <select id="getByChainId" resultType="com.ppcex.wallet.entity.CoinConfig">
+        SELECT * FROM coin_config WHERE chain_id = #{chainId} AND status = 1
+    </select>
+
+</mapper>

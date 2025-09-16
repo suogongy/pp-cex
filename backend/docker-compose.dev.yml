@@ -12,7 +12,7 @@ services:
       MYSQL_PASSWORD: cex_password
     volumes:
       - mysql-dev-data:/var/lib/mysql
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
     networks:
@@ -59,7 +59,7 @@ services:
     volumes:
       - rocketmq-broker-logs:/home/rocketmq/logs
       - rocketmq-broker-store:/home/rocketmq/store
-      - ./scripts/rocketmq/broker-dev.conf:/home/rocketmq/conf/broker.conf
+      - ./docker/rocketmq/broker-dev.conf:/home/rocketmq/conf/broker.conf
     networks:
       - cex-network
     depends_on:

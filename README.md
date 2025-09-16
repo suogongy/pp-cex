@@ -31,10 +31,10 @@
 cp .env.example .env
 
 # 启动开发环境
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f backend/docker-compose.dev.yml up -d
 
 # 查看日志
-docker-compose -f docker-compose.dev.yml logs -f
+docker-compose -f backend/docker-compose.dev.yml logs -f
 ```
 
 ### 服务访问
@@ -90,21 +90,35 @@ docker-compose -f docker-compose.dev.yml logs -f
 pp-cex/
 ├── docs/                           # 技术文档
 ├── backend/                        # 后端微服务
+│   ├── docker/                     # Docker配置文件
+│   ├── docker-compose.dev.yml      # 开发环境配置
+│   ├── docker-compose.prod.yml     # 生产环境配置
+│   ├── docker-compose.yml          # 基础环境配置
+│   └── README.md                   # 📖 后端项目详细文档
 ├── frontend/                       # 前端应用
+│   └── README.md                   # 📖 前端项目详细文档
 ├── scripts/                        # 脚本文件
-├── docker-compose.dev.yml          # 开发环境配置
-├── docker-compose.prod.yml         # 生产环境配置
+├── sql/                            # 数据库脚本
 └── README.md                       # 项目说明
 ```
 
-## 📚 文档
+## 📚 项目文档
 
+### 📖 详细文档
 - [总体架构设计](./docs/01-总体架构设计.md)
 - [数据库设计](./docs/02-数据库设计.md)
 - [API接口设计](./docs/03-API接口设计.md)
 - [RocketMQ设计](./docs/04-RocketMQ设计.md)
 - [安全设计](./docs/05-安全设计.md)
 - [部署设计](./docs/06-部署设计.md)
+
+### 🚀 快速入门
+- [🔗 后端项目文档](./backend/README.md) - 微服务架构、技术栈、开发指南
+- [🔗 前端项目文档](./frontend/README.md) - React技术栈、组件库、部署指南
+
+### 📊 技术栈详情
+- **后端技术**: Spring Boot 3.2 + Spring Cloud Alibaba + MySQL + Redis + RocketMQ
+- **前端技术**: Next.js 15 + TypeScript + Ant Design + Tailwind CSS + Web3
 
 ## ⚠️ 免责声明
 

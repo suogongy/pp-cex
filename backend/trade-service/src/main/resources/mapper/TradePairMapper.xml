@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cex.trade.mapper.TradePairMapper">
+
+    <resultMap id="TradePairVOMap" type="com.cex.trade.dto.TradePairVO">
+        <id column="id" property="id"/>
+        <result column="symbol" property="symbol"/>
+        <result column="base_coin" property="baseCoin"/>
+        <result column="quote_coin" property="quoteCoin"/>
+        <result column="pair_name" property="pairName"/>
+        <result column="status" property="status"/>
+        <result column="price_precision" property="pricePrecision"/>
+        <result column="amount_precision" property="amountPrecision"/>
+        <result column="min_amount" property="minAmount"/>
+        <result column="max_amount" property="maxAmount"/>
+        <result column="min_price" property="minPrice"/>
+        <result column="max_price" property="maxPrice"/>
+        <result column="fee_rate" property="feeRate"/>
+        <result column="sort_order" property="sortOrder"/>
+    </resultMap>
+
+    <select id="selectTradePairVOPage" resultMap="TradePairVOMap">
+        SELECT
+            id, symbol, base_coin, quote_coin, pair_name, status,
+            price_precision, amount_precision, min_amount, max_amount,
+            min_price, max_price, fee_rate, sort_order
+        FROM trade_pair
+        <where>
+            <if test="symbol != null and symbol != ''">
+                AND symbol LIKE CONCAT('%', #{symbol}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY sort_order ASC, id DESC
+    </select>
+
+    <select id="selectActiveTradePairs" resultMap="TradePairVOMap">
+        SELECT
+            id, symbol, base_coin, quote_coin, pair_name, status,
+            price_precision, amount_precision, min_amount, max_amount,
+            min_price, max_price, fee_rate, sort_order
+        FROM trade_pair
+        WHERE status = 1
+        ORDER BY sort_order ASC, id DESC
+    </select>
+
+    <select id="selectTradePairVOBySymbol" resultMap="TradePairVOMap">
+        SELECT
+            id, symbol, base_coin, quote_coin, pair_name, status,
+            price_precision, amount_precision, min_amount, max_amount,
+            min_price, max_price, fee_rate, sort_order
+        FROM trade_pair
+        WHERE symbol = #{symbol}
+    </select>
+
+</mapper>

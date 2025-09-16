@@ -14,8 +14,8 @@ services:
       MYSQL_REPLICATION_PASSWORD: ${MYSQL_REPLICATION_PASSWORD}
     volumes:
       - mysql-master-data:/var/lib/mysql
-      - ./scripts/mysql/master.cnf:/etc/mysql/conf.d/master.cnf
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql/master.cnf:/etc/mysql/conf.d/master.cnf
+      - ../sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
     networks:
@@ -44,7 +44,7 @@ services:
       MYSQL_REPLICATION_PASSWORD: ${MYSQL_REPLICATION_PASSWORD}
     volumes:
       - mysql-slave-data:/var/lib/mysql
-      - ./scripts/mysql/slave.cnf:/etc/mysql/conf.d/slave.cnf
+      - ./docker/mysql/slave.cnf:/etc/mysql/conf.d/slave.cnf
     ports:
       - "3307:3306"
     networks:
@@ -136,7 +136,7 @@ services:
     volumes:
       - rocketmq-broker-a-logs:/home/rocketmq/logs
       - rocketmq-broker-a-store:/home/rocketmq/store
-      - ./scripts/rocketmq/broker-a.conf:/home/rocketmq/conf/broker.conf
+      - ./docker/rocketmq/broker-a.conf:/home/rocketmq/conf/broker.conf
     networks:
       - cex-network
     depends_on:
@@ -157,7 +157,7 @@ services:
     volumes:
       - rocketmq-broker-b-logs:/home/rocketmq/logs
       - rocketmq-broker-b-store:/home/rocketmq/store
-      - ./scripts/rocketmq/broker-b.conf:/home/rocketmq/conf/broker.conf
+      - ./docker/rocketmq/broker-b.conf:/home/rocketmq/conf/broker.conf
     networks:
       - cex-network
     depends_on:
