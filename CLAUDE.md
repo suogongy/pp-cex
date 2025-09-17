@@ -58,10 +58,10 @@ pp-cex/
 
 ### 快速启动
 ```bash
-# 启动基础设施
-docker-compose up -d mysql redis rocketmq nacos
+# 启动基础设施服务
+cd backend && docker-compose -f docker/docker-compose.yml up -d
 
-# 启动后端服务
+# 或使用传统方式启动后端服务
 cd backend && mvn spring-boot:run
 
 # 启动前端应用

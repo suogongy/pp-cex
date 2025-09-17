@@ -1,0 +1,151 @@
+# 基础设施服务配置
+# 仅包含数据库、缓存、消息队列、配置中心等基础服务
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cex_db}
+      MYSQL_USER: ${MYSQL_USER:-cex_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-cex123}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../sql:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - cex-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    restart: unless-stopped
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes --protected-mode no --aclfile /data/users.acl
+    volumes:
+      - redis-data:/data
+      - ./redis/users.acl:/data/users.acl
+    ports:
+      - "6379:6379"
+    networks:
+      - cex-network
+    environment:
+      REDIS_USERNAME: ${REDIS_USERNAME:-cex_user}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123456}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-u", "${REDIS_USERNAME:-cex_user}", "-a", "${REDIS_PASSWORD:-redis123456}", "ping"]
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # RocketMQ NameServer
+  rocketmq-nameserver:
+    image: apache/rocketmq:4.9.4
+    container_name: rocketmq-nameserver
+    command: ["sh", "-c", "cd /home/rocketmq/rocketmq-4.9.4 && ./bin/mqnamesrv"]
+    volumes:
+      - rocketmq-nameserver-logs:/home/rocketmq/rocketmq-4.9.4/logs
+    ports:
+      - "9876:9876"
+    networks:
+      - cex-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9876 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  rocketmq-broker:
+    image: apache/rocketmq:4.9.4
+    container_name: rocketmq-broker
+    command: ["sh", "-c", "cd /home/rocketmq/rocketmq-4.9.4 && ./bin/mqbroker -n rocketmq-nameserver:9876 -c /home/rocketmq/rocketmq-4.9.4/conf/broker.conf"]
+    volumes:
+      - rocketmq-broker-logs:/home/rocketmq/rocketmq-4.9.4/logs
+      - rocketmq-broker-store:/home/rocketmq/rocketmq-4.9.4/store
+      - ./rocketmq/broker.conf:/home/rocketmq/rocketmq-4.9.4/conf/broker.conf
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    networks:
+      - cex-network
+    depends_on:
+      rocketmq-nameserver:
+        condition: service_healthy
+    environment:
+      NAMESRV_ADDR: rocketmq-nameserver:9876
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 10911 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  # Nacos配置中心
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: nacos
+    environment:
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_DB_NAME: nacos
+      MYSQL_SERVICE_USER: ${MYSQL_USER:-root}
+      MYSQL_SERVICE_PASSWORD: ${MYSQL_PASSWORD:-root123}
+      MYSQL_SERVICE_DB_PARAM: characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+      NACOS_AUTH_ENABLE: false
+    volumes:
+      - nacos-logs:/home/nacos/logs
+      - ./nacos/init.sql:/home/nacos/init.d/mysql-schema.sql
+    ports:
+      - "8848:8848"
+    networks:
+      - cex-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/ns/operator/switches"]
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # RocketMQ Console
+  rocketmq-console:
+    image: styletang/rocketmq-console-ng:latest
+    container_name: rocketmq-console
+    environment:
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-nameserver:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false"
+    ports:
+      - "8080:8080"
+    networks:
+      - cex-network
+    depends_on:
+      rocketmq-nameserver:
+        condition: service_healthy
+      rocketmq-broker:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
+  rocketmq-nameserver-logs:
+  rocketmq-broker-logs:
+  rocketmq-broker-store:
+  nacos-logs:
+
+networks:
+  cex-network:
+    driver: bridge
