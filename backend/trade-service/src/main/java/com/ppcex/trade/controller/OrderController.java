@@ -1,14 +1,14 @@
-package com.cex.trade.controller;
+package com.ppcex.trade.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cex.trade.service.OrderService;
-import com.cex.trade.dto.OrderCreateDTO;
-import com.cex.trade.dto.OrderCancelDTO;
-import com.cex.trade.dto.OrderVO;
-import com.cex.common.response.Result;
-import com.cex.common.response.PageResult;
-import com.cex.common.util.UserContext;
+import com.ppcex.trade.service.OrderService;
+import com.ppcex.trade.dto.OrderCreateDTO;
+import com.ppcex.trade.dto.OrderCancelDTO;
+import com.ppcex.trade.dto.OrderVO;
+import com.ppcex.common.response.Result;
+import com.ppcex.common.response.PageResult;
+import com.ppcex.common.util.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -63,14 +63,14 @@ public class OrderController {
             @Parameter(description = "订单类型") @RequestParam(required = false) Integer orderType) {
 
         Long userId = UserContext.getCurrentUserId();
-        Page<com.cex.trade.entity.TradeOrder> pageParam = new Page<>(page, size);
+        Page<com.ppcex.trade.entity.TradeOrder> pageParam = new Page<>(page, size);
         IPage<OrderVO> result = orderService.getUserOrders(pageParam, userId, symbol, status, orderType);
 
-        PageResult<OrderVO> pageResult = new PageResult<>(
+        PageResult<OrderVO> pageResult = PageResult.of(
                 result.getRecords(),
-                result.getTotal(),
                 result.getCurrent(),
-                result.getSize()
+                result.getSize(),
+                result.getTotal()
         );
 
         return Result.success(pageResult);

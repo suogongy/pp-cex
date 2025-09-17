@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cex.trade.mapper.TradePairMapper">
+<mapper namespace="com.ppcex.trade.mapper.TradePairMapper">
 
-    <resultMap id="TradePairVOMap" type="com.cex.trade.dto.TradePairVO">
+    <resultMap id="TradePairVOMap" type="com.ppcex.trade.dto.TradePairVO">
         <id column="id" property="id"/>
         <result column="symbol" property="symbol"/>
         <result column="base_coin" property="baseCoin"/>

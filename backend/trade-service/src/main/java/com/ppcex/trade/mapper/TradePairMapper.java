@@ -1,10 +1,10 @@
-package com.cex.trade.mapper;
+package com.ppcex.trade.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cex.trade.entity.TradePair;
-import com.cex.trade.dto.TradePairVO;
+import com.ppcex.trade.entity.TradePair;
+import com.ppcex.trade.dto.TradePairVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

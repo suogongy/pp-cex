@@ -1,4 +1,4 @@
-package com.cex.trade.dto;
+package com.ppcex.trade.dto;
 
 import lombok.Data;
 

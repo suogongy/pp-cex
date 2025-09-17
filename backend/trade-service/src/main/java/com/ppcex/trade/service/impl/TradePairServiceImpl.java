@@ -1,12 +1,12 @@
-package com.cex.trade.service.impl;
+package com.ppcex.trade.service.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cex.trade.entity.TradePair;
-import com.cex.trade.mapper.TradePairMapper;
-import com.cex.trade.service.TradePairService;
-import com.cex.trade.dto.TradePairVO;
+import com.ppcex.trade.entity.TradePair;
+import com.ppcex.trade.mapper.TradePairMapper;
+import com.ppcex.trade.service.TradePairService;
+import com.ppcex.trade.dto.TradePairVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;

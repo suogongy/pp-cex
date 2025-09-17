@@ -1,0 +1,250 @@
+# =================================================================
+# Redis Configuration
+# Service: trade-service
+# Group: trade-service
+# Environment: All
+# =================================================================
+
+spring:
+  data:
+    redis:
+      # Connection configuration
+      host: localhost
+      port: 6379
+      password: "root123"
+      database: 1
+      username: "root"
+
+      # Connection pool configuration
+      lettuce:
+        pool:
+          max-active: 300
+          max-wait: -1ms
+          max-idle: 20
+          min-idle: 0
+          time-between-eviction-runs: 30000ms
+
+      # Timeout configuration
+      timeout: 10000ms
+      connect-timeout: 10000ms
+      read-timeout: 10000ms
+
+      # Client name
+      client-name: trade-service-redis-client
+
+      # Serialization configuration
+      serialization:
+        key-serializer: org.springframework.data.redis.serializer.StringRedisSerializer
+        value-serializer: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+
+  # Spring Cache configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "trade:"
+      use-key-prefix: true
+
+# Business cache configuration
+cache:
+  config:
+    # Market data cache
+    market-data:
+      ttl: 60
+      max-size: 10000
+      key-prefix: "trade:market:"
+
+    # Order book cache
+    order-book:
+      ttl: 30
+      max-size: 5000
+      key-prefix: "trade:orderbook:"
+
+    # Ticker data cache
+    ticker-data:
+      ttl: 60
+      max-size: 1000
+      key-prefix: "trade:ticker:"
+
+    # K-line data cache
+    kline-data:
+      ttl: 300
+      max-size: 20000
+      key-prefix: "trade:kline:"
+
+    # User orders cache
+    user-orders:
+      ttl: 300
+      max-size: 2000
+      key-prefix: "trade:user:orders:"
+
+    # Trade history cache
+    trade-history:
+      ttl: 600
+      max-size: 50000
+      key-prefix: "trade:history:"
+
+    # User positions cache
+    user-positions:
+      ttl: 180
+      max-size: 5000
+      key-prefix: "trade:user:positions:"
+
+    # Trading pairs cache
+    trading-pairs:
+      ttl: 3600
+      max-size: 100
+      key-prefix: "trade:pairs:"
+
+    # Price cache
+    price-data:
+      ttl: 60
+      max-size: 10000
+      key-prefix: "trade:price:"
+
+    # Volume cache
+    volume-data:
+      ttl: 300
+      max-size: 5000
+      key-prefix: "trade:volume:"
+
+    # Order cache
+    order-info:
+      ttl: 1800
+      max-size: 100000
+      key-prefix: "trade:order:"
+
+    # Matching engine cache
+    matching-engine:
+      ttl: 86400
+      max-size: 1000000
+      key-prefix: "trade:matching:"
+
+# Redis pub/sub configuration
+redis-pubsub:
+  enabled: true
+  channels:
+    market-data: "trade:market:data"
+    order-updates: "trade:order:updates"
+    trade-executions: "trade:execution:updates"
+    price-updates: "trade:price:updates"
+    system-events: "trade:system:events"
+
+# Redis distributed lock configuration
+redis-lock:
+  enabled: true
+  key-prefix: "trade:lock:"
+  lease-time: 30000  # 锁租约时间（毫秒）
+  wait-time: 10000    # 等待锁时间（毫秒）
+  retry-interval: 100 # 重试间隔（毫秒）
+
+# Redis health check configuration
+management:
+  health:
+    redis:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,redis
+
+# Redis monitoring configuration
+redis-monitor:
+  enabled: true
+  interval: 60  # 监控间隔（秒）
+  metrics:
+    - used_memory
+    - used_memory_peak
+    - connected_clients
+    - total_commands_processed
+    - instantaneous_ops_per_sec
+    - keyspace_hits
+    - keyspace_misses
+    - expired_keys
+    - evicted_keys
+    - connected_slaves
+    - lastsave_timestamp
+
+# Redis cluster configuration (for production)
+redis-cluster:
+  enabled: false
+  nodes:
+    - host: redis-cluster-1
+      port: 6379
+    - host: redis-cluster-2
+      port: 6379
+    - host: redis-cluster-3
+      port: 6379
+    - host: redis-cluster-4
+      port: 6379
+    - host: redis-cluster-5
+      port: 6379
+    - host: redis-cluster-6
+      port: 6379
+  max-redirects: 3
+  password: ${REDIS_CLUSTER_PASSWORD}
+
+# Redis sentinel configuration (for high availability)
+redis-sentinel:
+  enabled: false
+  master: mymaster
+  nodes:
+    - host: redis-sentinel-1
+      port: 26379
+    - host: redis-sentinel-2
+      port: 26379
+    - host: redis-sentinel-3
+      port: 26379
+  password: ${REDIS_SENTINEL_PASSWORD}
+  database: 1
+
+# Redis cache warming configuration
+cache-warming:
+  enabled: true
+  schedule: "0 0 0 * * ?"  # 每天午夜执行
+  tasks:
+    - name: "trading-pairs"
+      key-pattern: "trade:pairs:*"
+      enabled: true
+    - name: "market-tickers"
+      key-pattern: "trade:ticker:*"
+      enabled: true
+    - name: "active-orders"
+      key-pattern: "trade:order:active:*"
+      enabled: true
+
+# Redis cache eviction configuration
+cache-eviction:
+  enabled: true
+  max-memory-policy: allkeys-lru
+  eviction-interval: 300  # 清理间隔（秒）
+  sample-size: 10
+
+# Redis backup configuration
+redis-backup:
+  enabled: false
+  schedule: "0 0 2 * * ?"  # 每天凌晨2点执行
+  backup-path: "/backup/redis"
+  retention-days: 7
+  compression: true
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (redis-config-dev.yaml):
+# - spring.data.redis.host: dev-redis
+# - spring.data.redis.database: 1
+#
+# 测试环境 (redis-config-test.yaml):
+# - spring.data.redis.host: test-redis-cluster
+# - spring.data.redis.password: ${REDIS_PASSWORD}
+# - redis-cluster.enabled: true
+#
+# 生产环境 (redis-config-prod.yaml):
+# - spring.data.redis.host: prod-redis-cluster
+# - spring.data.redis.password: ${REDIS_PASSWORD}
+# - redis-cluster.enabled: true
+# - redis-monitor.enabled: true
+# =================================================================

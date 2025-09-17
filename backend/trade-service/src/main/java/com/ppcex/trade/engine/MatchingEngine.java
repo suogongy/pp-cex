@@ -1,11 +1,11 @@
-package com.cex.trade.engine;
+package com.ppcex.trade.engine;
 
-import com.cex.trade.entity.TradeOrder;
-import com.cex.trade.entity.TradeDetail;
-import com.cex.trade.service.OrderService;
-import com.cex.trade.service.TradePairService;
-import com.cex.trade.service.TradeDetailService;
-import com.cex.common.util.SnowflakeIdUtil;
+import com.ppcex.trade.entity.TradeOrder;
+import com.ppcex.trade.entity.TradeDetail;
+import com.ppcex.trade.service.OrderService;
+import com.ppcex.trade.service.TradePairService;
+import com.ppcex.trade.service.TradeDetailService;
+import com.ppcex.common.util.SnowflakeIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -122,7 +122,7 @@ public class MatchingEngine {
                              BigDecimal amount, BigDecimal price) {
         BigDecimal value = amount.multiply(price);
 
-        com.cex.trade.dto.TradePairVO tradePair = tradePairService.getTradePairBySymbol(orderBook.getSymbol());
+        com.ppcex.trade.dto.TradePairVO tradePair = tradePairService.getTradePairBySymbol(orderBook.getSymbol());
         BigDecimal feeRate = tradePair != null ? tradePair.getFeeRate() : new BigDecimal("0.001");
 
         BigDecimal makerFee = value.multiply(feeRate).setScale(8, RoundingMode.HALF_UP);

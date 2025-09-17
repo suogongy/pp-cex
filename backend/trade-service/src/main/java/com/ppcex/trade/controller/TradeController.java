@@ -1,12 +1,12 @@
-package com.cex.trade.controller;
+package com.ppcex.trade.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cex.trade.service.TradeDetailService;
-import com.cex.trade.engine.MatchingEngine;
-import com.cex.trade.dto.TradeDetailVO;
-import com.cex.common.response.Result;
-import com.cex.common.response.PageResult;
+import com.ppcex.trade.service.TradeDetailService;
+import com.ppcex.trade.engine.MatchingEngine;
+import com.ppcex.trade.dto.TradeDetailVO;
+import com.ppcex.common.response.Result;
+import com.ppcex.common.response.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,14 +38,14 @@ public class TradeController {
             @Parameter(description = "结束时间") @RequestParam(required = false) String endTime) {
 
         Long userId = null;
-        Page<com.cex.trade.entity.TradeDetail> pageParam = new Page<>(page, size);
+        Page<com.ppcex.trade.entity.TradeDetail> pageParam = new Page<>(page, size);
         IPage<TradeDetailVO> result = tradeDetailService.getTradeDetailPage(pageParam, userId, symbol, startTime, endTime);
 
-        PageResult<TradeDetailVO> pageResult = new PageResult<>(
+        PageResult<TradeDetailVO> pageResult = PageResult.of(
                 result.getRecords(),
-                result.getTotal(),
                 result.getCurrent(),
-                result.getSize()
+                result.getSize(),
+                result.getTotal()
         );
 
         return Result.success(pageResult);
@@ -64,7 +64,7 @@ public class TradeController {
     @GetMapping("/trades/user")
     public Result<List<TradeDetailVO>> getUserTrades(
             @Parameter(description = "交易对") @RequestParam(required = false) String symbol) {
-        Long userId = com.cex.common.util.UserContext.getCurrentUserId();
+        Long userId = com.ppcex.common.util.UserContext.getCurrentUserId();
         List<TradeDetailVO> trades = tradeDetailService.getUserTrades(userId, symbol);
         return Result.success(trades);
     }

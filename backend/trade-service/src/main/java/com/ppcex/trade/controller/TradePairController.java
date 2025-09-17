@@ -1,12 +1,12 @@
-package com.cex.trade.controller;
+package com.ppcex.trade.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cex.trade.entity.TradePair;
-import com.cex.trade.service.TradePairService;
-import com.cex.trade.dto.TradePairVO;
-import com.cex.common.response.Result;
-import com.cex.common.response.PageResult;
+import com.ppcex.trade.entity.TradePair;
+import com.ppcex.trade.service.TradePairService;
+import com.ppcex.trade.dto.TradePairVO;
+import com.ppcex.common.response.Result;
+import com.ppcex.common.response.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,11 +35,11 @@ public class TradePairController {
         Page<TradePair> pageParam = new Page<>(page, size);
         IPage<TradePairVO> result = tradePairService.getTradePairPage(pageParam, symbol, status);
 
-        PageResult<TradePairVO> pageResult = new PageResult<>(
+        PageResult<TradePairVO> pageResult = PageResult.of(
                 result.getRecords(),
-                result.getTotal(),
                 result.getCurrent(),
-                result.getSize()
+                result.getSize(),
+                result.getTotal()
         );
 
         return Result.success(pageResult);

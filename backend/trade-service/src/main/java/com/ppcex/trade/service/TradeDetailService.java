@@ -1,10 +1,10 @@
-package com.cex.trade.service;
+package com.ppcex.trade.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.cex.trade.entity.TradeDetail;
-import com.cex.trade.dto.TradeDetailVO;
+import com.ppcex.trade.entity.TradeDetail;
+import com.ppcex.trade.dto.TradeDetailVO;
 
 import java.util.List;
 

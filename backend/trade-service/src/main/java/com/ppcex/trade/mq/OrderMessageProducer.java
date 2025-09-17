@@ -1,8 +1,8 @@
-package com.cex.trade.mq;
+package com.ppcex.trade.mq;
 
-import com.cex.trade.entity.TradeOrder;
-import com.cex.trade.dto.OrderVO;
-import com.cex.common.util.JsonUtil;
+import com.ppcex.trade.entity.TradeOrder;
+import com.ppcex.trade.dto.OrderVO;
+import com.ppcex.common.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;

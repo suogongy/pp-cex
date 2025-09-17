@@ -1,4 +1,4 @@
-package com.cex.trade.config;
+package com.ppcex.trade.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

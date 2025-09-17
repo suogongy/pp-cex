@@ -1,14 +1,15 @@
-package com.cex.trade.mq;
+package com.ppcex.trade.mq;
 
-import com.cex.trade.entity.TradeOrder;
-import com.cex.trade.service.OrderService;
-import com.cex.common.exception.BusinessException;
-import com.cex.common.util.JsonUtil;
+import com.ppcex.trade.entity.TradeOrder;
+import com.ppcex.trade.service.OrderService;
+import com.ppcex.common.exception.BusinessException;
+import com.ppcex.common.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Bean;
+import java.util.function.Consumer;
 
 @Service
 @Slf4j
@@ -17,8 +18,12 @@ public class OrderMessageConsumer {
     @Autowired
     private OrderService orderService;
 
-    @StreamListener("order-topic")
-    public void handleOrderMessage(Message<String> message) {
+    @Bean
+    public Consumer<Message<String>> orderTopic() {
+        return this::handleOrderMessage;
+    }
+
+    private void handleOrderMessage(Message<String> message) {
         try {
             String payload = message.getPayload();
             String tags = (String) message.getHeaders().get("tags");

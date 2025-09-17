@@ -1,4 +1,4 @@
-package com.cex.trade;
+package com.ppcex.trade;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -9,7 +9,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.cex")
-@MapperScan("com.cex.trade.mapper")
+@MapperScan("com.ppcex.trade.mapper")
 public class TradeServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(TradeServiceApplication.class, args);

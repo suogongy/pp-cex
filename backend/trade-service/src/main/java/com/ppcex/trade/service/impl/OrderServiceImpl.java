@@ -1,18 +1,19 @@
-package com.cex.trade.service.impl;
+package com.ppcex.trade.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cex.trade.entity.TradeOrder;
-import com.cex.trade.mapper.TradeOrderMapper;
-import com.cex.trade.service.OrderService;
-import com.cex.trade.service.TradePairService;
-import com.cex.trade.dto.OrderCreateDTO;
-import com.cex.trade.dto.OrderCancelDTO;
-import com.cex.trade.dto.OrderVO;
-import com.cex.common.exception.BusinessException;
-import com.cex.common.util.SnowflakeIdUtil;
+import com.ppcex.trade.entity.TradeOrder;
+import com.ppcex.trade.mapper.TradeOrderMapper;
+import com.ppcex.trade.service.OrderService;
+import com.ppcex.trade.service.TradePairService;
+import com.ppcex.trade.dto.OrderCreateDTO;
+import com.ppcex.trade.dto.OrderCancelDTO;
+import com.ppcex.trade.dto.OrderVO;
+import com.ppcex.trade.dto.TradePairVO;
+import com.ppcex.common.exception.BusinessException;
+import com.ppcex.common.util.SnowflakeIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
-public class OrderServiceImpl extends ServiceImpl<TradeOrderMapper, OrderService> implements OrderService {
+public class OrderServiceImpl extends ServiceImpl<TradeOrderMapper, TradeOrder> implements OrderService {
 
     @Autowired
     private TradePairService tradePairService;
