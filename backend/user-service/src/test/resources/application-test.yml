@@ -69,11 +69,11 @@ test:
 
 # JWT配置
 cex:
-  user:
-    jwt:
-      secret: test-jwt-secret-key-for-testing-only
-      expiration: 3600000 # 1小时
-      refresh-expiration: 86400000 # 24小时
+  jwt:
+    enabled: true
+    secret: test-jwt-secret-key-for-testing-only
+    expiration: 3600000 # 1小时
+    refresh-expiration: 86400000 # 24小时
 
 # 安全配置
 security:

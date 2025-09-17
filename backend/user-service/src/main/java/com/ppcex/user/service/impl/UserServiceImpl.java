@@ -9,7 +9,7 @@ import com.ppcex.user.entity.UserInfo;
 import com.ppcex.user.entity.UserLoginLog;
 import com.ppcex.user.mapper.UserInfoMapper;
 import com.ppcex.user.mapper.UserLoginLogMapper;
-import com.ppcex.user.service.JwtService;
+import com.ppcex.common.service.JwtService;
 import com.ppcex.user.security.UserDetailsServiceImpl;
 import com.ppcex.user.service.UserService;
 import com.ppcex.user.util.PasswordUtil;

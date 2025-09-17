@@ -1,7 +1,7 @@
 package com.ppcex.trade.security;
 
 import com.ppcex.common.util.UserContext;
-import com.ppcex.trade.service.JwtService;
+import com.ppcex.common.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

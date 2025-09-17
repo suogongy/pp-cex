@@ -2,7 +2,7 @@ package com.ppcex.user.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ppcex.user.dto.ApiResponse;
-import com.ppcex.user.service.JwtService;
+import com.ppcex.common.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

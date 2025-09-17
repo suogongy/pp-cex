@@ -36,6 +36,13 @@ spring:
 
 # 业务配置
 cex:
+  # JWT 配置
+  jwt:
+    enabled: true
+    secret: your-jwt-secret-key-at-least-32-bytes-long-for-security
+    expiration: 86400000  # 24小时过期时间
+    refresh-expiration: 604800000  # 7天刷新token过期时间
+    issuer: PPCEX
   trade:
     # 交易配置
     trading:

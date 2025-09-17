@@ -70,5 +70,4 @@ knife4j:
     version: v1.0.0
     license: MIT License
     license-url: https://opensource.org/licenses/MIT
-
 debug: false
