@@ -45,7 +45,7 @@ spring:
   # MyBatis Plus配置
   mybatis-plus:
     mapper-locations: classpath:mapper/*.xml
-    type-aliases-package: com.cex.user.entity
+    type-aliases-package: com.ppcex.user.entity
     configuration:
       map-underscore-to-camel-case: true
       cache-enabled: true
@@ -123,10 +123,12 @@ spring:
             rule-type: flow
 
 # JWT配置
-jwt:
-  secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
-  expiration: 86400000 # 24小时
-  refresh-expiration: 604800000 # 7天
+cex:
+  user:
+    jwt:
+      secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
+      expiration: 86400000 # 24小时
+      refresh-expiration: 604800000 # 7天
 
 # 安全配置
 security:
@@ -203,8 +205,8 @@ management:
 logging:
   level:
     root: INFO
-    com.cex.user: ${LOG_LEVEL:INFO}
-    com.cex.common: INFO
+    com.ppcex.user: ${LOG_LEVEL:INFO}
+    com.ppcex.common: INFO
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
   pattern:

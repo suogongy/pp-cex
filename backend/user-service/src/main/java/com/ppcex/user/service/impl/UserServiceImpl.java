@@ -7,9 +7,9 @@ import com.ppcex.user.dto.UserLoginResponse;
 import com.ppcex.user.dto.UserRegisterRequest;
 import com.ppcex.user.entity.UserInfo;
 import com.ppcex.user.entity.UserLoginLog;
-import com.ppcex.user.repository.UserInfoRepository;
-import com.ppcex.user.repository.UserLoginLogRepository;
-import com.ppcex.user.security.JwtTokenUtil;
+import com.ppcex.user.mapper.UserInfoMapper;
+import com.ppcex.user.mapper.UserLoginLogMapper;
+import com.ppcex.common.util.JwtUtil;
 import com.ppcex.user.security.UserDetailsServiceImpl;
 import com.ppcex.user.service.UserService;
 import com.ppcex.user.util.PasswordUtil;
@@ -34,10 +34,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final UserInfoRepository userInfoRepository;
-    private final UserLoginLogRepository userLoginLogRepository;
-    private final JwtTokenUtil jwtTokenUtil;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final UserInfoMapper userInfoMapper;
+    private final UserLoginLogMapper userLoginLogMapper;
+        private final UserDetailsServiceImpl userDetailsService;
     private final PasswordUtil passwordUtil;
     private final UserNoGenerator userNoGenerator;
     private final AuthenticationManager authenticationManager;
@@ -99,7 +98,7 @@ public class UserServiceImpl implements UserService {
 
         // 处理邀请码
         if (registerRequest.getInviteCode() != null && !registerRequest.getInviteCode().trim().isEmpty()) {
-            UserInfo inviter = userInfoRepository.selectOne(
+            UserInfo inviter = userInfoMapper.selectOne(
                 new QueryWrapper<UserInfo>()
                     .eq("invite_code", registerRequest.getInviteCode())
                     .eq("status", 1)
@@ -113,7 +112,7 @@ public class UserServiceImpl implements UserService {
         userInfo.setInviteCode(userNoGenerator.generateInviteCode());
 
         // 保存用户信息
-        userInfoRepository.insert(userInfo);
+        userInfoMapper.insert(userInfo);
 
         log.info("用户注册成功: {}, 用户编号: {}", registerRequest.getUsername(), userInfo.getUserNo());
     }
@@ -132,7 +131,7 @@ public class UserServiceImpl implements UserService {
             );
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            UserInfo userInfo = userInfoRepository.selectByUsername(userDetails.getUsername());
+            UserInfo userInfo = userInfoMapper.selectByUsername(userDetails.getUsername());
 
             // 检查是否需要Google 2FA
             if (userInfo.getGoogleAuthEnabled() == 1) {
@@ -149,14 +148,13 @@ public class UserServiceImpl implements UserService {
             }
 
             // 生成JWT token
-            String accessToken = jwtTokenUtil.generateAccessToken(
-                userInfo.getUsername(),
+            String accessToken = JwtUtil.createUserToken(
                 userInfo.getId(),
-                userInfo.getUserNo()
+                userInfo.getUsername(),
+                "USER"
             );
 
-            String refreshToken = jwtTokenUtil.generateRefreshToken(
-                userInfo.getUsername(),
+            String refreshToken = JwtUtil.createRefreshToken(
                 userInfo.getId()
             );
 
@@ -167,7 +165,7 @@ public class UserServiceImpl implements UserService {
             updateLoginInfo(userInfo.getId());
 
             // 重置登录失败次数
-            userInfoRepository.resetLoginFailedCount(userInfo.getId());
+            userInfoMapper.resetLoginFailedCount(userInfo.getId());
 
             // 构建响应
             UserInfoResponse userInfoResponse = new UserInfoResponse();
@@ -177,7 +175,7 @@ public class UserServiceImpl implements UserService {
                 accessToken,
                 refreshToken,
                 "Bearer",
-                jwtTokenUtil.getExpiration(),
+                JwtUtil.getTokenRemainingTime(accessToken),
                 userInfoResponse,
                 false,
                 null
@@ -199,8 +197,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public void logout(String token) {
         try {
-            String username = jwtTokenUtil.getUsernameFromToken(token);
-            UserInfo userInfo = userInfoRepository.selectByUsername(username);
+            String username = JwtUtil.getUsernameFromToken(token);
+            UserInfo userInfo = userInfoMapper.selectByUsername(username);
 
             if (userInfo != null) {
                 // 记录登出日志
@@ -214,32 +212,33 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String refreshToken(String refreshToken) {
-        if (!jwtTokenUtil.validateToken(refreshToken)) {
+        if (!JwtUtil.validateToken(refreshToken)) {
             throw new RuntimeException("无效的刷新令牌");
         }
 
-        if (!jwtTokenUtil.isRefreshToken(refreshToken)) {
+        String tokenType = JwtUtil.getTypeFromToken(refreshToken);
+        if (!"refresh".equals(tokenType)) {
             throw new RuntimeException("不是刷新令牌");
         }
 
-        String username = jwtTokenUtil.getUsernameFromToken(refreshToken);
-        Long userId = jwtTokenUtil.getUserIdFromToken(refreshToken);
+        String username = JwtUtil.getUsernameFromToken(refreshToken);
+        Long userId = JwtUtil.getClaimFromToken(refreshToken, "userId");
 
         // 检查用户状态
         checkUserStatus(userId);
 
         // 生成新的访问令牌
-        UserInfo userInfo = userInfoRepository.selectById(userId);
-        return jwtTokenUtil.generateAccessToken(
-            username,
+        UserInfo userInfo = userInfoMapper.selectById(userId);
+        return JwtUtil.createUserToken(
             userId,
-            userInfo.getUserNo()
+            username,
+            "USER"
         );
     }
 
     @Override
     public UserInfoResponse getUserInfo(Long userId) {
-        UserInfo userInfo = userInfoRepository.selectById(userId);
+        UserInfo userInfo = userInfoMapper.selectById(userId);
         if (userInfo == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -251,7 +250,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInfoResponse updateUserInfo(Long userId, UserInfoResponse userInfoRequest) {
-        UserInfo userInfo = userInfoRepository.selectById(userId);
+        UserInfo userInfo = userInfoMapper.selectById(userId);
         if (userInfo == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -273,7 +272,7 @@ public class UserServiceImpl implements UserService {
             userInfo.setTimezone(userInfoRequest.getTimezone());
         }
 
-        userInfoRepository.updateById(userInfo);
+        userInfoMapper.updateById(userInfo);
 
         UserInfoResponse response = new UserInfoResponse();
         BeanUtils.copyProperties(userInfo, response);
@@ -282,7 +281,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void changePassword(Long userId, String oldPassword, String newPassword) {
-        UserInfo userInfo = userInfoRepository.selectById(userId);
+        UserInfo userInfo = userInfoMapper.selectById(userId);
         if (userInfo == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -303,41 +302,41 @@ public class UserServiceImpl implements UserService {
 
         userInfo.setPasswordHash(newPasswordHash);
         userInfo.setSalt(newSalt);
-        userInfoRepository.updateById(userInfo);
+        userInfoMapper.updateById(userInfo);
 
         log.info("用户修改密码成功: {}", userInfo.getUsername());
     }
 
     @Override
     public boolean checkUsernameExists(String username) {
-        return userInfoRepository.selectByUsername(username) != null;
+        return userInfoMapper.selectByUsername(username) != null;
     }
 
     @Override
     public boolean checkEmailExists(String email) {
-        return userInfoRepository.selectByEmail(email) != null;
+        return userInfoMapper.selectByEmail(email) != null;
     }
 
     @Override
     public boolean checkPhoneExists(String phone) {
-        return userInfoRepository.selectByPhone(phone) != null;
+        return userInfoMapper.selectByPhone(phone) != null;
     }
 
     @Override
     public Long getUserIdByUsername(String username) {
-        UserInfo userInfo = userInfoRepository.selectByUsername(username);
+        UserInfo userInfo = userInfoMapper.selectByUsername(username);
         if (userInfo == null) {
-            userInfo = userInfoRepository.selectByEmail(username);
+            userInfo = userInfoMapper.selectByEmail(username);
         }
         if (userInfo == null) {
-            userInfo = userInfoRepository.selectByPhone(username);
+            userInfo = userInfoMapper.selectByPhone(username);
         }
         return userInfo != null ? userInfo.getId() : null;
     }
 
     @Override
     public void checkUserStatus(Long userId) {
-        UserInfo userInfo = userInfoRepository.selectById(userId);
+        UserInfo userInfo = userInfoMapper.selectById(userId);
         if (userInfo == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -356,13 +355,13 @@ public class UserServiceImpl implements UserService {
      * 处理登录失败
      */
     private void handleLoginFailure(String username) {
-        UserInfo userInfo = userInfoRepository.selectByUsername(username);
+        UserInfo userInfo = userInfoMapper.selectByUsername(username);
         if (userInfo == null) {
             return;
         }
 
         int failedCount = userInfo.getLoginFailedCount() + 1;
-        userInfoRepository.updateLoginFailedCount(userInfo.getId(), failedCount);
+        userInfoMapper.updateLoginFailedCount(userInfo.getId(), failedCount);
 
         // 记录登录失败日志
         recordLoginLog(userInfo.getId(), 1, "用户名或密码错误", false);
@@ -371,7 +370,7 @@ public class UserServiceImpl implements UserService {
         int maxFailedAttempts = 5; // 最大失败次数
         if (failedCount >= maxFailedAttempts) {
             LocalDateTime lockUntil = LocalDateTime.now().plusMinutes(30); // 锁定30分钟
-            userInfoRepository.lockAccount(userInfo.getId(), lockUntil);
+            userInfoMapper.lockAccount(userInfo.getId(), lockUntil);
             log.warn("用户账户已被锁定: {}, 锁定至: {}", username, lockUntil);
         }
     }
@@ -392,7 +391,7 @@ public class UserServiceImpl implements UserService {
             // loginLog.setLoginIp(getClientIp());
             // loginLog.setDeviceInfo(getDeviceInfo());
 
-            userLoginLogRepository.insert(loginLog);
+            userLoginLogMapper.insert(loginLog);
         } catch (Exception e) {
             log.error("记录登录日志失败", e);
         }
@@ -407,7 +406,7 @@ public class UserServiceImpl implements UserService {
             // TODO: 获取客户端IP
             String clientIp = "127.0.0.1";
 
-            userInfoRepository.updateLoginInfo(userId, now, clientIp);
+            userInfoMapper.updateLoginInfo(userId, now, clientIp);
         } catch (Exception e) {
             log.error("更新用户登录信息失败", e);
         }

@@ -2,7 +2,7 @@ package com.ppcex.user.controller;
 
 import com.ppcex.user.dto.ApiResponse;
 import com.ppcex.user.dto.UserInfoResponse;
-import com.ppcex.user.security.JwtTokenUtil;
+import com.ppcex.common.util.JwtUtil;
 import com.ppcex.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -20,14 +20,13 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-    private final JwtTokenUtil jwtTokenUtil;
-
+    
     @GetMapping("/info")
     @Operation(summary = "获取用户信息", description = "获取当前登录用户的详细信息")
     public ApiResponse<UserInfoResponse> getUserInfo(@RequestHeader("Authorization") String token) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtTokenUtil.getUserIdFromToken(jwtToken);
+            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
 
             UserInfoResponse userInfo = userService.getUserInfo(userId);
             return ApiResponse.success(userInfo);
@@ -44,7 +43,7 @@ public class UserController {
             @RequestBody UserInfoResponse userInfoRequest) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtTokenUtil.getUserIdFromToken(jwtToken);
+            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
 
             UserInfoResponse updatedUserInfo = userService.updateUserInfo(userId, userInfoRequest);
             return ApiResponse.success(updatedUserInfo);
@@ -61,7 +60,7 @@ public class UserController {
             @RequestBody ChangePasswordRequest request) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtTokenUtil.getUserIdFromToken(jwtToken);
+            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
 
             userService.changePassword(userId, request.getOldPassword(), request.getNewPassword());
             return ApiResponse.success("密码修改成功");

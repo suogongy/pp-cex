@@ -3,7 +3,7 @@ package com.ppcex.user.controller;
 import com.ppcex.user.dto.ApiResponse;
 import com.ppcex.user.dto.KycInfoResponse;
 import com.ppcex.user.dto.KycSubmitRequest;
-import com.ppcex.user.security.JwtTokenUtil;
+import com.ppcex.common.util.JwtUtil;
 import com.ppcex.user.service.KycService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -21,8 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class KycController {
 
     private final KycService kycService;
-    private final JwtTokenUtil jwtTokenUtil;
-
+    
     @PostMapping("/submit")
     @Operation(summary = "提交KYC认证", description = "提交KYC认证信息")
     public ApiResponse<String> submitKyc(
@@ -30,7 +29,7 @@ public class KycController {
             @RequestBody KycSubmitRequest request) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtTokenUtil.getUserIdFromToken(jwtToken);
+            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
 
             kycService.submitKyc(userId, request);
             return ApiResponse.success("KYC认证提交成功，请等待审核");
@@ -47,7 +46,7 @@ public class KycController {
             @RequestBody KycSubmitRequest request) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtTokenUtil.getUserIdFromToken(jwtToken);
+            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
 
             kycService.resubmitKyc(userId, request);
             return ApiResponse.success("KYC认证重新提交成功，请等待审核");
@@ -62,7 +61,7 @@ public class KycController {
     public ApiResponse<KycInfoResponse> getKycInfo(@RequestHeader("Authorization") String token) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtTokenUtil.getUserIdFromToken(jwtToken);
+            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
 
             KycInfoResponse kycInfo = kycService.getKycInfo(userId);
             return ApiResponse.success(kycInfo);
@@ -77,7 +76,7 @@ public class KycController {
     public ApiResponse<KycStatusResponse> getKycStatus(@RequestHeader("Authorization") String token) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtTokenUtil.getUserIdFromToken(jwtToken);
+            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
 
             boolean hasSubmitted = kycService.hasSubmittedKyc(userId);
             boolean isApproved = kycService.isKycApproved(userId);

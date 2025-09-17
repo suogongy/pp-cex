@@ -1,0 +1,261 @@
+# =================================================================
+# Redis 配置 - Redis Configuration
+# 服务名称: user-service
+# 配置组: DEFAULT_GROUP
+# 适用于: 所有环境的Redis配置
+# =================================================================
+
+# Spring Data Redis 配置
+spring:
+  data:
+    redis:
+      # 连接配置
+      host: localhost
+      port: 6379
+      password: ""
+      database: 0
+      username: ""
+
+      # 连接池配置
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 10
+          min-idle: 0
+          time-between-eviction-runs: 30000ms
+
+      # 超时配置
+      timeout: 10000ms
+      connect-timeout: 10000ms
+      read-timeout: 10000ms
+
+      # SSL配置
+      ssl: false
+
+      # 客户端名称
+      client-name: user-service-redis-client
+
+      # 序列化配置
+      serialization:
+        key-serializer: org.springframework.data.redis.serializer.StringRedisSerializer
+        value-serializer: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+
+  # Redisson 配置 (分布式锁、分布式对象)
+  redisson:
+    # 单节点配置
+    address: redis://localhost:6379
+    password: ""
+    database: 0
+
+    # 连接配置
+    timeout: 10000
+    connectionPoolSize: 64
+    connectionMinimumIdleSize: 24
+    slaveConnectionMinimumIdleSize: 24
+    slaveConnectionPoolSize: 64
+    masterConnectionPoolSize: 64
+
+    # 连接超时配置
+    idleConnectionTimeout: 10000
+    pingConnectionInterval: 30000
+    pingTimeout: 1000
+    connectTimeout: 10000
+    timeout: 3000
+
+    # 重试配置
+    retryAttempts: 3
+    retryInterval: 1500
+    reconnectionTimeout: 3000
+    failedAttempts: 3
+
+    # 订阅配置
+    subscriptionsPerConnection: 5
+    subscriptionConnectionMinimumIdleSize: 1
+    subscriptionConnectionPoolSize: 50
+
+    # 监控配置
+    monitorInterval: 3000
+
+    # 线程配置
+    threads: 16
+    nettyThreads: 32
+
+    # 编码配置
+    codec: org.redisson.codec.JsonJacksonCodec
+
+    # 传输配置
+    transportMode: "NIO"
+
+# Redis 缓存配置
+cache:
+  redis:
+    # 基础配置
+    enabled: true
+    default-expiration: 3600  # 默认过期时间（秒）
+    key-prefix: "user:"
+    use-key-prefix: true
+    cache-null-values: false
+    time-to-live: 3600000  # 默认TTL（毫秒）
+
+    # 键值生成策略
+    key-generator: simpleKeyGenerator
+
+    # 序列化配置
+    serialization:
+      key-serializer: STRING
+      value-serializer: JSON
+
+    # 缓存管理器配置
+    cache-configs:
+      # 用户信息缓存
+      user-info:
+        ttl: 1800         # 30分钟
+        maximum-size: 1000
+        key-prefix: "user:info:"
+
+      # 用户资产缓存
+      user-asset:
+        ttl: 300          # 5分钟
+        maximum-size: 5000
+        key-prefix: "user:asset:"
+
+      # KYC信息缓存
+      kyc-info:
+        ttl: 3600         # 1小时
+        maximum-size: 1000
+        key-prefix: "user:kyc:"
+
+      # 登录令牌缓存
+      login-token:
+        ttl: 86400        # 24小时
+        maximum-size: 10000
+        key-prefix: "user:token:"
+
+      # 验证码缓存
+      verification-code:
+        ttl: 300          # 5分钟
+        maximum-size: 5000
+        key-prefix: "user:code:"
+
+      # 用户权限缓存
+      user-permissions:
+        ttl: 1800         # 30分钟
+        maximum-size: 1000
+        key-prefix: "user:perm:"
+
+# Redis 键空间通知配置
+redis:
+  keyspace-notifications:
+    enabled: false
+    events: "KEA"  # K:键事件, E:过期事件, A:所有命令
+
+  # Lua 脚本配置
+  scripts:
+    # 分布式锁脚本
+    distributed-lock: |
+      local key = KEYS[1]
+      local value = ARGV[1]
+      local ttl = ARGV[2]
+
+      if redis.call('exists', key) == 0 then
+        redis.call('set', key, value)
+        redis.call('expire', key, ttl)
+        return 1
+      else
+        return 0
+      end
+
+    # 限流脚本
+    rate-limiter: |
+      local key = KEYS[1]
+      local limit = tonumber(ARGV[1])
+      local window = tonumber(ARGV[2])
+      local current = redis.call('get', key)
+
+      if current == false then
+        redis.call('set', key, 1)
+        redis.call('expire', key, window)
+        return 1
+      else
+        current = tonumber(current)
+        if current < limit then
+          redis.call('incr', key)
+          return 1
+        else
+          return 0
+        end
+      end
+
+# Redis 集群配置（用于生产环境）
+redis-cluster:
+  enabled: false
+  nodes:
+    - host: localhost
+      port: 7000
+    - host: localhost
+      port: 7001
+    - host: localhost
+      port: 7002
+    - host: localhost
+      port: 7003
+    - host: localhost
+      port: 7004
+    - host: localhost
+      port: 7005
+  max-redirects: 3
+  password: ""
+
+# Redis Sentinel 配置（用于高可用）
+redis-sentinel:
+  enabled: false
+  master: mymaster
+  nodes:
+    - host: localhost
+      port: 26379
+    - host: localhost
+      port: 26380
+    - host: localhost
+      port: 26381
+  password: ""
+  database: 0
+
+# Redis 性能监控
+redis-monitor:
+  enabled: true
+  interval: 60  # 监控间隔（秒）
+  metrics:
+    - used_memory
+    - used_memory_peak
+    - connected_clients
+    - total_commands_processed
+    - instantaneous_ops_per_sec
+    - keyspace_hits
+    - keyspace_misses
+    - used_cpu_sys
+    - used_cpu_user
+
+# Redis 健康检查
+redis-health:
+  enabled: true
+  timeout: 3000
+  check-command: "PING"
+  expected-response: "PONG"
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (redis-config-dev.yaml):
+# - spring.data.redis.host: dev-redis-server
+# - spring.data.redis.database: 0
+#
+# 测试环境 (redis-config-test.yaml):
+# - spring.data.redis.host: test-redis-server
+# - spring.data.redis.database: 1
+#
+# 生产环境 (redis-config-prod.yaml):
+# - spring.data.redis.host: prod-redis-cluster
+# - redis-cluster.enabled: true
+# - spring.data.redis.password: 通过环境变量注入
+# =================================================================

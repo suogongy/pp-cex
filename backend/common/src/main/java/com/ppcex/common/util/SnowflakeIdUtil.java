@@ -1,4 +1,4 @@
-package com.cex.common.util;
+package com.ppcex.common.util;
 
 import org.springframework.stereotype.Component;
 

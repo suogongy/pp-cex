@@ -1,7 +1,7 @@
 package com.ppcex.user.security;
 
 import com.ppcex.user.entity.UserInfo;
-import com.ppcex.user.repository.UserInfoRepository;
+import com.ppcex.user.mapper.UserInfoMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,21 +18,21 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UserInfoRepository userInfoRepository;
+    private final UserInfoMapper userInfoMapper;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // 尝试用用户名查询
-        UserInfo userInfo = userInfoRepository.selectByUsername(username);
+        UserInfo userInfo = userInfoMapper.selectByUsername(username);
 
         // 如果用户名查询失败，尝试用邮箱查询
         if (userInfo == null) {
-            userInfo = userInfoRepository.selectByEmail(username);
+            userInfo = userInfoMapper.selectByEmail(username);
         }
 
         // 如果邮箱查询失败，尝试用手机号查询
         if (userInfo == null) {
-            userInfo = userInfoRepository.selectByPhone(username);
+            userInfo = userInfoMapper.selectByPhone(username);
         }
 
         if (userInfo == null) {
@@ -69,7 +69,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      * 根据用户ID加载用户详情
      */
     public UserDetails loadUserByUserId(Long userId) {
-        UserInfo userInfo = userInfoRepository.selectById(userId);
+        UserInfo userInfo = userInfoMapper.selectById(userId);
         if (userInfo == null) {
             throw new UsernameNotFoundException("用户不存在: " + userId);
         }

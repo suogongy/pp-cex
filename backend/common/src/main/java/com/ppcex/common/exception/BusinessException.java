@@ -1,4 +1,4 @@
-package com.cex.common.exception;
+package com.ppcex.common.exception;
 
 /**
  * 业务异常

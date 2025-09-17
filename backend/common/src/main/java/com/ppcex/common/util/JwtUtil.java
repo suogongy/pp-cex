@@ -1,4 +1,4 @@
-package com.cex.common.util;
+package com.ppcex.common.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -223,9 +223,9 @@ public class JwtUtil {
      * 获取Token受众
      *
      * @param token JWT Token
-     * @return 受众
+     * @return 受众集合
      */
-    public static String getAudienceFromToken(String token) {
+    public static java.util.Set<String> getAudienceFromToken(String token) {
         return getClaimFromToken(token, Claims::getAudience);
     }
 

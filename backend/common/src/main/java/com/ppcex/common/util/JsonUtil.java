@@ -1,4 +1,4 @@
-package com.cex.common.util;
+package com.ppcex.common.util;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;

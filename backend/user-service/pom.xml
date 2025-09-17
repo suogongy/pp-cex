@@ -12,12 +12,12 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.cex</groupId>
+    <groupId>com.ppcex</groupId>
     <artifactId>user-service</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>CEX User Service</name>
-    <description>User service for CEX project</description>
+    <name>PPCEX User Service</name>
+    <description>User service for PPCEX project</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -32,7 +32,7 @@
     <dependencies>
         <!-- Project Dependencies -->
         <dependency>
-            <groupId>com.cex</groupId>
+            <groupId>com.ppcex</groupId>
             <artifactId>common</artifactId>
             <version>1.0.0</version>
         </dependency>

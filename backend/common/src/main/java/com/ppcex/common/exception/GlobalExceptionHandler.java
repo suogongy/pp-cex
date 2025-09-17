@@ -1,6 +1,5 @@
-package com.cex.common.exception;
+package com.ppcex.common.exception;
 
-import com.cex.common.response.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
@@ -13,6 +12,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+
+import com.ppcex.common.response.Result;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -124,7 +125,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<?> handleException(Exception e, HttpServletRequest request) {
         log.error("系统异常: {} - {}", request.getRequestURI(), e.getMessage(), e);
-        return Result.systemError("系统繁忙，请稍后重试");
+        return Result.error("系统繁忙，请稍后重试");
     }
 
     /**
@@ -134,7 +135,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<?> handleRuntimeException(RuntimeException e, HttpServletRequest request) {
         log.error("运行时异常: {} - {}", request.getRequestURI(), e.getMessage(), e);
-        return Result.systemError("系统繁忙，请稍后重试");
+        return Result.error("系统繁忙，请稍后重试");
     }
 
     /**
@@ -144,7 +145,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<?> handleNullPointerException(NullPointerException e, HttpServletRequest request) {
         log.error("空指针异常: {} - {}", request.getRequestURI(), e.getMessage(), e);
-        return Result.systemError("系统繁忙，请稍后重试");
+        return Result.error("系统繁忙，请稍后重试");
     }
 
     /**
@@ -154,7 +155,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<?> handleIndexOutOfBoundsException(IndexOutOfBoundsException e, HttpServletRequest request) {
         log.error("数组越界异常: {} - {}", request.getRequestURI(), e.getMessage(), e);
-        return Result.systemError("系统繁忙，请稍后重试");
+        return Result.error("系统繁忙，请稍后重试");
     }
 
     /**
@@ -174,7 +175,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<?> handleArithmeticException(ArithmeticException e, HttpServletRequest request) {
         log.error("算术异常: {} - {}", request.getRequestURI(), e.getMessage(), e);
-        return Result.systemError("系统繁忙，请稍后重试");
+        return Result.error("系统繁忙，请稍后重试");
     }
 
     /**
@@ -184,7 +185,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<?> handleClassNotFoundException(ClassNotFoundException e, HttpServletRequest request) {
         log.error("类未找到异常: {} - {}", request.getRequestURI(), e.getMessage(), e);
-        return Result.systemError("系统繁忙，请稍后重试");
+        return Result.error("系统繁忙，请稍后重试");
     }
 
     /**
@@ -204,6 +205,6 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<?> handleIllegalStateException(IllegalStateException e, HttpServletRequest request) {
         log.error("非法状态异常: {} - {}", request.getRequestURI(), e.getMessage(), e);
-        return Result.systemError("系统繁忙，请稍后重试");
+        return Result.error("系统繁忙，请稍后重试");
     }
 }

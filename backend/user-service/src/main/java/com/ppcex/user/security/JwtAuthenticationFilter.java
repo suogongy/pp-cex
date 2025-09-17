@@ -1,6 +1,7 @@
 package com.ppcex.user.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ppcex.common.util.JwtUtil;
 import com.ppcex.user.dto.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,7 +25,6 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtTokenUtil jwtTokenUtil;
     private final UserDetailsServiceImpl userDetailsService;
     private final ObjectMapper objectMapper;
 
@@ -40,8 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String token = authorizationHeader.substring(7);
 
                 // 验证token
-                if (jwtTokenUtil.validateToken(token)) {
-                    String username = jwtTokenUtil.getUsernameFromToken(token);
+                if (JwtUtil.validateToken(token)) {
+                    String username = JwtUtil.getUsernameFromToken(token);
 
                     // 如果SecurityContext中没有认证信息，则进行认证
                     if (SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -81,7 +81,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             apiResponse = ApiResponse.error(401, "不支持的Token");
         } else if (e instanceof io.jsonwebtoken.MalformedJwtException) {
             apiResponse = ApiResponse.error(401, "Token格式错误");
-        } else if (e instanceof io.jsonwebtoken.SecurityException) {
+        } else if (e instanceof java.lang.SecurityException) {
             apiResponse = ApiResponse.error(401, "Token签名验证失败");
         } else {
             apiResponse = ApiResponse.error(401, "认证失败: " + e.getMessage());

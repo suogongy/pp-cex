@@ -1,0 +1,88 @@
+spring:
+  # 数据源配置 - 使用测试数据库
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${TEST_MYSQL_HOST:localhost}:${TEST_MYSQL_PORT:3306}/${TEST_MYSQL_DATABASE:ppcex_user_test}?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+    username: ${TEST_MYSQL_USER:test_user}
+    password: ${TEST_MYSQL_PASSWORD:test123}
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+      pool-name: UserTestHikariCP
+
+  # Redis配置 - 测试环境可以禁用
+  data:
+    redis:
+      host: ${TEST_REDIS_HOST:localhost}
+      port: ${TEST_REDIS_PORT:6379}
+      password: ${TEST_REDIS_PASSWORD:}
+      database: 1
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-wait: -1ms
+          max-idle: 5
+          min-idle: 0
+
+  # MyBatis Plus配置
+  mybatis-plus:
+    mapper-locations: classpath:mapper/*.xml
+    type-aliases-package: com.ppcex.user.entity
+    configuration:
+      map-underscore-to-camel-case: true
+      cache-enabled: false # 测试环境禁用缓存
+      lazy-loading-enabled: false
+      multiple-result-sets-enabled: true
+      use-column-label: true
+      use-generated-keys: false
+      auto-mapping-behavior: partial
+      default-statement-timeout: 25000
+    global-config:
+      db-config:
+        id-type: auto
+        table-underline: true
+        logic-delete-field: deleted
+        logic-delete-value: 1
+        logic-not-delete-value: 0
+
+# 日志配置
+logging:
+  level:
+    root: WARN
+    com.ppcex.user: DEBUG
+    com.ppcex.common: WARN
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+    org.springframework.test: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 测试配置
+test:
+  cleanup:
+    enabled: true # 测试后清理数据
+
+# JWT配置
+cex:
+  user:
+    jwt:
+      secret: test-jwt-secret-key-for-testing-only
+      expiration: 3600000 # 1小时
+      refresh-expiration: 86400000 # 24小时
+
+# 安全配置
+security:
+  permit-all:
+    - /user/auth/**
+    - /user/public/**
+    - /doc.html
+    - /swagger-ui/**
+    - /v3/api-docs/**
+    - /actuator/**
+    - /favicon.ico
+    - /error

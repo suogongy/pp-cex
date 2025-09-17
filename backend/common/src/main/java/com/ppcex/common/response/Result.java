@@ -1,4 +1,4 @@
-package com.cex.common.response;
+package com.ppcex.common.response;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

@@ -12,8 +12,8 @@ spring:
           context-path: /user
       config:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:public}
-        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        namespace: ${NACOS_NAMESPACE:test}
+        group: ${NACOS_GROUP:user-service}
         file-extension: yaml
         shared-configs:
           - data-id: common-config.yaml
