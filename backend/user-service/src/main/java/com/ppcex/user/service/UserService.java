@@ -20,7 +20,7 @@ public interface UserService {
     /**
      * 用户登出
      */
-    void logout(String token);
+    void logout(Long userId);
 
     /**
      * 刷新token

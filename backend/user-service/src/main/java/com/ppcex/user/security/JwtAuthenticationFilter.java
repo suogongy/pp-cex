@@ -141,7 +141,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
         log.info("shouldNotFilter检查路径: {}", path);
-        boolean shouldSkip = path.startsWith("/api/v1/auth/") ||
+        boolean shouldSkip = (path.startsWith("/api/v1/auth/") && !path.equals("/api/v1/auth/logout")) ||
                path.startsWith("/doc.html") ||
                path.startsWith("/swagger-ui") ||
                path.startsWith("/v3/api-docs") ||

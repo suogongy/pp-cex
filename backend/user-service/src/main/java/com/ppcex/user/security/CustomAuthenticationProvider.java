@@ -10,13 +10,10 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 
 @Component
 @Slf4j
@@ -69,16 +66,12 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         }
 
         // 构建UserDetails
-        UserDetails userDetails = User.builder()
-                .username(userInfo.getUsername())
-                .password(userInfo.getPasswordHash())
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
-                .accountExpired(false)
-                .accountLocked(userInfo.getAccountLockedUntil() != null &&
-                               userInfo.getAccountLockedUntil().isAfter(java.time.LocalDateTime.now()))
-                .credentialsExpired(false)
-                .disabled(userInfo.getStatus() != 1)
-                .build();
+        UserDetails userDetails = new CustomUserDetails(
+                userInfo.getId(),
+                userInfo.getUsername(),
+                userInfo.getPasswordHash(),
+                userInfo.getStatus() == 1
+        );
 
         // 创建认证令牌
         return new UsernamePasswordAuthenticationToken(

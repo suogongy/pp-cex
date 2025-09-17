@@ -5,7 +5,6 @@ import com.ppcex.user.mapper.UserInfoMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -53,16 +52,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException("用户账户已被锁定");
         }
 
-        return User.builder()
-                .username(userInfo.getUsername())
-                .password(userInfo.getPasswordHash())
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
-                .accountExpired(false)
-                .accountLocked(userInfo.getAccountLockedUntil() != null &&
-                               userInfo.getAccountLockedUntil().isAfter(java.time.LocalDateTime.now()))
-                .credentialsExpired(false)
-                .disabled(userInfo.getStatus() != 1)
-                .build();
+        return new CustomUserDetails(
+                userInfo.getId(),
+                userInfo.getUsername(),
+                userInfo.getPasswordHash(),
+                userInfo.getStatus() == 1
+        );
     }
 
     /**
@@ -87,14 +82,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException("用户账户已被锁定");
         }
 
-        return User.builder()
-                .username(userInfo.getUsername())
-                .password(userInfo.getPasswordHash())
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
-                .accountExpired(false)
-                .accountLocked(false)
-                .credentialsExpired(false)
-                .disabled(false)
-                .build();
+        return new CustomUserDetails(
+                userInfo.getId(),
+                userInfo.getUsername(),
+                userInfo.getPasswordHash(),
+                true
+        );
     }
 }

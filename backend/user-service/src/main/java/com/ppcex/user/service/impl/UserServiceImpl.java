@@ -200,15 +200,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void logout(String token) {
+    public void logout(Long userId) {
         try {
-            String username = jwtService.getUsernameFromToken(token);
-            UserInfo userInfo = userInfoMapper.selectByUsername(username);
+            UserInfo userInfo = userInfoMapper.selectById(userId);
 
             if (userInfo != null) {
                 // 记录登出日志
-                recordLoginLog(userInfo.getId(), 1, "用户主动登出", true);
-                log.info("用户登出成功: {}", username);
+                recordLoginLog(userId, 1, "用户主动登出", true);
+                log.info("用户登出成功: {}", userId);
             }
         } catch (Exception e) {
             log.error("用户登出失败", e);

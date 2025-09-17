@@ -6,16 +6,20 @@ import com.ppcex.user.dto.UserLoginResponse;
 import com.ppcex.user.dto.UserRegisterRequest;
 import com.ppcex.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.ppcex.user.security.CustomUserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 @Tag(name = "用户认证接口", description = "用户注册、登录、登出等认证相关接口")
+@SecurityRequirement(name = "Bearer Authentication")
 @RequiredArgsConstructor
 @Slf4j
 public class AuthController {
@@ -48,10 +52,20 @@ public class AuthController {
 
     @PostMapping("/logout")
     @Operation(summary = "用户登出", description = "用户登出")
-    public ApiResponse<String> logout(@RequestHeader("Authorization") String token) {
+    public ApiResponse<String> logout() {
         try {
-            String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            userService.logout(jwtToken);
+            // 获取当前认证的用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ApiResponse.error(401, "用户未认证");
+            }
+
+            // 从认证信息中获取用户ID
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            Long userId = userDetails.getUserId();
+            log.debug("用户登出 - 当前用户ID: {}", userId);
+
+            userService.logout(userId);
             return ApiResponse.success("登出成功");
         } catch (Exception e) {
             log.error("用户登出失败", e);

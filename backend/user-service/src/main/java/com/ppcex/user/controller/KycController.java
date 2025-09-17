@@ -3,13 +3,16 @@ package com.ppcex.user.controller;
 import com.ppcex.user.dto.ApiResponse;
 import com.ppcex.user.dto.KycInfoResponse;
 import com.ppcex.user.dto.KycSubmitRequest;
-import com.ppcex.user.service.JwtService;
 import com.ppcex.user.service.KycService;
+import com.ppcex.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.ppcex.user.security.CustomUserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,16 +24,22 @@ import org.springframework.web.bind.annotation.*;
 public class KycController {
 
     private final KycService kycService;
-    private final JwtService jwtService;
+    private final UserService userService;
     
     @PostMapping("/submit")
     @Operation(summary = "提交KYC认证", description = "提交KYC认证信息")
-    public ApiResponse<String> submitKyc(
-            @RequestHeader("Authorization") String token,
-            @RequestBody KycSubmitRequest request) {
+    public ApiResponse<String> submitKyc(@RequestBody KycSubmitRequest request) {
         try {
-            String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtService.getClaimFromToken(jwtToken, "userId");
+            // 获取当前认证的用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ApiResponse.error(401, "用户未认证");
+            }
+
+            // 从认证信息中获取用户ID
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            Long userId = userDetails.getUserId();
+            log.debug("提交KYC认证 - 当前用户ID: {}", userId);
 
             kycService.submitKyc(userId, request);
             return ApiResponse.success("KYC认证提交成功，请等待审核");
@@ -42,12 +51,23 @@ public class KycController {
 
     @PostMapping("/resubmit")
     @Operation(summary = "重新提交KYC认证", description = "重新提交KYC认证信息")
-    public ApiResponse<String> resubmitKyc(
-            @RequestHeader("Authorization") String token,
-            @RequestBody KycSubmitRequest request) {
+    public ApiResponse<String> resubmitKyc(@RequestBody KycSubmitRequest request) {
         try {
-            String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtService.getClaimFromToken(jwtToken, "userId");
+            // 获取当前认证的用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ApiResponse.error(401, "用户未认证");
+            }
+
+            // 从认证信息中获取用户名
+            String username = authentication.getName();
+            log.debug("重新提交KYC认证 - 当前用户名: {}", username);
+
+            // 通过用户名获取用户ID
+            Long userId = userService.getUserIdByUsername(username);
+            if (userId == null) {
+                return ApiResponse.error(404, "用户不存在");
+            }
 
             kycService.resubmitKyc(userId, request);
             return ApiResponse.success("KYC认证重新提交成功，请等待审核");
@@ -59,10 +79,23 @@ public class KycController {
 
     @GetMapping("/info")
     @Operation(summary = "获取KYC信息", description = "获取用户KYC认证信息")
-    public ApiResponse<KycInfoResponse> getKycInfo(@RequestHeader("Authorization") String token) {
+    public ApiResponse<KycInfoResponse> getKycInfo() {
         try {
-            String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtService.getClaimFromToken(jwtToken, "userId");
+            // 获取当前认证的用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ApiResponse.error(401, "用户未认证");
+            }
+
+            // 从认证信息中获取用户名
+            String username = authentication.getName();
+            log.debug("获取KYC信息 - 当前用户名: {}", username);
+
+            // 通过用户名获取用户ID
+            Long userId = userService.getUserIdByUsername(username);
+            if (userId == null) {
+                return ApiResponse.error(404, "用户不存在");
+            }
 
             KycInfoResponse kycInfo = kycService.getKycInfo(userId);
             return ApiResponse.success(kycInfo);
@@ -74,10 +107,23 @@ public class KycController {
 
     @GetMapping("/status")
     @Operation(summary = "获取KYC状态", description = "获取用户KYC认证状态")
-    public ApiResponse<KycStatusResponse> getKycStatus(@RequestHeader("Authorization") String token) {
+    public ApiResponse<KycStatusResponse> getKycStatus() {
         try {
-            String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = jwtService.getClaimFromToken(jwtToken, "userId");
+            // 获取当前认证的用户信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ApiResponse.error(401, "用户未认证");
+            }
+
+            // 从认证信息中获取用户名
+            String username = authentication.getName();
+            log.debug("获取KYC状态 - 当前用户名: {}", username);
+
+            // 通过用户名获取用户ID
+            Long userId = userService.getUserIdByUsername(username);
+            if (userId == null) {
+                return ApiResponse.error(404, "用户不存在");
+            }
 
             boolean hasSubmitted = kycService.hasSubmittedKyc(userId);
             boolean isApproved = kycService.isKycApproved(userId);

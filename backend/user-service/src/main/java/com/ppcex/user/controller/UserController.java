@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import com.ppcex.user.security.CustomUserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -35,12 +36,13 @@ public class UserController {
                 return ApiResponse.error(401, "用户未认证");
             }
 
-            // 从认证信息中获取用户名
-            String username = authentication.getName();
-            log.debug("当前用户名: {}", username);
+            // 从认证信息中获取用户ID
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            Long userId = userDetails.getUserId();
+            log.debug("当前用户ID: {}", userId);
 
-            // 通过用户名获取用户信息
-            UserInfoResponse userInfo = userService.getUserInfoByUsername(username);
+            // 通过用户ID获取用户信息
+            UserInfoResponse userInfo = userService.getUserInfo(userId);
             return ApiResponse.success(userInfo);
         } catch (Exception e) {
             log.error("获取用户信息失败", e);
@@ -58,15 +60,10 @@ public class UserController {
                 return ApiResponse.error(401, "用户未认证");
             }
 
-            // 从认证信息中获取用户名
-            String username = authentication.getName();
-            log.debug("更新用户信息 - 当前用户名: {}", username);
-
-            // 通过用户名获取用户ID
-            Long userId = userService.getUserIdByUsername(username);
-            if (userId == null) {
-                return ApiResponse.error(404, "用户不存在");
-            }
+            // 从认证信息中获取用户ID
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            Long userId = userDetails.getUserId();
+            log.debug("更新用户信息 - 当前用户ID: {}", userId);
 
             UserInfoResponse updatedUserInfo = userService.updateUserInfo(userId, userInfoRequest);
             return ApiResponse.success(updatedUserInfo);
@@ -86,15 +83,10 @@ public class UserController {
                 return ApiResponse.error(401, "用户未认证");
             }
 
-            // 从认证信息中获取用户名
-            String username = authentication.getName();
-            log.debug("修改密码 - 当前用户名: {}", username);
-
-            // 通过用户名获取用户ID
-            Long userId = userService.getUserIdByUsername(username);
-            if (userId == null) {
-                return ApiResponse.error(404, "用户不存在");
-            }
+            // 从认证信息中获取用户ID
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            Long userId = userDetails.getUserId();
+            log.debug("修改密码 - 当前用户ID: {}", userId);
 
             userService.changePassword(userId, request.getOldPassword(), request.getNewPassword());
             return ApiResponse.success("密码修改成功");
