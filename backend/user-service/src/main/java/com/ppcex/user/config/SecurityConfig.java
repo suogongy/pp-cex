@@ -37,17 +37,18 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 // 公开接口
-                .requestMatchers("/user/api/v1/auth/**").permitAll()
-                .requestMatchers("/user/doc.html").permitAll()
-                .requestMatchers("/user/swagger-ui/**").permitAll()
-                .requestMatchers("/user/v3/api-docs/**").permitAll()
-                .requestMatchers("/user/swagger-resources/**").permitAll()
-                .requestMatchers("/user/actuator/health").permitAll()
-                .requestMatchers("/user/actuator/info").permitAll()
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/doc.html").permitAll()
+                .requestMatchers("/swagger-ui/**").permitAll()
+                .requestMatchers("/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-resources/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/info").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 // 需要认证的接口
-                .requestMatchers("/user/api/v1/user/**").hasRole("USER")
-                .requestMatchers("/user/api/v1/kyc/**").hasRole("USER")
-                .requestMatchers("/user/api/v1/asset/**").hasRole("USER")
+                .requestMatchers("/api/v1/user/**").hasRole("USER")
+                .requestMatchers("/api/v1/kyc/**").hasRole("USER")
+                .requestMatchers("/api/v1/asset/**").hasRole("USER")
                 // 其他所有请求都需要认证
                 .anyRequest().authenticated()
             )

@@ -1,11 +1,21 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /user
+
 spring:
   profiles:
-    active: ${APP_ENV:dev}
+    active: ${APP_ENV:test}
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
 
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cex_db}?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:ppcex_user}?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
     username: ${MYSQL_USER:cex_user}
     password: ${MYSQL_PASSWORD:cex123}
     hikari:
@@ -22,7 +32,8 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      username: ${REDIS_USER:cex_user}
+      password: ${REDIS_PASSWORD:redis123}
       database: 0
       timeout: 10000ms
       lettuce:
@@ -78,7 +89,6 @@ spring:
     pingConnectionInterval: 30000
     pingTimeout: 1000
     connectTimeout: 10000
-    timeout: 3000
     retryAttempts: 3
     retryInterval: 1500
     reconnectionTimeout: 3000
@@ -108,7 +118,6 @@ rocketmq:
       pull-batch-size: 32
 
 # Sentinel配置
-spring:
   cloud:
     sentinel:
       transport:
@@ -123,12 +132,10 @@ spring:
             rule-type: flow
 
 # JWT配置
-cex:
-  user:
-    jwt:
-      secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
-      expiration: 86400000 # 24小时
-      refresh-expiration: 604800000 # 7天
+jwt:
+  secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
+  expiration: 86400000 # 24小时
+  refresh-expiration: 604800000 # 7天
 
 # 安全配置
 security:

@@ -1,12 +1,13 @@
 spring:
   application:
     name: user-service
+  config:
+    import: nacos:${spring.cloud.nacos.config.server-addr}
   cloud:
-    nacos:
       discovery:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:public}
-        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        namespace: ${NACOS_NAMESPACE:test}
+        group: ${NACOS_GROUP:user-service}
         metadata:
           version: 1.0.0
           context-path: /user
@@ -17,16 +18,16 @@ spring:
         file-extension: yaml
         shared-configs:
           - data-id: common-config.yaml
-            group: DEFAULT_GROUP
+            group: user-service
             refresh: true
           - data-id: redis-config.yaml
-            group: DEFAULT_GROUP
+            group: user-service
             refresh: true
           - data-id: mysql-config.yaml
-            group: DEFAULT_GROUP
+            group: user-service
             refresh: true
           - data-id: rocketmq-config.yaml
-            group: DEFAULT_GROUP
+            group: user-service
             refresh: true
 
 server:
