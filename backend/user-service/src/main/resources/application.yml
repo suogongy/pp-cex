@@ -9,7 +9,6 @@ spring:
   config:
     import:
       - optional:nacos:mysql-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      # - optional:nacos:redis-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
       - optional:nacos:common-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
       - optional:nacos:rocketmq-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
 
