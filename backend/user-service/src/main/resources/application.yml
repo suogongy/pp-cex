@@ -8,9 +8,10 @@ spring:
 
   config:
     import:
-      - nacos:mysql-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      - nacos:redis-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      - nacos:common-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:mysql-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      # - optional:nacos:redis-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:common-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:rocketmq-config.yaml?group=user-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
 
   cloud:
     nacos:
@@ -26,21 +27,8 @@ spring:
         namespace: d8a0e588-e615-448b-994c-0ad931c56808
         group: user-service
         file-extension: yaml
-        shared-configs:
-          - data-id: common-config.yaml
-            group: user-service
-            refresh: true
-          - data-id: redis-config.yaml
-            group: user-service
-            refresh: true
-          - data-id: mysql-config.yaml
-            group: user-service
-            refresh: true
-          - data-id: rocketmq-config.yaml
-            group: user-service
-            refresh: true
 
 server:
-  port: 8001
+  port: 8002
   servlet:
     context-path: /user

@@ -152,6 +152,9 @@ curl http://localhost:8001/user/actuator/health
 curl http://localhost:8001/user/actuator/info
 ```
 
+### 接口文档：
+[api文档](http://localhost:8002/user/swagger-ui/index.html)
+
 ## 监控指标
 
 ### 业务指标

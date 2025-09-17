@@ -12,10 +12,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/ppcex_user?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&maxReconnects=3
     username: root
-    password: root
-    database: ppcex_user
-    schema: ppcex_user
-
+    password: root123
     # HikariCP 连接池配置
     hikari:
       # 基础配置
@@ -134,9 +131,6 @@ spring:
       banner: false                        # 是否打印banner
       enable-sql-runner: false             # 是否启用sql runner
       meta-object-handler: com.ppcex.user.config.MyMetaObjectHandler
-
-    # 类型处理器
-    type-handlers-package: com.ppcex.user.handler
 
     # 枚举包
     type-enums-package: com.ppcex.user.enums
