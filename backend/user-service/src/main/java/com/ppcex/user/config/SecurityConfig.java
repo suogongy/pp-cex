@@ -4,6 +4,7 @@ import com.ppcex.user.security.CustomAuthenticationProvider;
 import com.ppcex.user.security.JwtAuthenticationFilter;
 import com.ppcex.user.security.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,7 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
@@ -32,6 +34,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        log.info("正在配置SecurityFilterChain...");
+
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
@@ -56,6 +60,7 @@ public class SecurityConfig {
             .authenticationProvider(customAuthenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
+        log.info("JWT过滤器已添加到SecurityFilterChain中");
         return http.build();
     }
 
@@ -64,8 +69,22 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        // 修复：当allowCredentials为true时，不能使用通配符*，需要明确指定允许的headers
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "X-Requested-With",
+            "Cache-Control",
+            "Pragma",
+            "Expires",
+            "Origin",
+            "User-Agent",
+            "Cookie",
+            "Set-Cookie"
+        ));
         configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

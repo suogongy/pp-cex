@@ -356,6 +356,26 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public UserInfoResponse getUserInfoByUsername(String username) {
+        // 支持通过用户名、邮箱或手机号查找用户
+        UserInfo userInfo = userInfoMapper.selectByUsername(username);
+        if (userInfo == null) {
+            userInfo = userInfoMapper.selectByEmail(username);
+        }
+        if (userInfo == null) {
+            userInfo = userInfoMapper.selectByPhone(username);
+        }
+
+        if (userInfo == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        UserInfoResponse response = new UserInfoResponse();
+        BeanUtils.copyProperties(userInfo, response);
+        return response;
+    }
+
     /**
      * 处理登录失败
      */

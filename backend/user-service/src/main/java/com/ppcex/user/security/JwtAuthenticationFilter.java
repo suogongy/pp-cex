@@ -13,11 +13,13 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 
 @Component
@@ -25,9 +27,16 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final boolean DEBUG_ENABLED = log.isDebugEnabled();
+
     private final UserDetailsServiceImpl userDetailsService;
     private final ObjectMapper objectMapper;
     private final JwtService jwtService;
+
+    @PostConstruct
+    public void init() {
+        log.info("JwtAuthenticationFilter 被创建并注册到Spring容器");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -38,7 +47,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String authorizationHeader = request.getHeader("Authorization");
             String path = request.getServletPath();
 
-            log.debug("JWT过滤器处理请求路径: {}, Authorization: {}", path, authorizationHeader);
+            log.info("JWT过滤器处理请求路径: {}, Authorization: {}", path, authorizationHeader);
+            log.info("请求方法: {}, RemoteAddr: {}", request.getMethod(), request.getRemoteAddr());
 
             if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer ")) {
                 String token = authorizationHeader.substring(7);
@@ -63,16 +73,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // 如果SecurityContext中没有认证信息，则进行认证
                     if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                        // 使用用户ID加载用户详情
-                        UserDetails userDetails = ((UserDetailsServiceImpl) userDetailsService).loadUserByUserId(userId);
+                        try {
+                            // 使用用户ID加载用户详情
+                            UserDetails userDetails = ((UserDetailsServiceImpl) userDetailsService).loadUserByUserId(userId);
 
-                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            log.debug("用户详情加载成功: {}, 权限: {}", userDetails.getUsername(), userDetails.getAuthorities());
 
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                    userDetails, null, userDetails.getAuthorities());
+                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                        log.info("用户 {} (ID: {}) 已通过JWT认证", username, userId);
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                            log.info("用户 {} (ID: {}) 已通过JWT认证", username, userId);
+                        } catch (UsernameNotFoundException e) {
+                            log.error("用户详情加载失败: {}", e.getMessage());
+                            // 用户不存在或被禁用，继续过滤器链但不要设置认证
+                            filterChain.doFilter(request, response);
+                            return;
+                        }
+                    } else {
+                        log.debug("SecurityContext中已存在认证信息: {}", SecurityContextHolder.getContext().getAuthentication());
                     }
                 } else {
                     log.warn("JWT token验证失败");
@@ -119,12 +140,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return path.startsWith("/api/v1/auth/") ||
+        log.info("shouldNotFilter检查路径: {}", path);
+        boolean shouldSkip = path.startsWith("/api/v1/auth/") ||
                path.startsWith("/doc.html") ||
                path.startsWith("/swagger-ui") ||
                path.startsWith("/v3/api-docs") ||
                path.startsWith("/swagger-resources") ||
                path.equals("/actuator/health") ||
                path.equals("/actuator/info");
+        log.info("路径 {} 是否跳过JWT验证: {}", path, shouldSkip);
+        return shouldSkip;
     }
 }

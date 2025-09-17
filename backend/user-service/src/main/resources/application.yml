@@ -32,3 +32,33 @@ server:
   port: 8002
   servlet:
     context-path: /user
+
+# Knife4j Configuration
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enableSwaggerModels: true
+    enableDocumentManage: true
+    swaggerModelName: 实体类列表
+    enableVersion: false
+    enableReloadCacheParameter: false
+    enableFilterMultipartApis: false
+    enableFilterMultipartMethods: false
+    enableRequestCache: true
+    enableHost: false
+    enableHomeCustom: true
+    homeCustomLocation: classpath:markdown/home.md
+    enableAfterScript: true
+    enableSwaggerAuth: true  # 启用Swagger认证
+  enableRequestCache: true
+  enableHost: false
+  openapi:
+    title: PPCEX User Service API
+    description: 用户服务API文档
+    email: support@ppcex.com
+    concat: PPCEX Team
+    url: https://www.ppcex.com
+    version: v1.0.0
+    license: MIT License
+    license-url: https://opensource.org/licenses/MIT

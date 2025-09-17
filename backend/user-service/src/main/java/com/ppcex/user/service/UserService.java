@@ -33,6 +33,11 @@ public interface UserService {
     UserInfoResponse getUserInfo(Long userId);
 
     /**
+     * 根据用户名获取用户信息
+     */
+    UserInfoResponse getUserInfoByUsername(String username);
+
+    /**
      * 更新用户信息
      */
     UserInfoResponse updateUserInfo(Long userId, UserInfoResponse userInfoRequest);

@@ -74,15 +74,27 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException("用户不存在: " + userId);
         }
 
+        // 检查用户状态
+        if (userInfo.getStatus() != 1) {
+            log.warn("用户已被冻结或注销: {}", userId);
+            throw new UsernameNotFoundException("用户已被冻结或注销");
+        }
+
+        // 检查账户是否被锁定
+        if (userInfo.getAccountLockedUntil() != null &&
+            userInfo.getAccountLockedUntil().isAfter(java.time.LocalDateTime.now())) {
+            log.warn("用户账户已被锁定: {}", userId);
+            throw new UsernameNotFoundException("用户账户已被锁定");
+        }
+
         return User.builder()
                 .username(userInfo.getUsername())
                 .password(userInfo.getPasswordHash())
                 .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
                 .accountExpired(false)
-                .accountLocked(userInfo.getAccountLockedUntil() != null &&
-                               userInfo.getAccountLockedUntil().isAfter(java.time.LocalDateTime.now()))
+                .accountLocked(false)
                 .credentialsExpired(false)
-                .disabled(userInfo.getStatus() != 1)
+                .disabled(false)
                 .build();
     }
 }
