@@ -56,7 +56,7 @@ logging:
     root: WARN
     com.ppcex.user: DEBUG
     com.ppcex.common: WARN
-    org.springframework.security: WARN
+    org.springframework.security: DEBUG
     org.springframework.web: WARN
     org.springframework.test: INFO
   pattern:

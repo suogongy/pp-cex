@@ -1,8 +1,8 @@
 package com.ppcex.user.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ppcex.common.util.JwtUtil;
 import com.ppcex.user.dto.ApiResponse;
+import com.ppcex.user.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final ObjectMapper objectMapper;
+    private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -35,17 +36,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // 获取Authorization header
             String authorizationHeader = request.getHeader("Authorization");
+            String path = request.getServletPath();
+
+            log.debug("JWT过滤器处理请求路径: {}, Authorization: {}", path, authorizationHeader);
 
             if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer ")) {
                 String token = authorizationHeader.substring(7);
+                log.debug("提取的JWT token: {}", token.substring(0, Math.min(20, token.length())) + "...");
 
                 // 验证token
-                if (JwtUtil.validateToken(token)) {
-                    String username = JwtUtil.getUsernameFromToken(token);
+                if (jwtService.validateToken(token)) {
+                    // 处理userId可能是Integer或Long的情况
+                    Object userIdObj = jwtService.getClaimFromToken(token, "userId");
+                    Long userId;
+                    if (userIdObj instanceof Integer) {
+                        userId = ((Integer) userIdObj).longValue();
+                    } else if (userIdObj instanceof Long) {
+                        userId = (Long) userIdObj;
+                    } else {
+                        log.error("JWT token中的userId类型不支持: {}", userIdObj.getClass().getName());
+                        throw new RuntimeException("JWT token中的userId类型不支持");
+                    }
+
+                    String username = jwtService.getUsernameFromToken(token);
+                    log.debug("JWT token验证成功，用户ID: {}, 用户名: {}", userId, username);
 
                     // 如果SecurityContext中没有认证信息，则进行认证
                     if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                        // 使用用户ID加载用户详情
+                        UserDetails userDetails = ((UserDetailsServiceImpl) userDetailsService).loadUserByUserId(userId);
 
                         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities());
@@ -53,15 +72,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                        log.debug("用户 {} 已通过JWT认证", username);
+                        log.info("用户 {} (ID: {}) 已通过JWT认证", username, userId);
                     }
+                } else {
+                    log.warn("JWT token验证失败");
                 }
+            } else {
+                log.debug("没有找到Authorization header或格式不正确");
             }
 
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
-            log.error("JWT认证失败", e);
+            log.error("JWT认证失败: {}", e.getMessage(), e);
             handleAuthenticationException(response, e);
         }
     }
@@ -96,12 +119,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return path.startsWith("/user/api/v1/auth/") ||
-               path.startsWith("/user/doc.html") ||
-               path.startsWith("/user/swagger-ui") ||
-               path.startsWith("/user/v3/api-docs") ||
-               path.startsWith("/user/swagger-resources") ||
-               path.equals("/user/actuator/health") ||
-               path.equals("/user/actuator/info");
+        return path.startsWith("/api/v1/auth/") ||
+               path.startsWith("/doc.html") ||
+               path.startsWith("/swagger-ui") ||
+               path.startsWith("/v3/api-docs") ||
+               path.startsWith("/swagger-resources") ||
+               path.equals("/actuator/health") ||
+               path.equals("/actuator/info");
     }
 }

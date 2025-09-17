@@ -17,36 +17,21 @@ import java.util.function.Function;
 public class JwtUtil {
 
     /**
-     * JWT密钥
-     */
-    private static final String SECRET = System.getenv().getOrDefault("JWT_SECRET", "your-jwt-secret-key-at-least-32-bytes-long-for-security");
-
-    /**
-     * 过期时间（毫秒）
-     */
-    private static final long EXPIRATION = 24 * 60 * 60 * 1000; // 24小时
-
-    /**
-     * 生成密钥
-     */
-    private static SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes());
-    }
-
-    /**
      * 生成JWT Token
      *
      * @param subject 主题
      * @param claims  声明
+     * @param secret  密钥
+     * @param expiration 过期时间（毫秒）
      * @return JWT Token
      */
-    public static String generateToken(String subject, Map<String, Object> claims) {
+    public static String generateToken(String subject, Map<String, Object> claims, String secret, long expiration) {
         return Jwts.builder()
                 .subject(subject)
                 .claims(claims)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION))
-                .signWith(getSigningKey())
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSigningKey(secret))
                 .compact();
     }
 
@@ -54,21 +39,32 @@ public class JwtUtil {
      * 生成JWT Token
      *
      * @param subject 主题
+     * @param secret  密钥
+     * @param expiration 过期时间（毫秒）
      * @return JWT Token
      */
-    public static String generateToken(String subject) {
-        return generateToken(subject, new HashMap<>());
+    public static String generateToken(String subject, String secret, long expiration) {
+        return generateToken(subject, new HashMap<>(), secret, expiration);
     }
 
+    /**
+     * 生成密钥
+     */
+    private static SecretKey getSigningKey(String secret) {
+        return Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    
     /**
      * 解析JWT Token
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return Claims
      */
-    public static Claims parseToken(String token) {
+    public static Claims parseToken(String token, String secret) {
         return Jwts.parser()
-                .verifyWith(getSigningKey())
+                .verifyWith(getSigningKey(secret))
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -78,11 +74,12 @@ public class JwtUtil {
      * 验证JWT Token
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 是否有效
      */
-    public static boolean validateToken(String token) {
+    public static boolean validateToken(String token, String secret) {
         try {
-            parseToken(token);
+            parseToken(token, secret);
             return true;
         } catch (ExpiredJwtException e) {
             log.warn("JWT Token已过期: {}", e.getMessage());
@@ -102,20 +99,22 @@ public class JwtUtil {
      * 从Token中获取用户名
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 用户名
      */
-    public static String getUsernameFromToken(String token) {
-        return getClaimFromToken(token, Claims::getSubject);
+    public static String getUsernameFromToken(String token, String secret) {
+        return getClaimFromToken(token, Claims::getSubject, secret);
     }
 
     /**
      * 从Token中获取过期时间
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 过期时间
      */
-    public static Date getExpirationDateFromToken(String token) {
-        return getClaimFromToken(token, Claims::getExpiration);
+    public static Date getExpirationDateFromToken(String token, String secret) {
+        return getClaimFromToken(token, Claims::getExpiration, secret);
     }
 
     /**
@@ -123,11 +122,12 @@ public class JwtUtil {
      *
      * @param token          JWT Token
      * @param claimsResolver 声明解析器
+     * @param secret         密钥
      * @param <T>            声明类型
      * @return 声明值
      */
-    public static <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = parseToken(token);
+    public static <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver, String secret) {
+        final Claims claims = parseToken(token, secret);
         return claimsResolver.apply(claims);
     }
 
@@ -136,12 +136,13 @@ public class JwtUtil {
      *
      * @param token     JWT Token
      * @param claimName 声明名称
+     * @param secret    密钥
      * @param <T>       声明类型
      * @return 声明值
      */
     @SuppressWarnings("unchecked")
-    public static <T> T getClaimFromToken(String token, String claimName) {
-        final Claims claims = parseToken(token);
+    public static <T> T getClaimFromToken(String token, String claimName, String secret) {
+        final Claims claims = parseToken(token, secret);
         return (T) claims.get(claimName);
     }
 
@@ -149,10 +150,11 @@ public class JwtUtil {
      * 检查Token是否过期
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 是否过期
      */
-    public static boolean isTokenExpired(String token) {
-        final Date expiration = getExpirationDateFromToken(token);
+    public static boolean isTokenExpired(String token, String secret) {
+        final Date expiration = getExpirationDateFromToken(token, secret);
         return expiration.before(new Date());
     }
 
@@ -160,21 +162,24 @@ public class JwtUtil {
      * 刷新Token
      *
      * @param token JWT Token
+     * @param secret 密钥
+     * @param expiration 过期时间
      * @return 新的JWT Token
      */
-    public static String refreshToken(String token) {
-        final Claims claims = parseToken(token);
-        return generateToken(claims.getSubject(), claims);
+    public static String refreshToken(String token, String secret, long expiration) {
+        final Claims claims = parseToken(token, secret);
+        return generateToken(claims.getSubject(), claims, secret, expiration);
     }
 
     /**
      * 获取Token剩余有效期（毫秒）
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 剩余有效期
      */
-    public static long getTokenRemainingTime(String token) {
-        final Date expiration = getExpirationDateFromToken(token);
+    public static long getTokenRemainingTime(String token, String secret) {
+        final Date expiration = getExpirationDateFromToken(token, secret);
         return expiration.getTime() - System.currentTimeMillis();
     }
 
@@ -182,10 +187,11 @@ public class JwtUtil {
      * 检查Token是否即将过期（剩余时间小于5分钟）
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 是否即将过期
      */
-    public static boolean isTokenExpiringSoon(String token) {
-        long remainingTime = getTokenRemainingTime(token);
+    public static boolean isTokenExpiringSoon(String token, String secret) {
+        long remainingTime = getTokenRemainingTime(token, secret);
         return remainingTime > 0 && remainingTime < 5 * 60 * 1000;
     }
 
@@ -193,50 +199,55 @@ public class JwtUtil {
      * 获取Token签发时间
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 签发时间
      */
-    public static Date getIssuedAtDateFromToken(String token) {
-        return getClaimFromToken(token, Claims::getIssuedAt);
+    public static Date getIssuedAtDateFromToken(String token, String secret) {
+        return getClaimFromToken(token, Claims::getIssuedAt, secret);
     }
 
     /**
      * 获取Token ID
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return Token ID
      */
-    public static String getIdFromToken(String token) {
-        return getClaimFromToken(token, Claims::getId);
+    public static String getIdFromToken(String token, String secret) {
+        return getClaimFromToken(token, Claims::getId, secret);
     }
 
     /**
      * 获取Token签发者
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 签发者
      */
-    public static String getIssuerFromToken(String token) {
-        return getClaimFromToken(token, Claims::getIssuer);
+    public static String getIssuerFromToken(String token, String secret) {
+        return getClaimFromToken(token, Claims::getIssuer, secret);
     }
 
     /**
      * 获取Token受众
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return 受众集合
      */
-    public static java.util.Set<String> getAudienceFromToken(String token) {
-        return getClaimFromToken(token, Claims::getAudience);
+    public static java.util.Set<String> getAudienceFromToken(String token, String secret) {
+        return getClaimFromToken(token, Claims::getAudience, secret);
     }
 
     /**
      * 获取Token类型
      *
      * @param token JWT Token
+     * @param secret 密钥
      * @return Token类型
      */
-    public static String getTypeFromToken(String token) {
-        return getClaimFromToken(token, "type");
+    public static String getTypeFromToken(String token, String secret) {
+        return getClaimFromToken(token, "type", secret);
     }
 
     /**
@@ -244,29 +255,33 @@ public class JwtUtil {
      *
      * @param userId   用户ID
      * @param username 用户名
+     * @param secret   密钥
+     * @param expiration 过期时间
      * @param roles    角色
      * @return JWT Token
      */
-    public static String createUserToken(Long userId, String username, String... roles) {
+    public static String createUserToken(Long userId, String username, String secret, long expiration, String... roles) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
         claims.put("roles", roles);
         claims.put("type", "access");
-        return generateToken(String.valueOf(userId), claims);
+        return generateToken(String.valueOf(userId), claims, secret, expiration);
     }
 
     /**
      * 创建刷新Token
      *
      * @param userId 用户ID
+     * @param secret 密钥
+     * @param expiration 过期时间
      * @return 刷新Token
      */
-    public static String createRefreshToken(Long userId) {
+    public static String createRefreshToken(Long userId, String secret, long expiration) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("type", "refresh");
-        return generateToken(String.valueOf(userId), claims);
+        return generateToken(String.valueOf(userId), claims, secret, expiration);
     }
 
     /**
@@ -274,12 +289,13 @@ public class JwtUtil {
      *
      * @param token JWT Token
      * @param userId 用户ID
+     * @param secret 密钥
      * @return 是否有效
      */
-    public static boolean validateUserToken(String token, Long userId) {
+    public static boolean validateUserToken(String token, Long userId, String secret) {
         try {
-            String subject = getUsernameFromToken(token);
-            Long tokenUserId = getClaimFromToken(token, "userId");
+            String subject = getUsernameFromToken(token, secret);
+            Long tokenUserId = getClaimFromToken(token, "userId", secret);
             return subject.equals(String.valueOf(userId)) && tokenUserId.equals(userId);
         } catch (Exception e) {
             log.warn("验证用户Token失败: {}", e.getMessage());

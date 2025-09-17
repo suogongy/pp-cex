@@ -2,7 +2,7 @@ package com.ppcex.user.controller;
 
 import com.ppcex.user.dto.ApiResponse;
 import com.ppcex.user.dto.UserInfoResponse;
-import com.ppcex.common.util.JwtUtil;
+import com.ppcex.user.service.JwtService;
 import com.ppcex.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -20,13 +20,32 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final JwtService jwtService;
     
     @GetMapping("/info")
     @Operation(summary = "获取用户信息", description = "获取当前登录用户的详细信息")
     public ApiResponse<UserInfoResponse> getUserInfo(@RequestHeader("Authorization") String token) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
+            log.debug("JWT Token: {}", jwtToken.substring(0, Math.min(20, jwtToken.length())) + "...");
+
+            // Debug: 检查token是否有效
+            if (!jwtService.validateToken(jwtToken)) {
+                log.error("JWT Token验证失败");
+                return ApiResponse.error(401, "Token验证失败");
+            }
+
+            // Debug: 获取所有claims
+            var claims = jwtService.parseToken(jwtToken);
+            log.debug("JWT Claims: {}", claims);
+
+            Long userId = jwtService.getClaimFromToken(jwtToken, "userId");
+            log.debug("Extracted userId: {}", userId);
+
+            if (userId == null) {
+                log.error("无法从JWT Token中提取userId");
+                return ApiResponse.error(401, "无法提取用户ID");
+            }
 
             UserInfoResponse userInfo = userService.getUserInfo(userId);
             return ApiResponse.success(userInfo);
@@ -43,7 +62,7 @@ public class UserController {
             @RequestBody UserInfoResponse userInfoRequest) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
+            Long userId = jwtService.getClaimFromToken(jwtToken, "userId");
 
             UserInfoResponse updatedUserInfo = userService.updateUserInfo(userId, userInfoRequest);
             return ApiResponse.success(updatedUserInfo);
@@ -60,7 +79,7 @@ public class UserController {
             @RequestBody ChangePasswordRequest request) {
         try {
             String jwtToken = token.substring(7); // 去掉"Bearer "前缀
-            Long userId = JwtUtil.getClaimFromToken(jwtToken, "userId");
+            Long userId = jwtService.getClaimFromToken(jwtToken, "userId");
 
             userService.changePassword(userId, request.getOldPassword(), request.getNewPassword());
             return ApiResponse.success("密码修改成功");

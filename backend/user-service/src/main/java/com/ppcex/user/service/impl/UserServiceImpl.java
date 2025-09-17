@@ -9,7 +9,7 @@ import com.ppcex.user.entity.UserInfo;
 import com.ppcex.user.entity.UserLoginLog;
 import com.ppcex.user.mapper.UserInfoMapper;
 import com.ppcex.user.mapper.UserLoginLogMapper;
-import com.ppcex.common.util.JwtUtil;
+import com.ppcex.user.service.JwtService;
 import com.ppcex.user.security.UserDetailsServiceImpl;
 import com.ppcex.user.service.UserService;
 import com.ppcex.user.util.PasswordUtil;
@@ -17,6 +17,7 @@ import com.ppcex.user.util.UserNoGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,11 +37,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserInfoMapper userInfoMapper;
     private final UserLoginLogMapper userLoginLogMapper;
-        private final UserDetailsServiceImpl userDetailsService;
+    private final UserDetailsServiceImpl userDetailsService;
     private final PasswordUtil passwordUtil;
     private final UserNoGenerator userNoGenerator;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
 
     @Override
     @Transactional
@@ -148,13 +152,13 @@ public class UserServiceImpl implements UserService {
             }
 
             // 生成JWT token
-            String accessToken = JwtUtil.createUserToken(
+            String accessToken = jwtService.createUserToken(
                 userInfo.getId(),
                 userInfo.getUsername(),
                 "USER"
             );
 
-            String refreshToken = JwtUtil.createRefreshToken(
+            String refreshToken = jwtService.createRefreshToken(
                 userInfo.getId()
             );
 
@@ -175,7 +179,7 @@ public class UserServiceImpl implements UserService {
                 accessToken,
                 refreshToken,
                 "Bearer",
-                JwtUtil.getTokenRemainingTime(accessToken),
+                jwtService.getTokenRemainingTime(accessToken),
                 userInfoResponse,
                 false,
                 null
@@ -198,7 +202,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void logout(String token) {
         try {
-            String username = JwtUtil.getUsernameFromToken(token);
+            String username = jwtService.getUsernameFromToken(token);
             UserInfo userInfo = userInfoMapper.selectByUsername(username);
 
             if (userInfo != null) {
@@ -213,24 +217,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String refreshToken(String refreshToken) {
-        if (!JwtUtil.validateToken(refreshToken)) {
+        if (!jwtService.validateToken(refreshToken)) {
             throw new RuntimeException("无效的刷新令牌");
         }
 
-        String tokenType = JwtUtil.getTypeFromToken(refreshToken);
+        String tokenType = jwtService.getTypeFromToken(refreshToken);
         if (!"refresh".equals(tokenType)) {
             throw new RuntimeException("不是刷新令牌");
         }
 
-        String username = JwtUtil.getUsernameFromToken(refreshToken);
-        Long userId = JwtUtil.getClaimFromToken(refreshToken, "userId");
+        String username = jwtService.getUsernameFromToken(refreshToken);
+        Long userId = jwtService.getClaimFromToken(refreshToken, "userId");
 
         // 检查用户状态
         checkUserStatus(userId);
 
         // 生成新的访问令牌
         UserInfo userInfo = userInfoMapper.selectById(userId);
-        return JwtUtil.createUserToken(
+        return jwtService.createUserToken(
             userId,
             username,
             "USER"
