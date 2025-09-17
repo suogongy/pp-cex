@@ -1,0 +1,63 @@
+server:
+  port: 8005
+  servlet:
+    context-path: /match
+
+spring:
+  application:
+    name: match-service
+  profiles:
+    active: test
+  main:
+    allow-bean-definition-overriding: true
+  config:
+    import:
+      - optional:nacos:redis-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:rocketmq-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:sentinel-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:common-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: d8a0e588-e615-448b-994c-0ad931c56808
+        group: match-service
+        metadata:
+          version: 1.0.0
+          context-path: /match
+      config:
+        server-addr: localhost:8848
+        namespace: d8a0e588-e615-448b-994c-0ad931c56808
+        group: match-service
+        file-extension: yaml
+
+# Knife4j Configuration
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enableSwaggerModels: true
+    enableDocumentManage: true
+    swaggerModelName: 实体类列表
+    enableVersion: false
+    enableReloadCacheParameter: false
+    enableFilterMultipartApis: false
+    enableFilterMultipartMethods: false
+    enableRequestCache: true
+    enableHost: false
+    enableHomeCustom: true
+    homeCustomLocation: classpath:markdown/home.md
+    enableAfterScript: true
+    enableSwaggerAuth: true  # 启用Swagger认证
+  enableRequestCache: true
+  enableHost: false
+  openapi:
+    title: PPCEX Match Service API
+    description: 撮合服务API文档
+    email: support@ppcex.com
+    concat: PPCEX Team
+    url: https://www.ppcex.com
+    version: v1.0.0
+    license: MIT License
+    license-url: https://opensource.org/licenses/MIT

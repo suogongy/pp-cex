@@ -1,0 +1,154 @@
+# =================================================================
+# Sentinel Configuration
+# Service: match-service
+# Group: match-service
+# Environment: All
+# =================================================================
+
+spring:
+  cloud:
+    sentinel:
+      # Transport configuration
+      transport:
+        dashboard: sentinel:8080
+        port: 8719
+        client-ip: ${spring.cloud.client.ip-address}
+
+      # Datasource configuration
+      datasource:
+        # Flow control rules
+        flow-rules:
+          nacos:
+            server-addr: nacos:8848
+            dataId: sentinel-match-service-flow
+            groupId: match-service
+            rule-type: flow
+            namespace: d8a0e588-e615-448b-994c-0ad931c56808
+
+        # Degrade rules
+        degrade-rules:
+          nacos:
+            server-addr: nacos:8848
+            dataId: sentinel-match-service-degrade
+            groupId: match-service
+            rule-type: degrade
+            namespace: d8a0e588-e615-448b-994c-0ad931c56808
+
+        # System rules
+        system-rules:
+          nacos:
+            server-addr: nacos:8848
+            dataId: sentinel-match-service-system
+            groupId: match-service
+            rule-type: system
+            namespace: d8a0e588-e615-448b-994c-0ad931c56808
+
+        # Authority rules
+        authority-rules:
+          nacos:
+            server-addr: nacos:8848
+            dataId: sentinel-match-service-authority
+            groupId: match-service
+            rule-type: authority
+            namespace: d8a0e588-e615-448b-994c-0ad931c56808
+
+      # Filter configuration
+      filter:
+        enabled: true
+        order: -2147483648
+
+      # Log configuration
+      log:
+        dir: logs/csp/
+        switch-pid: false
+
+      # Metric configuration
+      metric:
+        charset: UTF-8
+        single-file-size: 52428800
+        total-file-count: 6
+
+# Flow control rules
+sentinel:
+  flow:
+    # Matching engine flow control
+    match-engine-process:
+      resource: match-engine-process
+      count: 10000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 10
+      maxQueueingTimeMs: 500
+
+    # Order book API flow control
+    match-api-orderbook:
+      resource: match-api-orderbook
+      count: 5000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 5
+      maxQueueingTimeMs: 200
+
+    # WebSocket flow control
+    match-websocket:
+      resource: match-websocket
+      count: 1000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 3
+      maxQueueingTimeMs: 100
+
+    # Trade API flow control
+    match-api-trade:
+      resource: match-api-trade
+      count: 2000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 5
+      maxQueueingTimeMs: 300
+
+  # Degrade rules
+  degrade:
+    match-engine-process:
+      resource: match-engine-process
+      grade: 0
+      count: 10
+      timeWindow: 60
+      minRequestAmount: 20
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
+
+    match-api-orderbook:
+      resource: match-api-orderbook
+      grade: 0
+      count: 5
+      timeWindow: 30
+      minRequestAmount: 10
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
+
+  # System protection rules
+  system:
+    highestCpuUsage: 0.8
+    highestSystemLoad: 10.0
+    qps: 20000
+    avgRt: 1000
+    maxThread: 1000
+
+# Health check configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,sentinel
+  endpoint:
+    health:
+      show-details: always

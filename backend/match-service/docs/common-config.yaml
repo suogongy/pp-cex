@@ -1,0 +1,136 @@
+# 通用配置
+spring:
+  main:
+    allow-bean-definition-overriding: true
+    lazy-initialization: false
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# 日志配置
+logging:
+  level:
+    com.ppcex.match: debug
+    com.ppcex.common: debug
+    org.springframework.cloud: info
+    org.springframework.cloud.stream: debug
+    com.alibaba.cloud: debug
+    com.alibaba.nacos: info
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/match-service.log
+    max-size: 100MB
+    max-history: 30
+    total-size-cap: 1GB
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 1GB
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    web:
+      server:
+        request:
+          autotime:
+            enabled: true
+  info:
+    git:
+      mode: full
+
+# 监控配置
+info:
+  app:
+    name: ${spring.application.name}
+    description: 高性能撮合引擎服务
+    version: 1.0.0
+    encoding: UTF-8
+    java:
+      version: ${java.version}
+  build:
+    artifact: ${project.artifactId}
+    name: ${project.name}
+    version: ${project.version}
+    time: ${project.build.timestamp}
+
+# 撮合引擎配置
+match:
+  engine:
+    buffer-size: 1024              # Disruptor 缓冲区大小
+    thread-count: 4                # 处理线程数
+    order-book-depth: 1000         # 订单簿深度
+    trade-history-size: 1000       # 交易历史大小
+    price-precision: 8             # 价格精度
+    amount-precision: 8            # 数量精度
+    order-timeout: 300000          # 订单超时时间(毫秒)
+    max-orders-per-user: 1000      # 单用户最大订单数
+    max-orders-total: 100000       # 总订单数限制
+    enable-market-order: true      # 是否启用市价单
+    enable-limit-order: true       # 是否启用限价单
+    enable-stop-order: false       # 是否启用止损单
+    fee-rate: 0.001                # 手续费率
+    maker-fee-rate: 0.0005         # Maker手续费率
+    taker-fee-rate: 0.001          # Taker手续费率
+
+# 缓存配置
+cache:
+  order:
+    ttl: 3600000                   # 订单缓存TTL(1小时)
+    max-size: 10000                # 最大缓存数量
+  trade:
+    ttl: 86400000                  # 交易缓存TTL(24小时)
+    max-size: 50000                # 最大缓存数量
+  orderbook:
+    ttl: 60000                     # 订单簿缓存TTL(1分钟)
+    max-size: 1000                 # 最大缓存数量
+
+# 线程池配置
+thread:
+  pool:
+    core-size: 8
+    max-size: 16
+    queue-capacity: 1000
+    keep-alive-seconds: 60
+    thread-name-prefix: match-service-
+
+# 业务配置
+cex:
+  # JWT 配置
+  jwt:
+    enabled: true
+    secret: your-jwt-secret-key-at-least-32-bytes-long-for-security
+    expiration: 86400000  # 24小时过期时间
+    refresh-expiration: 604800000  # 7天刷新token过期时间
+    issuer: PPCEX
