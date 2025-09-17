@@ -8,7 +8,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.cex")
+@EnableFeignClients(basePackages = "com.ppcex")
 @MapperScan("com.ppcex.trade.mapper")
 public class TradeServiceApplication {
     public static void main(String[] args) {

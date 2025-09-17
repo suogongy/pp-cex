@@ -8,11 +8,11 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
+        <version>3.1.5</version>
         <relativePath/>
     </parent>
 
-    <groupId>com.cex</groupId>
+    <groupId>com.ppcex</groupId>
     <artifactId>trade-service</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
@@ -69,6 +69,11 @@
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.csp</groupId>
+            <artifactId>sentinel-datasource-nacos</artifactId>
+            <version>1.8.6</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba.cloud</groupId>

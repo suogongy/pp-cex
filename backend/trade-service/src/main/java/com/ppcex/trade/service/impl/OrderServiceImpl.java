@@ -13,7 +13,6 @@ import com.ppcex.trade.dto.OrderCancelDTO;
 import com.ppcex.trade.dto.OrderVO;
 import com.ppcex.trade.dto.TradePairVO;
 import com.ppcex.common.exception.BusinessException;
-import com.ppcex.common.util.SnowflakeIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;

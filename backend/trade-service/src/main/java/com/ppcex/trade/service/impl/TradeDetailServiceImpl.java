@@ -7,7 +7,6 @@ import com.ppcex.trade.entity.TradeDetail;
 import com.ppcex.trade.mapper.TradeDetailMapper;
 import com.ppcex.trade.service.TradeDetailService;
 import com.ppcex.trade.dto.TradeDetailVO;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

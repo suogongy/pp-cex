@@ -34,10 +34,10 @@
                 AND td.symbol = #{symbol}
             </if>
             <if test="startTime != null and startTime != ''">
-                AND td.create_time >= #{startTime}
+                AND td.create_time &gt;= #{startTime}
             </if>
             <if test="endTime != null and endTime != ''">
-                AND td.create_time <= #{endTime}
+                AND td.create_time &lt;= #{endTime}
             </if>
         </where>
         ORDER BY td.create_time DESC
