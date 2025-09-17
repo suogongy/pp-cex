@@ -185,6 +185,7 @@ public class UserServiceImpl implements UserService {
             return response;
 
         } catch (BadCredentialsException e) {
+            log.error("用户登录失败: {}", loginRequest.getUsername(), e);
             // 处理登录失败
             handleLoginFailure(loginRequest.getUsername());
             throw new RuntimeException("用户名或密码错误");
