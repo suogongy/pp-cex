@@ -109,6 +109,8 @@ services:
       - ./nacos/init.sql:/home/nacos/init.d/mysql-schema.sql
     ports:
       - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
     networks:
       - cex-network
     depends_on:
