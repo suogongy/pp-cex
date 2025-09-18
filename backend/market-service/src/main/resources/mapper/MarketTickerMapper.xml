@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.market.mapper.MarketTickerMapper">
+
+    <resultMap id="MarketTickerVOResultMap" type="com.ppcex.market.dto.MarketTickerVO">
+        <id property="id" column="id"/>
+        <result property="symbol" column="symbol"/>
+        <result property="pairName" column="pair_name"/>
+        <result property="lastPrice" column="last_price"/>
+        <result property="openPrice" column="open_price"/>
+        <result property="highPrice" column="high_price"/>
+        <result property="lowPrice" column="low_price"/>
+        <result property="volume" column="volume"/>
+        <result property="quoteVolume" column="quote_volume"/>
+        <result property="priceChange" column="price_change"/>
+        <result property="priceChangePercent" column="price_change_percent"/>
+        <result property="count" column="count"/>
+        <result property="lastUpdateTime" column="last_update_time"/>
+    </resultMap>
+
+    <select id="getTickerBySymbol" resultMap="MarketTickerVOResultMap">
+        SELECT
+            mt.*,
+            mp.pair_name
+        FROM market_ticker mt
+        LEFT JOIN market_pair mp ON mt.symbol = mp.symbol
+        WHERE mt.symbol = #{symbol}
+    </select>
+
+    <select id="getAllTickers" resultMap="MarketTickerVOResultMap">
+        SELECT
+            mt.*,
+            mp.pair_name
+        FROM market_ticker mt
+        LEFT JOIN market_pair mp ON mt.symbol = mp.symbol
+        ORDER BY mp.sort_order ASC
+    </select>
+
+    <update id="updateTickerBySymbol">
+        UPDATE market_ticker
+        SET
+            last_price = #{lastPrice},
+            high_price = GREATEST(high_price, #{highPrice}),
+            low_price = LEAST(low_price, #{lowPrice}),
+            volume = volume + #{volume},
+            quote_volume = quote_volume + #{quoteVolume},
+            count = count + #{count},
+            price_change = #{lastPrice} - open_price,
+            price_change_percent = CASE WHEN open_price > 0
+                THEN (#{lastPrice} - open_price) / open_price * 100
+                ELSE 0 END,
+            last_update_time = NOW(),
+            update_time = NOW()
+        WHERE symbol = #{symbol}
+    </update>
+
+    <update id="batchUpdateTickers" parameterType="java.util.List">
+        <foreach collection="tickers" item="ticker" separator=";">
+            UPDATE market_ticker
+            SET
+                last_price = #{ticker.lastPrice},
+                high_price = GREATEST(high_price, #{ticker.highPrice}),
+                low_price = LEAST(low_price, #{ticker.lowPrice}),
+                volume = volume + #{ticker.volume},
+                quote_volume = quote_volume + #{ticker.quoteVolume},
+                count = count + #{ticker.count},
+                price_change = #{ticker.lastPrice} - open_price,
+                price_change_percent = CASE WHEN open_price > 0
+                    THEN (#{ticker.lastPrice} - open_price) / open_price * 100
+                    ELSE 0 END,
+                last_update_time = NOW(),
+                update_time = NOW()
+            WHERE symbol = #{ticker.symbol}
+        </foreach>
+    </update>
+
+</mapper>

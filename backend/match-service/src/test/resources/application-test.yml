@@ -1,0 +1,46 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: match-service
+  profiles:
+    active: test
+  redis:
+    host: localhost
+    port: 6379
+    database: 1
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 100
+        max-idle: 50
+        min-idle: 10
+        max-wait: 3000ms
+
+nacos:
+  discovery:
+    server-addr: localhost:8848
+    namespace: test
+    group: test
+  config:
+    server-addr: localhost:8848
+    namespace: test
+    group: test
+    file-extension: yaml
+
+rocketmq:
+  name-server: localhost:9876
+  producer:
+    group: match-service-producer-test
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2
+  consumer:
+    group: match-service-consumer-test
+
+logging:
+  level:
+    com.ppcex.match: DEBUG
+    org.springframework.data.redis: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

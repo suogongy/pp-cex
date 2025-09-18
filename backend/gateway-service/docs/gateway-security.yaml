@@ -1,0 +1,238 @@
+# =================================================================
+# 网关安全配置 - Gateway Security Configuration
+# 服务名称: gateway-service
+# 配置组: gateway-service
+# 适用于: 所有环境的安全配置
+# =================================================================
+
+# 基础安全配置
+security:
+  enabled: true
+  mode: production
+
+  # JWT配置
+  jwt:
+    enabled: true
+    secret: ${JWT_SECRET:gateway-jwt-secret-key-min-32-bytes-long}
+    expiration: 86400000 # 24小时过期时间
+    refresh-expiration: 604800000 # 7天刷新token过期时间
+    issuer: PPCEX-Gateway
+    audience: PPCEX-Client
+    algorithm: HS256
+    header-name: Authorization
+    token-prefix: Bearer
+    allow-multiple-tokens: false
+    validate-expiration: true
+    validate-signature: true
+    validate-issuer: true
+    validate-audience: true
+
+  # 认证配置
+  auth:
+    enabled: true
+    strict-mode: true
+    bypass-paths:
+      - /api/v1/auth/login
+      - /api/v1/auth/register
+      - /api/v1/auth/refresh
+      - /api/v1/public/**
+      - /api/v1/market/**
+      - /actuator/**
+      - /doc.html
+      - /swagger-ui/**
+      - /v3/api-docs/**
+      - /favicon.ico
+      - /error
+      - /health
+
+  # 权限配置
+  permission:
+    enabled: true
+    cache-enabled: true
+    cache-ttl: 300 # 5分钟
+    role-hierarchy-enabled: true
+    permission-check-mode: ALL # ANY: 满足任一权限即可，ALL: 满足所有权限
+
+  # 会话管理
+  session:
+    enabled: true
+    timeout: 1800 # 30分钟会话超时
+    concurrent-sessions: 3 # 最大并发会话数
+    session-fixation-protection: migrateSession
+
+# IP白名单配置
+ip-whitelist:
+  enabled: true
+  cache-enabled: true
+  cache-ttl: 3600 # 1小时缓存
+  whitelist:
+    - 127.0.0.1
+    - 192.168.1.0/24
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+  blacklist:
+    - 0.0.0.0/8
+    - 100.64.0.0/10
+    - 192.0.0.0/24
+    - 198.18.0.0/15
+
+# 用户代理检查
+user-agent:
+  enabled: true
+  block-bots: true
+  block-suspicious: true
+  allowed-types:
+    - browser
+    - mobile
+    - api-client
+  suspicious-patterns:
+    - bot
+    - crawler
+    - spider
+    - scanner
+    - test
+
+# 请求安全检查
+request-security:
+  enabled: true
+  sql-injection-protection: true
+  xss-protection: true
+  csrf-protection: true
+  command-injection-protection: true
+  file-inclusion-protection: true
+  directory-traversal-protection: true
+
+  # SQL注入防护模式
+  sql-injection-patterns:
+    - "(?i)(\\b(select|insert|update|delete|drop|alter|truncate|exec|execute)\\b)"
+    - "(?i)(\\b(union|join|where|having|group by|order by)\\b)"
+    - "(?i)(\\b(and|or|not|exists|between|like|in)\\b)"
+    - "(''.+--|--)|(/\\*.*\\*/)|(\\|)|(;)"
+
+  # XSS攻击防护模式
+  xss-patterns:
+    - "<script.*?>.*?</script>"
+    - "javascript:"
+    - "on\\w+\\s*="
+    - "eval\\((.*?)\\)"
+    - "expression\\((.*?)\\)"
+    - "vbscript:"
+    - "onload="
+    - "onerror="
+
+# CORS配置
+cors:
+  enabled: true
+  allow-credentials: true
+  max-age: 3600
+  allowed-origins:
+    - "https://www.ppcex.com"
+    - "https://admin.ppcex.com"
+    - "https://api.ppcex.com"
+    - "http://localhost:3000"
+    - "http://localhost:8080"
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+    - HEAD
+    - PATCH
+  allowed-headers:
+    - "Authorization"
+    - "Content-Type"
+    - "Accept"
+    - "X-Requested-With"
+    - "X-User-Id"
+    - "X-Username"
+    - "X-Trace-Id"
+    - "X-Request-Id"
+  exposed-headers:
+    - "X-Request-Id"
+    - "X-Trace-Id"
+    - "Content-Disposition"
+    - "Content-Length"
+
+# 请求大小限制
+request-limits:
+  enabled: true
+  max-request-size: 10MB
+  max-header-size: 8KB
+  max-uri-length: 2048
+  max-query-string-length: 1024
+
+# 响应安全
+response-security:
+  enabled: true
+  add-security-headers: true
+  headers:
+    X-Content-Type-Options: "nosniff"
+    X-Frame-Options: "DENY"
+    X-XSS-Protection: "1; mode=block"
+    Referrer-Policy: "strict-origin-when-cross-origin"
+    Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss: https:; frame-ancestors 'none';"
+
+# 加密配置
+encryption:
+  enabled: true
+  algorithm: AES-256-GCM
+  key-size: 256
+  iv-size: 96
+  tag-size: 128
+
+# 证书配置
+ssl:
+  enabled: true
+  protocol: TLSv1.3
+  enabled-protocols:
+    - TLSv1.3
+    - TLSv1.2
+  enabled-cipher-suites:
+    - TLS_AES_256_GCM_SHA384
+    - TLS_AES_128_GCM_SHA256
+    - TLS_CHACHA20_POLY1305_SHA256
+  require-client-auth: false
+
+# 审计配置
+audit:
+  enabled: true
+  log-auth-events: true
+  log-auth-failures: true
+  log-permission-events: true
+  log-security-events: true
+  log-sensitive-data: false
+  retention-days: 365
+
+# 安全事件处理
+security-events:
+  enabled: true
+  alert-threshold:
+    auth-failures: 5 # 5分钟内5次认证失败
+    rate-limit-violations: 100 # 5分钟内100次限流违规
+    suspicious-requests: 50 # 5分钟内50次可疑请求
+  action:
+    ip-block: true
+    account-lock: true
+    alert-admin: true
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (gateway-security-dev.yaml):
+# - jwt.secret 使用开发环境密钥
+# - ip-whitelist.enabled: false 方便开发调试
+# - request-security.sql-injection-protection: false 便于测试
+#
+# 测试环境 (gateway-security-test.yaml):
+# - 使用测试环境密钥
+# - 启用完整的安全检查
+# - 使用宽松的IP限制
+#
+# 生产环境 (gateway-security-prod.yaml):
+# - 使用生产环境强密钥
+# - 启用所有安全功能
+# - 使用严格的IP限制
+# - 启用完整的审计功能
+# =================================================================

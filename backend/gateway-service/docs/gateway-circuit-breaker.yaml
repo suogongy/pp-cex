@@ -1,0 +1,251 @@
+# =================================================================
+# 网关熔断配置 - Gateway Circuit Breaker Configuration
+# 服务名称: gateway-service
+# 配置组: gateway-service
+# 适用于: 所有环境的熔断配置
+# =================================================================
+
+# 熔断器总开关
+circuit-breaker:
+  enabled: true
+  default-strategy: resilience4j
+  fallback-strategy: forward
+  health-check-interval: 10s
+  state-cache-ttl: 60s
+
+# 默认熔断配置
+default-config:
+  failure-rate-threshold: 50 # 50%失败率触发熔断
+  wait-duration-in-open-state: 30s # 熔断器打开状态持续时间
+  permitted-number-of-calls-in-half-open-state: 10 # 半开状态允许的调用次数
+  sliding-window-size: 20 # 滑动窗口大小
+  sliding-window-type: COUNT_BASED # 基于计数的滑动窗口
+  slow-call-duration-threshold: 5000ms # 慢调用阈值
+  slow-call-rate-threshold: 100 # 慢调用比例阈值
+  max-wait-duration-in-half-open-state: 0 # 半开状态最大等待时间
+  automatic-transition-from-open-to-half-open-enabled: true # 自动从打开状态转换到半开状态
+
+# 服务熔断配置
+services:
+  user-service:
+    enabled: true
+    failure-rate-threshold: 30
+    wait-duration-in-open-state: 60s
+    permitted-number-of-calls-in-half-open-state: 10
+    sliding-window-size: 20
+    sliding-window-type: COUNT_BASED
+    slow-call-duration-threshold: 3000ms
+    slow-call-rate-threshold: 80
+    fallback-uri: forward:/fallback/user
+    retry-config:
+      max-attempts: 3
+      wait-duration: 1s
+      retry-exceptions:
+        - "java.io.IOException"
+        - "java.net.ConnectException"
+
+  trade-service:
+    enabled: true
+    failure-rate-threshold: 50
+    wait-duration-in-open-state: 30s
+    permitted-number-of-calls-in-half-open-state: 5
+    sliding-window-size: 10
+    sliding-window-type: COUNT_BASED
+    slow-call-duration-threshold: 2000ms
+    slow-call-rate-threshold: 50
+    fallback-uri: forward:/fallback/trade
+    retry-config:
+      max-attempts: 2
+      wait-duration: 500ms
+      retry-exceptions:
+        - "java.net.SocketTimeoutException"
+        - "org.springframework.web.client.ResourceAccessException"
+
+  wallet-service:
+    enabled: true
+    failure-rate-threshold: 20
+    wait-duration-in-open-state: 120s
+    permitted-number-of-calls-in-half-open-state: 3
+    sliding-window-size: 10
+    sliding-window-type: COUNT_BASED
+    slow-call-duration-threshold: 1000ms
+    slow-call-rate-threshold: 20
+    fallback-uri: forward:/fallback/wallet
+    retry-config:
+      max-attempts: 1
+      wait-duration: 0
+
+  finance-service:
+    enabled: true
+    failure-rate-threshold: 40
+    wait-duration-in-open-state: 60s
+    permitted-number-of-calls-in-half-open-state: 5
+    sliding-window-size: 15
+    sliding-window-type: COUNT_BASED
+    slow-call-duration-threshold: 5000ms
+    slow-call-rate-threshold: 60
+    fallback-uri: forward:/fallback/finance
+    retry-config:
+      max-attempts: 2
+      wait-duration: 2s
+
+  market-service:
+    enabled: false # 行情服务不启用熔断，保证数据可用性
+    failure-rate-threshold: 80
+    wait-duration-in-open-state: 10s
+    permitted-number-of-calls-in-half-open-state: 20
+    sliding-window-size: 50
+    sliding-window-type: COUNT_BASED
+    slow-call-duration-threshold: 10000ms
+    slow-call-rate-threshold: 90
+
+  risk-service:
+    enabled: true
+    failure-rate-threshold: 60
+    wait-duration-in-open-state: 30s
+    permitted-number-of-calls-in-half-open-state: 8
+    sliding-window-size: 12
+    sliding-window-type: COUNT_BASED
+    slow-call-duration-threshold: 3000ms
+    slow-call-rate-threshold: 70
+    fallback-uri: forward:/fallback/risk
+
+# 熔断器状态监听
+state-listener:
+  enabled: true
+  events:
+    - state-transition
+    - error
+    - success
+    - timeout
+    - not-permitted
+
+# 熔断器恢复策略
+recovery-strategy:
+  auto-recovery: true
+  recovery-check-interval: 30s
+  max-recovery-attempts: 3
+  recovery-wait-multiplier: 2.0
+
+# 熔断器监控配置
+monitoring:
+  enabled: true
+  metrics:
+    - state
+    - failure-rate
+    - success-rate
+    - slow-call-rate
+    - buffered-calls
+    - failed-calls
+    - success-calls
+    - not-permitted-calls
+  collect-interval: 10s
+  retention-hours: 24
+
+# 熔断器告警配置
+alerts:
+  enabled: true
+  rules:
+    - name: "circuit-breaker-open"
+      condition: "state == OPEN"
+      duration: 300 # 持续5分钟
+      severity: "high"
+      channels: ["email", "webhook", "sms"]
+      message: "服务熔断器已打开，需要立即处理"
+
+    - name: "high-failure-rate"
+      condition: "failure_rate > 0.8" # 超过80%失败率
+      duration: 180 # 持续3分钟
+      severity: "medium"
+      channels: ["email", "webhook"]
+      message: "服务失败率过高，可能触发熔断"
+
+    - name: "slow-calls"
+      condition: "slow_call_rate > 0.6" # 超过60%慢调用
+      duration: 180
+      severity: "medium"
+      channels: ["email"]
+      message: "服务响应缓慢，可能影响用户体验"
+
+# 熔断器统计配置
+statistics:
+  enabled: true
+  window-size: 60 # 60秒统计窗口
+  sample-interval: 1s # 1秒采样间隔
+  metrics:
+    - total-calls
+    - successful-calls
+    - failed-calls
+    - slow-calls
+    - buffered-calls
+    - not-permitted-calls
+    - success-percentage
+    - failure-percentage
+    - slow-call-percentage
+
+# 熔断器事件配置
+events:
+  enabled: true
+  event-types:
+    - STATE_TRANSITION
+    - ERROR
+    - SUCCESS
+    - TIMEOUT
+    - NOT_PERMITTED
+  event-handlers:
+    - logging
+    - metrics
+    - alerting
+    - webhooks
+
+# 熔断器Webhook配置
+webhooks:
+  enabled: true
+  endpoints:
+    - url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+      events: ["STATE_TRANSITION", "ERROR"]
+      format: "slack"
+
+    - url: "https://your-monitoring-system.com/webhook"
+      events: ["STATE_TRANSITION"]
+      format: "json"
+
+# 熔断器健康检查
+health-check:
+  enabled: true
+  check-interval: 30s
+  timeout: 5s
+  endpoints:
+    - "/actuator/health"
+    - "/api/v1/health"
+    - "/health"
+
+# 熔断器测试配置
+testing:
+  enabled: false # 生产环境应该关闭
+  test-endpoints:
+    - path: "/api/v1/test/circuit-breaker"
+      service: "test-service"
+      failure-rate: 0.8
+      duration: 60s
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (gateway-circuit-breaker-dev.yaml):
+# - 调低熔断阈值便于测试
+# - 缩短熔断恢复时间
+# - 启用测试模式
+#
+# 测试环境 (gateway-circuit-breaker-test.yaml):
+# - 使用适中的熔断阈值
+# - 启用监控功能
+# - 简化的告警规则
+#
+# 生产环境 (gateway-circuit-breaker-prod.yaml):
+# - 使用严格的熔断阈值
+# - 启用完整的监控和告警
+# - 使用较长的熔断恢复时间
+# - 启用健康检查
+# =================================================================

@@ -1,0 +1,299 @@
+# =================================================================
+# 网关缓存配置 - Gateway Cache Configuration
+# 服务名称: gateway-service
+# 配置组: gateway-service
+# 适用于: 所有环境的缓存配置
+# =================================================================
+
+# 缓存总开关
+cache:
+  enabled: true
+  default-provider: redis
+  fallback-provider: caffeine
+  cache-null-values: false
+  use-key-prefix: true
+  key-prefix: "gateway:"
+  time-to-live: 3600000 # 1小时
+  cache-missing-keys: false
+
+# Redis缓存配置
+redis:
+  enabled: true
+  host: ${REDIS_HOST:localhost}
+  port: ${REDIS_PORT:6379}
+  username: ${REDIS_USER:gateway_user}
+  password: ${REDIS_PASSWORD:gateway123}
+  database: 1
+  timeout: 10000ms
+  lettuce:
+    pool:
+      max-active: 200
+      max-wait: -1ms
+      max-idle: 20
+      min-idle: 5
+      time-between-eviction-runs: 30000ms
+      min-evictable-idle-time: 60000ms
+    shutdown-timeout: 100ms
+  cluster:
+    enabled: false
+    nodes: []
+    max-redirects: 3
+
+# 本地缓存配置
+local:
+  enabled: true
+  provider: caffeine
+  maximum-size: 10000
+  expire-after-write: 300s # 5分钟
+  expire-after-access: 600s # 10分钟
+  initial-capacity: 1000
+  record-stats: true
+  weak-keys: false
+  weak-values: false
+  soft-values: false
+
+# 缓存配置策略
+cache-strategies:
+  enabled: true
+  default-strategy: "redis-first" # redis-first, local-first, multi-level
+
+  # Redis优先策略：先查Redis，再查本地
+  redis-first:
+    redis-hit: true
+    local-hit: true
+    redis-miss-local-hit: true
+    all-miss: false
+    write-through: true
+    write-behind: false
+
+  # 本地优先策略：先查本地，再查Redis
+  local-first:
+    redis-hit: false
+    local-hit: true
+    redis-miss-local-hit: true
+    all-miss: false
+    write-through: true
+    write-behind: false
+
+  # 多级缓存策略：同时查询本地和Redis
+  multi-level:
+    redis-hit: true
+    local-hit: true
+    redis-miss-local-hit: true
+    all-miss: false
+    write-through: true
+    write-behind: false
+
+# 缓存命名配置
+caches:
+  # 路由缓存
+  routes:
+    enabled: true
+    provider: redis
+    time-to-live: 1800s # 30分钟
+    maximum-size: 1000
+    key-prefix: "routes:"
+
+  # 认证信息缓存
+  auth:
+    enabled: true
+    provider: redis
+    time-to-live: 3600s # 1小时
+    maximum-size: 5000
+    key-prefix: "auth:"
+
+  # 用户信息缓存
+  users:
+    enabled: true
+    provider: redis
+    time-to-live: 1800s # 30分钟
+    maximum-size: 10000
+    key-prefix: "users:"
+
+  # 权限信息缓存
+  permissions:
+    enabled: true
+    provider: redis
+    time-to-live: 600s # 10分钟
+    maximum-size: 5000
+    key-prefix: "permissions:"
+
+  # JWT令牌缓存
+  jwt:
+    enabled: true
+    provider: redis
+    time-to-live: 3600s # 1小时
+    maximum-size: 10000
+    key-prefix: "jwt:"
+
+  # IP限流缓存
+  rate-limit-ip:
+    enabled: true
+    provider: redis
+    time-to-live: 60s # 1分钟
+    maximum-size: 50000
+    key-prefix: "rate:ip:"
+
+  # 用户限流缓存
+  rate-limit-user:
+    enabled: true
+    provider: redis
+    time-to-live: 60s # 1分钟
+    maximum-size: 20000
+    key-prefix: "rate:user:"
+
+  # API限流缓存
+  rate-limit-api:
+    enabled: true
+    provider: redis
+    time-to-live: 60s # 1分钟
+    maximum-size: 10000
+    key-prefix: "rate:api:"
+
+  # 熔断器状态缓存
+  circuit-breaker:
+    enabled: true
+    provider: redis
+    time-to-live: 300s # 5分钟
+    maximum-size: 1000
+    key-prefix: "circuit:"
+
+  # 响应缓存
+  response:
+    enabled: true
+    provider: redis
+    time-to-live: 300s # 5分钟
+    maximum-size: 5000
+    key-prefix: "response:"
+    cache-headers:
+      - "Cache-Control"
+      - "ETag"
+      - "Last-Modified"
+
+  # 请求缓存
+  request:
+    enabled: true
+    provider: local
+    time-to-live: 60s # 1分钟
+    maximum-size: 5000
+    key-prefix: "request:"
+
+  # 配置缓存
+  config:
+    enabled: true
+    provider: local
+    time-to-live: 600s # 10分钟
+    maximum-size: 1000
+    key-prefix: "config:"
+
+# 缓存同步配置
+synchronization:
+  enabled: true
+  strategy: "write-through" # write-through, write-behind, cache-aside
+  async: true
+  batch-size: 100
+  flush-interval: 5000ms # 5秒
+
+# 缓存过期配置
+eviction:
+  enabled: true
+  strategy: "time-based" # time-based, size-based, lru, lfu
+  cleanup-interval: 60000ms # 1分钟
+  max-size: 100MB
+
+# 缓存预热配置
+warmup:
+  enabled: true
+  auto-startup: true
+  start-delay: 30s # 服务启动30秒后开始预热
+  batch-size: 100
+  batch-interval: 1000ms
+  max-retries: 3
+  retry-interval: 5000ms
+
+  # 预热的缓存键
+  keys:
+    - "routes:*"
+    - "config:*"
+    - "permissions:*"
+
+# 缓存监控配置
+monitoring:
+  enabled: true
+  metrics:
+    - cache-size
+    - hit-rate
+    - miss-rate
+    - eviction-count
+    - put-count
+    - get-count
+    - delete-count
+    - average-load-time
+    - cache-loader-time
+    - cache-writer-time
+  collect-interval: 10s
+  retention-hours: 24
+
+# 缓存告警配置
+alerts:
+  enabled: true
+  rules:
+    - name: "low-hit-rate"
+      condition: "hit_rate < 0.5" # 命中率低于50%
+      duration: 300 # 持续5分钟
+      severity: "medium"
+      channels: ["email"]
+      message: "缓存命中率过低，可能影响性能"
+
+    - name: "high-eviction-rate"
+      condition: "eviction_rate > 0.1" # 淘汰率超过10%
+      duration: 180
+      severity: "medium"
+      channels: ["email"]
+      message: "缓存淘汰率过高，可能需要调整缓存大小"
+
+    - name: "cache-size-warning"
+      condition: "cache_size > max_size * 0.8" # 缓存大小超过80%
+      duration: 60
+      severity: "low"
+      channels: ["email"]
+      message: "缓存大小接近上限，建议清理或扩容"
+
+# 缓存统计配置
+statistics:
+  enabled: true
+  detailed: true
+  include-cache-names: true
+  include-timing: true
+  include-size: true
+  include-hit-miss: true
+
+# 缓存健康检查
+health-check:
+  enabled: true
+  check-interval: 60s
+  timeout: 5s
+  endpoints:
+    - redis: "INFO"
+    - local: "ping"
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (gateway-cache-dev.yaml):
+# - 调小缓存容量便于开发调试
+# - 缩短缓存过期时间
+# - 启用本地缓存
+#
+# 测试环境 (gateway-cache-test.yaml):
+# - 使用适中的缓存配置
+# - 启用监控功能
+# - 简化的告警规则
+#
+# 生产环境 (gateway-cache-prod.yaml):
+# - 使用Redis集群
+# - 启用多级缓存
+# - 优化缓存性能
+# - 启用完整的监控和告警
+# =================================================================

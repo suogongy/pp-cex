@@ -22,9 +22,9 @@ USER spring
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8004/market/actuator/health || exit 1
+  CMD curl -f http://localhost:8005/market/actuator/health || exit 1
 
-EXPOSE 8004
+EXPOSE 8005
 
 # JVM optimization for market data service
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -Djava.security.egd=file:/dev/./urandom -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseCompressedOops"

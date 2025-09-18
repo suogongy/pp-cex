@@ -1,0 +1,256 @@
+# =================================================================
+# 网关路由配置 - Gateway Routes Configuration
+# 服务名称: gateway-service
+# 配置组: gateway-service
+# 适用于: 所有环境的路由配置
+# =================================================================
+
+routes:
+  - id: user-service
+    uri: lb://user-service
+    order: 1
+    enabled: true
+    predicates:
+      - name: Path
+        args:
+          pattern: /api/v1/user/**
+    filters:
+      - name: StripPrefix
+        args:
+          parts: 2
+      - name: RequestRateLimiter
+        args:
+          key-resolver: "#{@userKeyResolver}"
+          redis-rate-limiter.replenishRate: 200
+          redis-rate-limiter.burstCapacity: 400
+      - name: Retry
+        args:
+          retries: 3
+          series: SERVER_ERROR
+          methods: GET,POST
+          backoff:
+            firstBackoff: 50ms
+            maxBackoff: 500ms
+            factor: 2
+            basedOnPreviousValue: false
+    metadata:
+      service-name: user-service
+      version: 1.0.0
+      description: 用户服务路由
+      category: user
+
+  - id: trade-service
+    uri: lb://trade-service
+    order: 2
+    enabled: true
+    predicates:
+      - name: Path
+        args:
+          pattern: /api/v1/trade/**
+    filters:
+      - name: StripPrefix
+        args:
+          parts: 2
+      - name: CircuitBreaker
+        args:
+          name: tradeServiceCircuitBreaker
+          fallbackUri: forward:/fallback/trade
+          statusCodes: 500,502,503,504
+      - name: RequestRateLimiter
+        args:
+          key-resolver: "#{@apiKeyResolver}"
+          redis-rate-limiter.replenishRate: 100
+          redis-rate-limiter.burstCapacity: 200
+    metadata:
+      service-name: trade-service
+      version: 1.0.0
+      description: 交易服务路由
+      category: trading
+
+  - id: wallet-service
+    uri: lb://wallet-service
+    order: 3
+    enabled: true
+    predicates:
+      - name: Path
+        args:
+          pattern: /api/v1/wallet/**
+    filters:
+      - name: StripPrefix
+        args:
+          parts: 2
+      - name: Authentication
+      - name: RequestRateLimiter
+        args:
+          key-resolver: "#{@userKeyResolver}"
+          redis-rate-limiter.replenishRate: 50
+          redis-rate-limiter.burstCapacity: 100
+    metadata:
+      service-name: wallet-service
+      version: 1.0.0
+      description: 钱包服务路由
+      category: finance
+
+  - id: finance-service
+    uri: lb://finance-service
+    order: 4
+    enabled: true
+    predicates:
+      - name: Path
+        args:
+          pattern: /api/v1/finance/**
+    filters:
+      - name: StripPrefix
+        args:
+          parts: 2
+      - name: Authentication
+      - name: RequestRateLimiter
+        args:
+          key-resolver: "#{@userKeyResolver}"
+          redis-rate-limiter.replenishRate: 80
+          redis-rate-limiter.burstCapacity: 160
+    metadata:
+      service-name: finance-service
+      version: 1.0.0
+      description: 财务服务路由
+      category: finance
+
+  - id: market-service
+    uri: lb://market-service
+    order: 5
+    enabled: true
+    predicates:
+      - name: Path
+        args:
+          pattern: /api/v1/market/**
+    filters:
+      - name: StripPrefix
+        args:
+          parts: 2
+      - name: RequestRateLimiter
+        args:
+          key-resolver: "#{@ipKeyResolver}"
+          redis-rate-limiter.replenishRate: 1000
+          redis-rate-limiter.burstCapacity: 2000
+      - name: CacheRequestBody
+        args:
+          bodyClass: java.lang.String
+    metadata:
+      service-name: market-service
+      version: 1.0.0
+      description: 行情服务路由
+      category: market
+
+  - id: risk-service
+    uri: lb://risk-service
+    order: 6
+    enabled: true
+    predicates:
+      - name: Path
+        args:
+          pattern: /api/v1/risk/**
+    filters:
+      - name: StripPrefix
+        args:
+          parts: 2
+      - name: Authentication
+      - name: RequestRateLimiter
+        args:
+          key-resolver: "#{@userKeyResolver}"
+          redis-rate-limiter.replenishRate: 200
+          redis-rate-limiter.burstCapacity: 400
+    metadata:
+      service-name: risk-service
+      version: 1.0.0
+      description: 风控服务路由
+      category: risk
+
+  - id: auth-service
+    uri: lb://user-service
+    order: 7
+    enabled: true
+    predicates:
+      - name: Path
+        args:
+          pattern: /api/v1/auth/**
+    filters:
+      - name: StripPrefix
+        args:
+          parts: 2
+      - name: RequestRateLimiter
+        args:
+          key-resolver: "#{@ipKeyResolver}"
+          redis-rate-limiter.replenishRate: 100
+          redis-rate-limiter.burstCapacity: 200
+    metadata:
+      service-name: user-service
+      version: 1.0.0
+      description: 认证服务路由
+      category: auth
+
+  - id: public-service
+    uri: lb://market-service
+    order: 8
+    enabled: true
+    predicates:
+      - name: Path
+        args:
+          pattern: /api/v1/public/**
+    filters:
+      - name: StripPrefix
+        args:
+          parts: 2
+      - name: RequestRateLimiter
+        args:
+          key-resolver: "#{@ipKeyResolver}"
+          redis-rate-limiter.replenishRate: 2000
+          redis-rate-limiter.burstCapacity: 5000
+    metadata:
+      service-name: market-service
+      version: 1.0.0
+      description: 公共服务路由
+      category: public
+
+# 路由配置开关
+gateway:
+  routes:
+    enabled: true
+    auto-refresh: true
+    cache-enabled: true
+    cache-ttl: 300 # 5分钟
+
+# 熔断降级配置
+circuit-breaker:
+  trade-service:
+    failure-rate-threshold: 50 # 50%失败率触发熔断
+    wait-duration-in-open-state: 30s # 熔断器打开状态持续时间
+    permitted-number-of-calls-in-half-open-state: 10 # 半开状态允许的调用次数
+    sliding-window-size: 20 # 滑动窗口大小
+    sliding-window-type: COUNT_BASED # 基于计数的滑动窗口
+
+  wallet-service:
+    failure-rate-threshold: 30
+    wait-duration-in-open-state: 60s
+    permitted-number-of-calls-in-half-open-state: 5
+    sliding-window-size: 10
+    sliding-window-type: COUNT_BASED
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (gateway-routes-dev.yaml):
+# - 所有服务的uri使用开发环境地址
+# - 调低限流阈值便于开发调试
+# - 禁用熔断器以便快速定位问题
+#
+# 测试环境 (gateway-routes-test.yaml):
+# - 所有服务的uri使用测试环境地址
+# - 使用适中的限流阈值
+# - 启用熔断器进行容错测试
+#
+# 生产环境 (gateway-routes-prod.yaml):
+# - 所有服务的uri使用生产环境地址
+# - 使用严格的限流阈值
+# - 启用完整的熔断降级机制
+# =================================================================

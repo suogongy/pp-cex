@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.market.mapper.MarketTradeMapper">
+
+    <resultMap id="MarketTradeVOResultMap" type="com.ppcex.market.dto.MarketTradeVO">
+        <id property="id" column="id"/>
+        <result property="tradeId" column="trade_id"/>
+        <result property="symbol" column="symbol"/>
+        <result property="price" column="price"/>
+        <result property="amount" column="amount"/>
+        <result property="quoteVolume" column="quote_volume"/>
+        <result property="timestamp" column="timestamp"/>
+        <result property="isBuyerMaker" column="is_buyer_maker"/>
+    </resultMap>
+
+    <select id="getRecentTrades" resultMap="MarketTradeVOResultMap">
+        SELECT
+            id,
+            trade_id,
+            symbol,
+            price,
+            amount,
+            quote_volume,
+            timestamp,
+            is_buyer_maker,
+            CASE WHEN is_buyer_maker = 1 THEN 'SELL' ELSE 'BUY' END as trade_type
+        FROM market_trade
+        WHERE symbol = #{symbol}
+        ORDER BY timestamp DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <insert id="batchInsertTrades" parameterType="java.util.List">
+        INSERT INTO market_trade (
+            trade_id, symbol, price, amount, quote_volume,
+            timestamp, is_buyer_maker, create_time
+        ) VALUES
+        <foreach collection="trades" item="trade" separator=",">
+            (
+                #{trade.tradeId}, #{trade.symbol}, #{trade.price}, #{trade.amount}, #{trade.quoteVolume},
+                #{trade.timestamp}, #{trade.isBuyerMaker}, NOW()
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteOldTrades">
+        DELETE FROM market_trade
+        WHERE symbol = #{symbol}
+        AND timestamp &lt; #{beforeTime}
+    </delete>
+
+</mapper>

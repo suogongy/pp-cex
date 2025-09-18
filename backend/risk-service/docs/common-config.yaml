@@ -1,0 +1,293 @@
+# =================================================================
+# 通用配置 - Common Configuration (Nacos版本)
+# 服务名称: risk-service
+# 配置组: risk-service
+# 适用于: 所有环境的基础配置
+# =================================================================
+
+# 基础应用配置
+spring:
+  application:
+    name: risk-service
+
+  # Spring Cloud 配置
+  cloud:
+    # Sentinel 流量控制配置
+    sentinel:
+      transport:
+        dashboard: localhost:8858
+        port: 8719
+      eager: true
+      datasource:
+        flow-rules:
+          nacos:
+            server-addr: localhost:8848
+            data-id: sentinel-risk-service-flow-rules
+            group-id: DEFAULT_GROUP
+            rule-type: flow
+            data-type: json
+        degrade-rules:
+          nacos:
+            server-addr: localhost:8848
+            data-id: sentinel-risk-service-degrade-rules
+            group-id: DEFAULT_GROUP
+            rule-type: degrade
+            data-type: json
+
+# 业务配置
+cex:
+  # JWT 配置
+  jwt:
+    enabled: true
+    secret: risk-jwt-secret-key-at-least-32-bytes-long-for-security
+    expiration: 86400000  # 24小时过期时间
+    refresh-expiration: 604800000  # 7天刷新token过期时间
+    issuer: PPCEX
+
+  # 风控配置
+  risk:
+    # 风控引擎配置
+    engine:
+      enabled: true
+      rule-cache-ttl: 300  # 规则缓存TTL(秒)
+      strategy-cache-ttl: 600  # 策略缓存TTL(秒)
+      whitelist-cache-ttl: 900  # 白名单缓存TTL(秒)
+      max-concurrent-rules: 100  # 最大并发规则数
+      rule-execution-timeout: 1000  # 规则执行超时(毫秒)
+
+    # 风险评分配置
+    scoring:
+      enabled: true
+      base-score-weight: 0.4  # 基础评分权重
+      behavior-score-weight: 0.3  # 行为评分权重
+      context-score-weight: 0.2  # 上下文评分权重
+      history-score-weight: 0.1  # 历史评分权重
+      time-decay-factor: 0.95  # 时间衰减因子
+      max-score: 100  # 最大风险评分
+      score-cache-ttl: 1800  # 评分缓存TTL(秒)
+
+    # 风险等级配置
+    levels:
+      low:
+        min-score: 0
+        max-score: 20
+        action: NONE
+        description: "低风险"
+      medium:
+        min-score: 21
+        max-score: 50
+        action: ENHANCED_VERIFICATION
+        description: "中风险"
+      high:
+        min-score: 51
+        max-score: 80
+        action: LIMIT_FUNCTION
+        description: "高风险"
+      severe:
+        min-score: 81
+        max-score: 100
+        action: FREEZE_ACCOUNT
+        description: "严重风险"
+
+    # 实时风控配置
+    realtime:
+      enabled: true
+      batch-size: 100  # 批处理大小
+      batch-timeout: 1000  # 批处理超时(毫秒)
+      max-queue-size: 10000  # 最大队列大小
+      worker-threads: 10  # 工作线程数
+
+    # 统计配置
+    statistics:
+      enabled: true
+      daily-statistics-cron: "0 0 0 * * ?"  # 每日统计任务
+      retain-days: 90  # 数据保留天数
+
+    # 告警配置
+    alert:
+      enabled: true
+      high-risk-threshold: 10  # 高风险事件阈值
+      severe-risk-threshold: 5  # 严重风险事件阈值
+      alert-interval: 300  # 告警间隔(秒)
+      notification-channels: ["EMAIL", "SMS", "WEBHOOK"]
+
+    # 白名单配置
+    whitelist:
+      enabled: true
+      cache-ttl: 600  # 白名单缓存TTL(秒)
+      max-whitelist-size: 10000  # 最大白名单数量
+
+# 安全配置
+security:
+  # 允许匿名访问的路径
+  permit-all:
+    - /risk/api/v1/public/**
+    - /risk/doc.html
+    - /risk/swagger-ui/**
+    - /risk/v3/api-docs/**
+    - /risk/actuator/**
+    - /risk/favicon.ico
+    - /risk/error
+
+  # 跨域配置
+  cors:
+    allowed-origins: ["*"]
+    allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed-headers: ["*"]
+    exposed-headers: ["Authorization", "Content-Disposition"]
+    allow-credentials: true
+    max-age: 3600
+
+  # 请求限流配置
+  rate-limit:
+    enabled: true
+    global-limit: 1000  # 全局限流（请求/分钟）
+    api-limits:
+      "/risk/api/v1/check": 200   # 风控检查接口限流
+      "/risk/api/v1/rules": 100   # 规则查询接口限流
+      "/risk/api/v1/events": 50   # 事件查询接口限流
+      "/risk/api/v1/statistics": 30  # 统计查询接口限流
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+      export:
+        prometheus:
+          enabled: true
+    info:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+    web:
+      server:
+        request:
+          autotime:
+            enabled: true
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.ppcex.risk: INFO
+    com.ppcex.common: INFO
+    org.springframework.web: DEBUG
+    org.springframework.cloud: WARN
+    com.alibaba.nacos.client: WARN
+    io.lettuce.core: WARN
+    com.zaxxer.hikari: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/risk-service.log
+    max-size: 100MB
+    max-history: 30
+    total-size-cap: 1GB
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 1GB
+      clean-history-on-start: false
+
+# 线程池配置
+thread-pool:
+  core:
+    core-size: 16
+    max-size: 50
+    queue-capacity: 1000
+    keep-alive-seconds: 60
+    thread-name-prefix: risk-service-core-
+  async:
+    core-size: 8
+    max-size: 20
+    queue-capacity: 500
+    keep-alive-seconds: 60
+    thread-name-prefix: risk-service-async-
+  risk:
+    core-size: 10
+    max-size: 30
+    queue-capacity: 1000
+    keep-alive-seconds: 60
+    thread-name-prefix: risk-service-risk-
+
+# 缓存配置
+cache:
+  # 本地缓存配置
+  local:
+    enabled: true
+    maximum-size: 10000
+    expire-after-write: 300  # 5分钟
+    expire-after-access: 600  # 10分钟
+
+  # Redis缓存配置
+  redis:
+    enabled: true
+    default-expiration: 3600  # 1小时
+    key-prefix: "risk:"
+    use-key-prefix: true
+    cache-null-values: false
+    time-to-live: 3600000
+
+  # 缓存名称配置
+  caches:
+    risk-rules:
+      ttl: 300   # 5分钟
+      maximum-size: 1000
+    risk-strategies:
+      ttl: 600   # 10分钟
+      maximum-size: 500
+    risk-whitelist:
+      ttl: 900   # 15分钟
+      maximum-size: 2000
+    user-risk-score:
+      ttl: 1800  # 30分钟
+      maximum-size: 5000
+    user-risk-status:
+      ttl: 600   # 10分钟
+      maximum-size: 5000
+    risk-statistics:
+      ttl: 3600  # 1小时
+      maximum-size: 100
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (common-config-dev.yaml):
+# - spring.cloud.sentinel.transport.dashboard: dev-sentinel:8858
+# - logging.level.com.ppcex.risk: DEBUG
+# - cex.risk.engine.enabled: false
+#
+# 测试环境 (common-config-test.yaml):
+# - spring.cloud.sentinel.transport.dashboard: test-sentinel:8858
+# - logging.level.com.ppcex.risk: INFO
+# - cex.risk.realtime.batch-size: 50
+#
+# 生产环境 (common-config-prod.yaml):
+# - spring.cloud.sentinel.transport.dashboard: prod-sentinel-cluster:8858
+# - logging.level.com.ppcex.risk: WARN
+# - cex.risk.alert.notification-channels: 通过环境变量注入
+# =================================================================

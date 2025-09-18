@@ -1,0 +1,270 @@
+# =================================================================
+# RocketMQ消息队列配置 - Message Queue Configuration (Nacos版本)
+# 服务名称: risk-service
+# 配置组: risk-service
+# 适用于: 消息队列连接和消息处理配置
+# =================================================================
+
+# Spring Cloud Stream 配置
+spring:
+  cloud:
+    stream:
+      # 默认绑定器配置
+      default-binder: rocketmq
+      rocketmq:
+        binder:
+          name-server: localhost:9876
+          # 生产者配置
+          producer:
+            group: risk-service-producer-group
+            send-message-timeout: 3000
+            compress-message-body-threshold: 4096
+            max-message-size: 4194304
+            retry-times-when-send-failed: 2
+            retry-next-server: true
+            access-key: ${ROCKETMQ_ACCESS_KEY:}
+            secret-key: ${ROCKETMQ_SECRET_KEY:}
+            enable-msg-trace: true
+            customized-trace-topic: RMQ_SYS_TRACE_TOPIC
+          # 消费者配置
+          consumer:
+            group: risk-service-consumer-group
+            subscription: risk-service-subscription
+            message-model: CLUSTERING
+            access-key: ${ROCKETMQ_ACCESS_KEY:}
+            secret-key: ${ROCKETMQ_SECRET_KEY:}
+            pull-batch-size: 10
+            pull-interval: 1000
+            consume-thread-min: 20
+            consume-thread-max: 64
+            consume-concurrently-max-span: 2000
+            pull-threshold-for-queue: 1000
+            pull-threshold-size-for-queue: 100
+            pull-threshold-for-topic: 100000
+            pull-threshold-size-for-topic: 1000000
+
+      # 函数绑定配置
+      function:
+        definition: riskTopic;userTopic;tradeTopic;assetTopic
+
+      # 绑定配置
+      bindings:
+        # 风控主题
+        riskTopic-in-0:
+          destination: risk-topic
+          group: risk-service-risk-group
+          content-type: application/json
+          consumer:
+            concurrency: 3
+            max-attempts: 3
+            back-off-initial-delay: 1000
+            back-off-multiplier: 2.0
+            back-off-max-delay: 10000
+
+        riskTopic-out-0:
+          destination: risk-topic
+          group: risk-service-risk-group
+          content-type: application/json
+          producer:
+            group: risk-service-risk-producer-group
+
+        # 用户主题
+        userTopic-in-0:
+          destination: user-topic
+          group: risk-service-user-group
+          content-type: application/json
+          consumer:
+            concurrency: 2
+            max-attempts: 3
+            back-off-initial-delay: 1000
+            back-off-multiplier: 2.0
+            back-off-max-delay: 10000
+
+        userTopic-out-0:
+          destination: user-topic
+          group: risk-service-user-group
+          content-type: application/json
+          producer:
+            group: risk-service-user-producer-group
+
+        # 交易主题
+        tradeTopic-in-0:
+          destination: trade-topic
+          group: risk-service-trade-group
+          content-type: application/json
+          consumer:
+            concurrency: 5
+            max-attempts: 3
+            back-off-initial-delay: 1000
+            back-off-multiplier: 2.0
+            back-off-max-delay: 10000
+
+        tradeTopic-out-0:
+          destination: trade-topic
+          group: risk-service-trade-group
+          content-type: application/json
+          producer:
+            group: risk-service-trade-producer-group
+
+        # 资产主题
+        assetTopic-in-0:
+          destination: asset-topic
+          group: risk-service-asset-group
+          content-type: application/json
+          consumer:
+            concurrency: 3
+            max-attempts: 3
+            back-off-initial-delay: 1000
+            back-off-multiplier: 2.0
+            back-off-max-delay: 10000
+
+        assetTopic-out-0:
+          destination: asset-topic
+          group: risk-service-asset-group
+          content-type: application/json
+          producer:
+            group: risk-service-asset-producer-group
+
+      # RocketMQ特定配置
+      rocketmq:
+        bindings:
+          # 风控主题配置
+          riskTopic-in-0:
+            consumer:
+              orderly: false
+              subscription: risk-service-subscription
+              tags: risk-event,rule-update,strategy-update
+              message-model: CLUSTERING
+              consume-thread-min: 10
+              consume-thread-max: 20
+              pull-batch-size: 10
+              pull-interval: 1000
+              pull-threshold-for-queue: 1000
+              pull-threshold-size-for-queue: 100
+              pull-threshold-for-topic: 100000
+              pull-threshold-size-for-topic: 1000000
+
+          riskTopic-out-0:
+            producer:
+              group: risk-service-risk-producer-group
+              sync: true
+              send-message-timeout: 3000
+              compress-message-body-threshold: 4096
+              max-message-size: 4194304
+              retry-times-when-send-failed: 2
+              retry-next-server: true
+              enable-msg-trace: true
+              customized-trace-topic: RMQ_SYS_TRACE_TOPIC
+
+          # 用户主题配置
+          userTopic-in-0:
+            consumer:
+              orderly: false
+              subscription: risk-service-user-subscription
+              tags: user-register,user-login,user-kyc,user-update
+              message-model: CLUSTERING
+              consume-thread-min: 5
+              consume-thread-max: 10
+              pull-batch-size: 10
+              pull-interval: 1000
+
+          userTopic-out-0:
+            producer:
+              group: risk-service-user-producer-group
+              sync: true
+              send-message-timeout: 3000
+
+          # 交易主题配置
+          tradeTopic-in-0:
+            consumer:
+              orderly: true
+              subscription: risk-service-trade-subscription
+              tags: order-create,order-trade,order-cancel,order-failed
+              message-model: CLUSTERING
+              consume-thread-min: 15
+              consume-thread-max: 30
+              pull-batch-size: 10
+              pull-interval: 1000
+
+          tradeTopic-out-0:
+            producer:
+              group: risk-service-trade-producer-group
+              sync: true
+              send-message-timeout: 3000
+
+          # 资产主题配置
+          assetTopic-in-0:
+            consumer:
+              orderly: false
+              subscription: risk-service-asset-subscription
+              tags: asset-recharge,asset-withdraw,asset-transfer,asset-freeze
+              message-model: CLUSTERING
+              consume-thread-min: 10
+              consume-thread-max: 20
+              pull-batch-size: 10
+              pull-interval: 1000
+
+          assetTopic-out-0:
+            producer:
+              group: risk-service-asset-producer-group
+              sync: true
+              send-message-timeout: 3000
+
+# 消息队列监控配置
+mq-monitoring:
+  enabled: true
+  metrics-enabled: true
+  trace-enabled: true
+  stats-enabled: true
+  export-to-prometheus: true
+
+# 消息重试配置
+message-retry:
+  enabled: true
+  max-retry-times: 3
+  retry-interval: 5000
+  exponential-backoff: true
+  backoff-multiplier: 2.0
+  max-backoff-interval: 30000
+
+# 死信队列配置
+dead-letter-queue:
+  enabled: true
+  dlq-topic: risk-topic-dlq
+  max-retries: 3
+  ttl: 86400000  # 24小时
+
+# 消息幂等性配置
+idempotent:
+  enabled: true
+  cache-ttl: 86400000  # 24小时
+  key-prefix: "msg:idempotent:"
+
+# 消息轨迹配置
+message-trace:
+  enabled: true
+  trace-topic: RMQ_SYS_TRACE_TOPIC
+  dispatcher-type: DIRECT
+  trace-topic-name-suffix: "-trace"
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (rocketmq-config-dev.yaml):
+# - spring.cloud.stream.rocketmq.binder.name-server: dev-rocketmq:9876
+# - spring.cloud.stream.bindings.riskTopic-in-0.consumer.concurrency: 1
+# - spring.cloud.stream.bindings.tradeTopic-in-0.consumer.concurrency: 1
+#
+# 测试环境 (rocketmq-config-test.yaml):
+# - spring.cloud.stream.rocketmq.binder.name-server: test-rocketmq-cluster:9876
+# - spring.cloud.stream.rocketmq.binder.access-key: ${ROCKETMQ_ACCESS_KEY}
+# - spring.cloud.stream.rocketmq.binder.secret-key: ${ROCKETMQ_SECRET_KEY}
+#
+# 生产环境 (rocketmq-config-prod.yaml):
+# - spring.cloud.stream.rocketmq.binder.name-server: prod-rocketmq-cluster:9876
+# - spring.cloud.stream.rocketmq.binder.access-key: ${ROCKETMQ_ACCESS_KEY}
+# - spring.cloud.stream.rocketmq.binder.secret-key: ${ROCKETMQ_SECRET_KEY}
+# - spring.cloud.stream.bindings.tradeTopic-in-0.consumer.consume-thread-max: 50
+# - message-trace.enabled: true
+# =================================================================

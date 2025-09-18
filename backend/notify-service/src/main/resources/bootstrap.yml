@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: notify-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: ppcex
+        group: DEFAULT_GROUP
+        metadata:
+          version: 1.0.0
+      config:
+        server-addr: localhost:8848
+        namespace: ppcex
+        group: DEFAULT_GROUP
+        file-extension: yaml
+        shared-configs:
+          - data-id: notify-service-config.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+          - data-id: common-config.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+    sentinel:
+      transport:
+        dashboard: localhost:8080
+        port: 8719
+      datasource:
+        ds1:
+          nacos:
+            server-addr: localhost:8848
+            data-id: notify-service-sentinel
+            group: DEFAULT_GROUP
+            namespace: ppcex
+            rule-type: flow
+
+server:
+  port: 8007
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.ppcex.notify: INFO
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

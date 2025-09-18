@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.market.mapper.MarketKlineMapper">
+
+    <select id="getKlineData" resultType="com.ppcex.market.entity.MarketKline">
+        SELECT
+            id,
+            symbol,
+            interval,
+            open_time,
+            close_time,
+            open_price,
+            high_price,
+            low_price,
+            close_price,
+            volume,
+            quote_volume,
+            trades_count,
+            create_time,
+            update_time
+        FROM market_kline
+        WHERE symbol = #{symbol}
+        AND interval = #{interval}
+        <if test="startTime != null">
+            AND open_time >= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND open_time &lt;= #{endTime}
+        </if>
+        ORDER BY open_time DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <select id="getLatestKline" resultType="com.ppcex.market.entity.MarketKline">
+        SELECT
+            id,
+            symbol,
+            interval,
+            open_time,
+            close_time,
+            open_price,
+            high_price,
+            low_price,
+            close_price,
+            volume,
+            quote_volume,
+            trades_count,
+            create_time,
+            update_time
+        FROM market_kline
+        WHERE symbol = #{symbol}
+        AND interval = #{interval}
+        ORDER BY open_time DESC
+        LIMIT 1
+    </select>
+
+    <insert id="batchInsertKlines" parameterType="java.util.List">
+        INSERT INTO market_kline (
+            symbol, interval, open_time, close_time,
+            open_price, high_price, low_price, close_price,
+            volume, quote_volume, trades_count,
+            create_time, update_time
+        ) VALUES
+        <foreach collection="klines" item="kline" separator=",">
+            (
+                #{kline.symbol}, #{kline.interval}, #{kline.openTime}, #{kline.closeTime},
+                #{kline.openPrice}, #{kline.highPrice}, #{kline.lowPrice}, #{kline.closePrice},
+                #{kline.volume}, #{kline.quoteVolume}, #{kline.tradesCount},
+                NOW(), NOW()
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateKline" parameterType="com.ppcex.market.entity.MarketKline">
+        UPDATE market_kline
+        SET
+            high_price = GREATEST(high_price, #{kline.highPrice}),
+            low_price = LEAST(low_price, #{kline.lowPrice}),
+            close_price = #{kline.closePrice},
+            volume = volume + #{kline.volume},
+            quote_volume = quote_volume + #{kline.quoteVolume},
+            trades_count = trades_count + #{kline.tradesCount},
+            update_time = NOW()
+        WHERE symbol = #{kline.symbol}
+        AND interval = #{kline.interval}
+        AND open_time = #{kline.openTime}
+    </update>
+
+    <delete id="deleteOldKlines">
+        DELETE FROM market_kline
+        WHERE symbol = #{symbol}
+        AND interval = #{interval}
+        AND open_time &lt; #{beforeTime}
+    </delete>
+
+</mapper>

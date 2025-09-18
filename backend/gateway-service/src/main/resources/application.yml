@@ -1,0 +1,195 @@
+spring:
+  application:
+    name: gateway-service
+  profiles:
+    active: test
+  main:
+    allow-bean-definition-overriding: true
+    lazy-initialization: false
+    banner-mode: "off"
+    web-application-type: reactive
+
+  config:
+    import:
+      - optional:nacos:gateway-routes.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:gateway-security.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:gateway-rate-limit.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:gateway-circuit-breaker.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:gateway-cache.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:common-config.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: d8a0e588-e615-448b-994c-0ad931c56808
+        group: gateway-service
+        metadata:
+          version: 1.0.0
+          context-path: /gateway
+      config:
+        server-addr: localhost:8848
+        namespace: d8a0e588-e615-448b-994c-0ad931c56808
+        group: gateway-service
+        file-extension: yaml
+
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/user/**
+          filters:
+            - StripPrefix=2
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+
+        - id: trade-service
+          uri: lb://trade-service
+          predicates:
+            - Path=/api/v1/trade/**
+          filters:
+            - StripPrefix=2
+            - name: CircuitBreaker
+              args:
+                name: tradeServiceCircuitBreaker
+                fallbackUri: forward:/fallback/trade
+
+        - id: wallet-service
+          uri: lb://wallet-service
+          predicates:
+            - Path=/api/v1/wallet/**
+          filters:
+            - StripPrefix=2
+
+        - id: finance-service
+          uri: lb://finance-service
+          predicates:
+            - Path=/api/v1/finance/**
+          filters:
+            - StripPrefix=2
+
+        - id: market-service
+          uri: lb://market-service
+          predicates:
+            - Path=/api/v1/market/**
+          filters:
+            - StripPrefix=2
+
+        - id: risk-service
+          uri: lb://risk-service
+          predicates:
+            - Path=/api/v1/risk/**
+          filters:
+            - StripPrefix=2
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+
+server:
+  port: 9000
+
+# Knife4j Configuration
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enableSwaggerModels: true
+    enableDocumentManage: true
+    swaggerModelName: 实体类列表
+    enableVersion: false
+    enableReloadCacheParameter: false
+    enableFilterMultipartApis: false
+    enableFilterMultipartMethods: false
+    enableRequestCache: true
+    enableHost: false
+    enableHomeCustom: true
+    homeCustomLocation: classpath:markdown/home.md
+    enableAfterScript: true
+    enableSwaggerAuth: true
+  enableRequestCache: true
+  enableHost: false
+  openapi:
+    title: PPCEX Gateway Service API
+    description: 网关服务API文档
+    email: support@ppcex.com
+    concat: PPCEX Team
+    url: https://www.ppcex.com
+    version: v1.0.0
+    license: MIT License
+    license-url: https://opensource.org/licenses/MIT
+
+# Management Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    gateway:
+      enabled: true
+    metrics:
+      enabled: true
+      export:
+        prometheus:
+          enabled: true
+    info:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+    web:
+      server:
+        request:
+          autotime:
+            enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.ppcex.gateway: INFO
+    com.ppcex.common: INFO
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    org.springframework.cloud: WARN
+    com.alibaba.nacos.client: WARN
+    io.lettuce.core: WARN
+    reactor.netty: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/gateway-service.log
+    max-size: 100MB
+    max-history: 30
+    total-size-cap: 1GB
+
+debug: false

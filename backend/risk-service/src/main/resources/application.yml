@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: risk-service
+  profiles:
+    active: test
+  main:
+    allow-bean-definition-overriding: true
+    lazy-initialization: false
+    banner-mode: "off"
+
+  config:
+    import:
+      - optional:nacos:mysql-config.yaml?group=risk-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:common-config.yaml?group=risk-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:rocketmq-config.yaml?group=risk-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:redis-config.yaml?group=risk-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: d8a0e588-e615-448b-994c-0ad931c56808
+        group: risk-service
+        metadata:
+          version: 1.0.0
+          context-path: /risk
+      config:
+        server-addr: localhost:8848
+        namespace: d8a0e588-e615-448b-994c-0ad931c56808
+        group: risk-service
+        file-extension: yaml
+    stream:
+      function:
+        definition: riskTopic;userTopic;tradeTopic;assetTopic
+      rocketmq:
+        binder:
+          name-server: localhost:9876
+
+server:
+  port: 8006
+  servlet:
+    context-path: /risk
+
+# Knife4j Configuration
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enableSwaggerModels: true
+    enableDocumentManage: true
+    swaggerModelName: 实体类列表
+    enableVersion: false
+    enableReloadCacheParameter: false
+    enableFilterMultipartApis: false
+    enableFilterMultipartMethods: false
+    enableRequestCache: true
+    enableHost: false
+    enableHomeCustom: true
+    homeCustomLocation: classpath:markdown/home.md
+    enableAfterScript: true
+    enableSwaggerAuth: true
+  enableRequestCache: true
+  enableHost: false
+  openapi:
+    title: PPCEX Risk Service API
+    description: 风控服务API文档
+    email: support@ppcex.com
+    concat: PPCEX Team
+    url: https://www.ppcex.com
+    version: v1.0.0
+    license: MIT License
+    license-url: https://opensource.org/licenses/MIT
+
+debug: false

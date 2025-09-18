@@ -1,0 +1,203 @@
+# =================================================================
+# Redis缓存配置 - Cache Configuration (Nacos版本)
+# 服务名称: risk-service
+# 配置组: risk-service
+# 适用于: Redis连接和缓存配置
+# =================================================================
+
+# Redis配置
+spring:
+  data:
+    redis:
+      # 主Redis配置
+      host: localhost
+      port: 6379
+      password:
+      database: 6
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+          time-between-eviction-runs: 30000ms
+        shutdown-timeout: 100ms
+      connect-timeout: 10000ms
+      client-name: risk-service
+
+      # Redis集群配置（生产环境使用）
+      # cluster:
+      #   nodes:
+      #     - redis-node1:7000
+      #     - redis-node2:7001
+      #     - redis-node3:7002
+      #   max-redirects: 3
+      #   timeout: 10000ms
+
+      # Redis哨兵配置（高可用）
+      # sentinel:
+      #   master: mymaster
+      #   nodes:
+      #     - redis-sentinel1:26379
+      #     - redis-sentinel2:26379
+      #     - redis-sentinel3:26379
+      #   password: ${REDIS_SENTINEL_PASSWORD}
+
+  # Spring Cache配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "risk:"
+      use-key-prefix: true
+      cache-null-values: false
+
+# Redisson配置（分布式锁）
+redisson:
+  address: redis://localhost:6379
+  password:
+  database: 6
+  connectionTimeout: 10000
+  connectTimeout: 10000
+  timeout: 3000
+  retryAttempts: 3
+  retryInterval: 1500
+  subscriptionsPerConnection: 5
+  subscriptionConnectionMinimumIdleSize: 1
+  subscriptionConnectionPoolSize: 50
+  connectionMinimumIdleSize: 10
+  connectionPoolSize: 64
+  idleConnectionTimeout: 10000
+  pingConnectionInterval: 30000
+  keepAlive: true
+  tcpNoDelay: true
+
+# 缓存配置
+cache:
+  # 本地缓存配置
+  local:
+    enabled: true
+    maximum-size: 10000
+    expire-after-write: 300  # 5分钟
+    expire-after-access: 600  # 10分钟
+    initial-capacity: 1000
+    concurrency-level: 16
+    record-stats: true
+
+  # Redis缓存配置
+  redis:
+    enabled: true
+    default-expiration: 3600  # 1小时
+    key-prefix: "risk:"
+    use-key-prefix: true
+    cache-null-values: false
+    time-to-live: 3600000
+    cache-null-values: false
+
+  # 缓存名称配置
+  caches:
+    # 风控规则缓存
+    risk-rules:
+      ttl: 300   # 5分钟
+      maximum-size: 1000
+      redis-enabled: true
+      local-enabled: true
+
+    # 风控策略缓存
+    risk-strategies:
+      ttl: 600   # 10分钟
+      maximum-size: 500
+      redis-enabled: true
+      local-enabled: true
+
+    # 白名单缓存
+    risk-whitelist:
+      ttl: 900   # 15分钟
+      maximum-size: 2000
+      redis-enabled: true
+      local-enabled: true
+
+    # 用户风险评分缓存
+    user-risk-score:
+      ttl: 1800  # 30分钟
+      maximum-size: 5000
+      redis-enabled: true
+      local-enabled: true
+
+    # 用户风控状态缓存
+    user-risk-status:
+      ttl: 600   # 10分钟
+      maximum-size: 5000
+      redis-enabled: true
+      local-enabled: true
+
+    # 风控统计缓存
+    risk-statistics:
+      ttl: 3600  # 1小时
+      maximum-size: 100
+      redis-enabled: true
+      local-enabled: false
+
+    # 规则引擎缓存
+    rule-engine:
+      ttl: 1800  # 30分钟
+      maximum-size: 2000
+      redis-enabled: true
+      local-enabled: true
+
+    # 用户行为缓存
+    user-behavior:
+      ttl: 300   # 5分钟
+      maximum-size: 10000
+      redis-enabled: true
+      local-enabled: true
+
+# 分布式锁配置
+distributed-lock:
+  enabled: true
+  lock-timeout: 30000  # 30秒
+  wait-time: 10000     # 10秒
+  lease-time: 60000   # 60秒
+
+# 消息队列补偿配置
+mq-compensation:
+  enabled: true
+  retry-interval: 5000  # 5秒重试间隔
+  max-retry-times: 3      # 最大重试次数
+
+# 缓存监控配置
+cache-monitoring:
+  enabled: true
+  metrics-enabled: true
+  stats-enabled: true
+  export-to-prometheus: true
+
+# 缓存预热配置
+cache-warmup:
+  enabled: true
+  startup-enabled: true
+  cron: "0 0 2 * * ?"  # 每天凌晨2点预热
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (redis-config-dev.yaml):
+# - spring.data.redis.host: dev-redis
+# - spring.data.redis.database: 6
+# - cache.local.maximum-size: 1000
+# - cache.local.expire-after-write: 60
+#
+# 测试环境 (redis-config-test.yaml):
+# - spring.data.redis.host: test-redis-cluster
+# - spring.data.redis.cluster.nodes: test-redis-node1:7000,test-redis-node2:7001,test-redis-node3:7002
+# - cache.local.maximum-size: 5000
+#
+# 生产环境 (redis-config-prod.yaml):
+# - spring.data.redis.cluster.nodes: prod-redis-node1:7000,prod-redis-node2:7001,prod-redis-node3:7002
+# - spring.data.redis.password: ${REDIS_PASSWORD}
+# - cache.local.maximum-size: 20000
+# - cache-warmup.enabled: true
+# =================================================================

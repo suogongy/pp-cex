@@ -1,0 +1,325 @@
+# =================================================================
+# 网关限流配置 - Gateway Rate Limit Configuration
+# 服务名称: gateway-service
+# 配置组: gateway-service
+# 适用于: 所有环境的限流配置
+# =================================================================
+
+# 限流总开关
+rate-limit:
+  enabled: true
+  default-strategy: redis
+  fallback-strategy: sentinel
+  cache-enabled: true
+  cache-ttl: 60 # 1分钟缓存
+
+# IP限流配置
+ip-limits:
+  enabled: true
+  default:
+    window-seconds: 60
+    max-requests: 1000
+    burst-capacity: 200
+    algorithm: token-bucket
+    block-message: "IP请求过于频繁，请稍后重试"
+
+  # 特殊IP限流配置
+  special:
+    - key: "192.168.1.100"
+      window-seconds: 60
+      max-requests: 5000
+      burst-capacity: 1000
+      algorithm: sliding-window
+      block-message: "VIP IP请求过于频繁，请稍后重试"
+
+    - key: "10.0.0.0/8"
+      window-seconds: 60
+      max-requests: 100
+      burst-capacity: 50
+      algorithm: leaky-bucket
+      block-message: "内网IP请求过于频繁，请稍后重试"
+
+# 用户限流配置
+user-limits:
+  enabled: true
+  default:
+    window-seconds: 60
+    max-requests: 500
+    burst-capacity: 100
+    algorithm: token-bucket
+    block-message: "用户请求过于频繁，请稍后重试"
+
+  # 用户类型限流配置
+  types:
+    - type: "normal"
+      window-seconds: 60
+      max-requests: 500
+      burst-capacity: 100
+      algorithm: token-bucket
+
+    - type: "vip"
+      window-seconds: 60
+      max-requests: 2000
+      burst-capacity: 400
+      algorithm: sliding-window
+
+    - type: "institution"
+      window-seconds: 60
+      max-requests: 5000
+      burst-capacity: 1000
+      algorithm: sliding-window
+
+# API限流配置
+api-limits:
+  enabled: true
+  endpoints:
+    # 认证相关API
+    - path: "/api/v1/auth/login"
+      window-seconds: 60
+      max-requests: 10
+      burst-capacity: 20
+      algorithm: leaky-bucket
+      block-message: "登录请求过于频繁，请稍后重试"
+
+    - path: "/api/v1/auth/register"
+      window-seconds: 60
+      max-requests: 5
+      burst-capacity: 10
+      algorithm: leaky-bucket
+      block-message: "注册请求过于频繁，请稍后重试"
+
+    # 用户相关API
+    - path: "/api/v1/user/**"
+      window-seconds: 60
+      max-requests: 200
+      burst-capacity: 400
+      algorithm: token-bucket
+      block-message: "用户服务请求过于频繁，请稍后重试"
+
+    # 交易相关API
+    - path: "/api/v1/trade/**"
+      window-seconds: 60
+      max-requests: 100
+      burst-capacity: 200
+      algorithm: sliding-window
+      block-message: "交易服务请求过于频繁，请稍后重试"
+
+    - path: "/api/v1/trade/order/create"
+      window-seconds: 60
+      max-requests: 50
+      burst-capacity: 100
+      algorithm: token-bucket
+      block-message: "创建订单请求过于频繁，请稍后重试"
+
+    # 钱包相关API
+    - path: "/api/v1/wallet/**"
+      window-seconds: 60
+      max-requests: 50
+      burst-capacity: 100
+      algorithm: token-bucket
+      block-message: "钱包服务请求过于频繁，请稍后重试"
+
+    - path: "/api/v1/wallet/withdraw"
+      window-seconds: 60
+      max-requests: 10
+      burst-capacity: 20
+      algorithm: leaky-bucket
+      block-message: "提现请求过于频繁，请稍后重试"
+
+    # 财务相关API
+    - path: "/api/v1/finance/**"
+      window-seconds: 60
+      max-requests: 80
+      burst-capacity: 160
+      algorithm: token-bucket
+      block-message: "财务服务请求过于频繁，请稍后重试"
+
+    # 行情相关API
+    - path: "/api/v1/market/**"
+      window-seconds: 60
+      max-requests: 5000
+      burst-capacity: 10000
+      algorithm: sliding-window
+      block-message: "行情服务请求过于频繁，请稍后重试"
+
+    - path: "/api/v1/market/ticker"
+      window-seconds: 60
+      max-requests: 10000
+      burst-capacity: 20000
+      algorithm: sliding-window
+      block-message: "行情数据请求过于频繁，请稍后重试"
+
+    # 风控相关API
+    - path: "/api/v1/risk/**"
+      window-seconds: 60
+      max-requests: 200
+      burst-capacity: 400
+      algorithm: token-bucket
+      block-message: "风控服务请求过于频繁，请稍后重试"
+
+    # 公共API
+    - path: "/api/v1/public/**"
+      window-seconds: 60
+      max-requests: 10000
+      burst-capacity: 20000
+      algorithm: sliding-window
+      block-message: "公共服务请求过于频繁，请稍后重试"
+
+# Sentinel限流配置
+sentinel:
+  enabled: true
+  dashboard: localhost:8858
+  eager: true
+  transport:
+    port: 8719
+    dashboard: localhost:8858
+
+  # 流控规则
+  flow-rules:
+    - resource: "user-service"
+      count: 1000
+      grade: 1 # QPS模式
+      strategy: 0 # 直接拒绝
+      controlBehavior: 0
+      clusterMode: false
+
+    - resource: "trade-service"
+      count: 500
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+
+    - resource: "wallet-service"
+      count: 200
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+
+    - resource: "market-service"
+      count: 5000
+      grade: 1
+      strategy: 0
+      controlBehavior: 1 # 匀速排队
+      controlBehavior: 1
+      maxQueueingTimeMs: 100
+      clusterMode: false
+
+  # 降级规则
+  degrade-rules:
+    - resource: "trade-service"
+      grade: 0 # 异常比例
+      count: 0.5 # 50%异常率
+      timeWindow: 60 # 60秒熔断
+      minRequestAmount: 10 # 最小请求数
+      slowRatioThreshold: 0.5 # 慢调用比例阈值
+      statIntervalMs: 1000 # 统计时长
+
+    - resource: "wallet-service"
+      grade: 0
+      count: 0.3
+      timeWindow: 30
+      minRequestAmount: 5
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
+
+  # 系统规则
+  system-rules:
+    - resource: "default"
+      highestSystemLoad: 10 # 最大系统负载
+      highestCpuUsage: 80 # 最大CPU使用率
+      qps: 10000 # 最大QPS
+      avgRt: 100 # 最大平均响应时间
+      maxThread: 1000 # 最大线程数
+
+# 动态限流配置
+dynamic-rate-limit:
+  enabled: true
+  adjust-strategy: auto # auto/manual
+  metrics-collect-interval: 10 # 10秒收集一次指标
+  adjust-interval: 60 # 60秒调整一次
+  factors:
+    - cpu-usage
+    - memory-usage
+    - response-time
+    - error-rate
+    - active-connections
+
+  # 限流阈值调整算法
+  algorithm:
+    base-limit: 1000
+    min-limit: 100
+    max-limit: 10000
+    step-size: 100
+    scale-factor: 1.2
+    reduce-factor: 0.8
+
+# 限流响应配置
+response:
+  enabled: true
+  include-headers: true
+  headers:
+    X-Rate-Limit-Limit: "limit"
+    X-Rate-Limit-Remaining: "remaining"
+    X-Rate-Limit-Reset: "reset"
+    X-Rate-Limit-Window: "window"
+  json-response: true
+  retry-after: 60
+  cache-control: "no-store"
+
+# 限流监控配置
+monitoring:
+  enabled: true
+  collect-interval: 10 # 10秒收集一次
+  retention-hours: 24 # 保留24小时数据
+  metrics:
+    - total-requests
+    - blocked-requests
+    - success-requests
+    - failure-requests
+    - average-response-time
+    - p95-response-time
+    - p99-response-time
+
+# 告警配置
+alerts:
+  enabled: true
+  rules:
+    - name: "high-block-rate"
+      condition: "block_rate > 0.1" # 超过10%的请求被限流
+      duration: 300 # 持续5分钟
+      severity: "high"
+      channels: ["email", "webhook"]
+
+    - name: "high-error-rate"
+      condition: "error_rate > 0.05" # 超过5%的错误率
+      duration: 300
+      severity: "medium"
+      channels: ["email"]
+
+    - name: "slow-response"
+      condition: "avg_response_time > 1000" # 平均响应时间超过1秒
+      duration: 300
+      severity: "medium"
+      channels: ["email"]
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (gateway-rate-limit-dev.yaml):
+# - 调低所有限流阈值便于开发调试
+# - 禁用告警功能
+# - sentinel.enabled: false
+#
+# 测试环境 (gateway-rate-limit-test.yaml):
+# - 使用适中的限流阈值
+# - 启用监控功能
+# - 简化的告警规则
+#
+# 生产环境 (gateway-rate-limit-prod.yaml):
+# - 使用严格的限流阈值
+# - 启用完整的监控和告警
+# - 使用Sentinel集群模式
+# =================================================================

@@ -1,0 +1,312 @@
+# =================================================================
+# RocketMQ配置 - RocketMQ Configuration (Nacos版本)
+# 服务名称: market-service
+# 配置组: market-service
+# 适用于: RocketMQ消息队列配置
+# =================================================================
+
+spring:
+  cloud:
+    stream:
+      # 默认binder配置
+      default-binder: rocketmq
+      rocketmq:
+        binder:
+          # RocketMQ NameServer地址
+          name-server: localhost:9876
+          # 访问密钥
+          access-key:
+          access-secret:
+          # 消费者组配置
+          group: market-service-group
+          # 消息队列配置
+          options:
+            # 消息队列模式
+            consume-mode: current  # current, earliest, latest
+            # 重试次数
+            max-reconsume-times: 3
+            # 消息模式
+            message-model: clustering  # clustering, broadcasting
+            # 消费线程数
+            consume-thread-min: 20
+            consume-thread-max: 64
+            # 拉取间隔
+            pull-batch-size: 32
+            # 消费超时
+            consume-timeout: 15
+            # 是否顺序消费
+            orderly: false
+        # 生产者配置
+        producer:
+          # 生产者组
+          group: market-service-producer-group
+          # 发送超时时间
+          send-message-timeout: 3000
+          # 压缩级别
+          compress-message-body-threshold: 4096
+          # 重试次数
+          retry-times-when-send-failed: 2
+          # 是否VIP通道
+          vip-channel-enabled: false
+          # 最大消息大小
+          max-message-size: 4194304  # 4MB
+          # 异步发送线程数
+          async-sender-cores: 2
+          # 异步发送队列大小
+          async-sender-queue-capacity: 10000
+
+      # Function定义
+      function:
+        definition: marketTopic;tickTopic
+
+      # 绑定器配置
+      bindings:
+        # 市场主题输入
+        marketTopic-in-0:
+          destination: market-topic
+          content-type: application/json
+          group: market-service-group
+          consumer:
+            # 顺序消费
+            orderly: false
+            # 批量消费
+            batch-mode: false
+            # 消费者配置
+            subscription: market-topic-subscription
+            # 标签过滤
+            tag: TICKER_UPDATE || TRADE_UPDATE || DEPTH_UPDATE || SYSTEM_COMMAND
+
+        # 市场主题输出
+        marketTopic-out-0:
+          destination: market-topic
+          content-type: application/json
+          producer:
+            # 同步发送
+            sync: true
+            # 发送超时
+            send-timeout: 3000
+            # 重试次数
+            retry-times: 3
+            # 消息队列选择
+            message-queue-selector: random
+
+        # Tick主题输入
+        tickTopic-in-0:
+          destination: tick-topic
+          content-type: application/json
+          group: market-service-group
+          consumer:
+            orderly: false
+            batch-mode: false
+            subscription: tick-topic-subscription
+            tag: KLINE_UPDATE || MARKET_STATISTICS
+
+        # Tick主题输出
+        tickTopic-out-0:
+          destination: tick-topic
+          content-type: application/json
+          producer:
+            sync: true
+            send-timeout: 3000
+            retry-times: 3
+            message-queue-selector: random
+
+        # 交易主题输入（接收trade-service消息）
+        tradeTopic-in-0:
+          destination: trade-topic
+          content-type: application/json
+          group: market-service-group
+          consumer:
+            orderly: false
+            batch-mode: false
+            subscription: trade-topic-subscription
+            tag: TRADE_EXECUTED || ORDER_UPDATED || PAIR_UPDATED
+
+# 业务消息配置
+market:
+  message:
+    # 消息主题配置
+    topics:
+      market:
+        name: market-topic
+        description: "市场数据主题"
+        partitions: 4
+        replication-factor: 2
+      tick:
+        name: tick-topic
+        description: "tick数据主题"
+        partitions: 4
+        replication-factor: 2
+      trade:
+        name: trade-topic
+        description: "交易数据主题"
+        partitions: 4
+        replication-factor: 2
+
+    # 消息生产者配置
+    producer:
+      # 行情更新生产者
+      ticker:
+        enabled: true
+        group: market-ticker-producer
+        send-timeout: 1000
+        retry-times: 2
+        max-retry-interval: 5000
+
+      # 成交更新生产者
+      trade:
+        enabled: true
+        group: market-trade-producer
+        send-timeout: 1000
+        retry-times: 2
+        max-retry-interval: 5000
+
+      # 深度更新生产者
+      depth:
+        enabled: true
+        group: market-depth-producer
+        send-timeout: 500
+        retry-times: 2
+        max-retry-interval: 3000
+
+      # K线更新生产者
+      kline:
+        enabled: true
+        group: market-kline-producer
+        send-timeout: 1000
+        retry-times: 2
+        max-retry-interval: 5000
+
+    # 消息消费者配置
+    consumer:
+      # 行情更新消费者
+      ticker:
+        enabled: true
+        group: market-ticker-consumer
+        threads: 4
+        max-reconsume-times: 3
+        consume-mode: current
+
+      # 成交更新消费者
+      trade:
+        enabled: true
+        group: market-trade-consumer
+        threads: 8
+        max-reconsume-times: 3
+        consume-mode: current
+
+      # 深度更新消费者
+      depth:
+        enabled: true
+        group: market-depth-consumer
+        threads: 4
+        max-reconsume-times: 3
+        consume-mode: current
+
+      # K线更新消费者
+      kline:
+        enabled: true
+        group: market-kline-consumer
+        threads: 4
+        max-reconsume-times: 3
+        consume-mode: current
+
+      # 系统命令消费者
+      system:
+        enabled: true
+        group: market-system-consumer
+        threads: 2
+        max-reconsume-times: 3
+        consume-mode: current
+
+    # 消息可靠性配置
+    reliability:
+      # 消息持久化
+      persistent: true
+      # 消息确认
+      ack-mode: auto
+      # 事务消息
+      transactional: true
+      # 消息重试
+      retry-enabled: true
+      # 死信队列
+      dead-letter-queue:
+        enabled: true
+        prefix: "DLQ%"
+        ttl: 86400000  # 24小时
+
+    # 消息监控配置
+    monitoring:
+      enabled: true
+      # 消息积压监控
+      backlog-threshold: 1000
+      # 消息延迟监控
+      delay-threshold: 5000  # 5秒
+      # 消息失败监控
+      failure-threshold: 10  # 连续失败次数
+      # 监控间隔
+      monitor-interval: 30000  # 30秒
+
+# 消息队列性能配置
+rocketmq:
+  # NameServer配置
+  namesrv:
+    addr: localhost:9876
+    timeout: 3000
+    client-ip:
+    instance-name: market-service
+
+  # 生产者配置
+  producer:
+    # 生产者组名
+    group-name: market-service-producer-group
+    # 发送超时时间
+    send-msg-timeout: 3000
+    # 压缩阈值
+    compress-msg-body-over-howmuch: 4096
+    # 重试次数
+    retry-times-when-send-async-failed: 2
+    # 最大消息大小
+    max-message-size: 4194304
+    # 发送失败重试次数
+    retry-another-broker-when-not-store-ok: false
+
+  # 消费者配置
+  consumer:
+    # 消费者组名
+    group-name: market-service-consumer-group
+    # 消息模式
+    message-model: CLUSTERING
+    # 消费顺序
+    consume-orderly: false
+    # 消费线程数
+    consume-thread-min: 20
+    consume-thread-max: 64
+    # 拉取间隔
+    pull-interval: 0
+    # 批量拉取大小
+    pull-batch-size: 32
+    # 消费超时
+    consume-timeout: 15
+    # 最大重试次数
+    max-reconsume-times: 3
+
+# 环境特定配置注释
+# =================================================================
+# 开发环境 (rocketmq-config-dev.yaml):
+# - spring.cloud.stream.rocketmq.binder.name-server: localhost:9876
+# - market.message.producer.ticker.retry-times: 1
+# - market.message.consumer.threads: 2
+#
+# 测试环境 (rocketmq-config-test.yaml):
+# - spring.cloud.stream.rocketmq.binder.name-server: test-rocketmq:9876
+# - spring.cloud.stream.rocketmq.binder.access-key: test-access-key
+# - spring.cloud.stream.rocketmq.binder.access-secret: test-access-secret
+#
+# 生产环境 (rocketmq-config-prod.yaml):
+# - spring.cloud.stream.rocketmq.binder.name-server: prod-rocketmq-1:9876;prod-rocketmq-2:9876;prod-rocketmq-3:9876
+# - spring.cloud.stream.rocketmq.binder.access-key: prod-access-key
+# - spring.cloud.stream.rocketmq.binder.access-secret: prod-access-secret
+# - rocketmq.producer.retry-times-when-send-failed: 3
+# - market.message.consumer.max-reconsume-times: 5
+# =================================================================

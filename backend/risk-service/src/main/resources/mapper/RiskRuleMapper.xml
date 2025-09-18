@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ppcex.risk.mapper.RiskRuleMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.ppcex.risk.entity.RiskRule">
+        <id column="id" property="id"/>
+        <result column="rule_code" property="ruleCode"/>
+        <result column="rule_name" property="ruleName"/>
+        <result column="rule_type" property="ruleType"/>
+        <result column="rule_category" property="ruleCategory"/>
+        <result column="risk_level" property="riskLevel"/>
+        <result column="status" property="status"/>
+        <result column="rule_expression" property="ruleExpression"/>
+        <result column="threshold_value" property="thresholdValue"/>
+        <result column="action_type" property="actionType"/>
+        <result column="action_params" property="actionParams"/>
+        <result column="description" property="description"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, rule_code, rule_name, rule_type, rule_category, risk_level, status,
+        rule_expression, threshold_value, action_type, action_params, description,
+        create_time, update_time, create_by, update_by, deleted
+    </sql>
+
+    <!-- 分页查询风控规则 -->
+    <select id="selectRulePage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM risk_rule
+        <where>
+            deleted = 0
+            <if test="ruleType != null">
+                AND rule_type = #{ruleType}
+            </if>
+            <if test="riskLevel != null">
+                AND risk_level = #{riskLevel}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY priority DESC, create_time DESC
+    </select>
+
+    <!-- 根据规则类型查询启用的规则 -->
+    <select id="selectEnabledRulesByType" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM risk_rule
+        WHERE deleted = 0
+        AND rule_type = #{ruleType}
+        AND status = 1
+        ORDER BY priority DESC, create_time DESC
+    </select>
+
+    <!-- 根据规则编码查询规则 -->
+    <select id="selectByRuleCode" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM risk_rule
+        WHERE deleted = 0
+        AND rule_code = #{ruleCode}
+        LIMIT 1
+    </select>
+
+    <!-- 批量更新规则状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE risk_rule
+        SET status = #{status},
+            update_time = NOW()
+        WHERE deleted = 0
+        AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 根据规则分类查询规则数量 -->
+    <select id="countByRuleCategory" resultType="int">
+        SELECT COUNT(1)
+        FROM risk_rule
+        WHERE deleted = 0
+        AND rule_category = #{ruleCategory}
+    </select>
+
+</mapper>
