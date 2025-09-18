@@ -18,15 +18,17 @@ spring:
 # 日志配置
 logging:
   level:
-    com.ppcex.match: debug
-    com.ppcex.common: debug
-    org.springframework.cloud: info
-    org.springframework.cloud.stream: debug
-    com.alibaba.cloud: debug
-    com.alibaba.nacos: info
+    root: INFO
+    com.ppcex.trade: INFO
+    com.ppcex.common: INFO
+    org.springframework.web: DEBUG
+    org.springframework.cloud: WARN
+    com.alibaba.nacos.client: WARN
+    io.lettuce.core: WARN
+    com.zaxxer.hikari: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
   file:
     name: logs/match-service.log
     max-size: 100MB
@@ -37,6 +39,7 @@ logging:
       max-file-size: 100MB
       max-history: 30
       total-size-cap: 1GB
+      clean-history-on-start: false
 
 # 管理端点配置
 management:

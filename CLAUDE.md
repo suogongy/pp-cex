@@ -1,5 +1,9 @@
 # Web3 CEX 学习项目
 
+## 注意事项  
+- 在claude分析处理的过程中，严格使用中文
+- 详细文档请查看[产品需求文档.md](docs/产品需求文档.md)
+
 ## 项目概述
 这是一个简化版的Web3中心化交易所(CEX)学习项目，基于Spring Cloud Alibaba和Next.js技术栈。
 

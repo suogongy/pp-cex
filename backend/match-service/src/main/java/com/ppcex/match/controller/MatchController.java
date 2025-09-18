@@ -1,6 +1,6 @@
 package com.ppcex.match.controller;
 
-import com.ppcex.common.core.result.Result;
+import com.ppcex.common.response.Result;
 import com.ppcex.match.dto.OrderBookRequest;
 import com.ppcex.match.dto.OrderBookResponse;
 import com.ppcex.match.dto.TradeHistoryRequest;
@@ -37,7 +37,7 @@ public class MatchController {
             response.setTimestamp(System.currentTimeMillis());
             return Result.success(response);
         } catch (Exception e) {
-            return Result.fail("获取订单簿失败: " + e.getMessage());
+            return Result.error("获取订单簿失败: " + e.getMessage());
         }
     }
 
@@ -48,7 +48,7 @@ public class MatchController {
             BigDecimal price = matchingEngine.getLatestPrice(symbol);
             return Result.success(price);
         } catch (Exception e) {
-            return Result.fail("获取最新价格失败: " + e.getMessage());
+            return Result.error("获取最新价格失败: " + e.getMessage());
         }
     }
 
@@ -65,7 +65,7 @@ public class MatchController {
             response.setTimestamp(System.currentTimeMillis());
             return Result.success(response);
         } catch (Exception e) {
-            return Result.fail("获取交易历史失败: " + e.getMessage());
+            return Result.error("获取交易历史失败: " + e.getMessage());
         }
     }
 
@@ -76,7 +76,7 @@ public class MatchController {
             List<String> symbols = List.copyOf(matchingEngine.getActiveSymbols());
             return Result.success(symbols);
         } catch (Exception e) {
-            return Result.fail("获取活跃交易对失败: " + e.getMessage());
+            return Result.error("获取活跃交易对失败: " + e.getMessage());
         }
     }
 
@@ -87,7 +87,7 @@ public class MatchController {
             matchingEngine.clearOrderBook(symbol);
             return Result.success("订单簿已清空: " + symbol);
         } catch (Exception e) {
-            return Result.fail("清空订单簿失败: " + e.getMessage());
+            return Result.error("清空订单簿失败: " + e.getMessage());
         }
     }
 
@@ -98,7 +98,7 @@ public class MatchController {
             matchingEngine.clearAllOrderBooks();
             return Result.success("所有订单簿已清空");
         } catch (Exception e) {
-            return Result.fail("清空所有订单簿失败: " + e.getMessage());
+            return Result.error("清空所有订单簿失败: " + e.getMessage());
         }
     }
 

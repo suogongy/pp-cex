@@ -10,11 +10,12 @@ spring:
     active: test
   main:
     allow-bean-definition-overriding: true
+    lazy-initialization: false
+    banner-mode: "off"
   config:
     import:
       - optional:nacos:redis-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
       - optional:nacos:rocketmq-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      - optional:nacos:sentinel-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
       - optional:nacos:common-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
 
   cloud:
@@ -61,3 +62,5 @@ knife4j:
     version: v1.0.0
     license: MIT License
     license-url: https://opensource.org/licenses/MIT
+
+debug: false

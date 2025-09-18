@@ -31,6 +31,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Autowired
+    private SnowflakeIdUtil snowflakeIdUtil;
+
     private static final String ORDER_CACHE_PREFIX = "match:order:";
     private static final String USER_ORDERS_PREFIX = "match:user:orders:";
 
@@ -38,7 +41,7 @@ public class OrderServiceImpl implements OrderService {
     public void processOrder(MatchOrder order) {
         try {
             if (order.getId() == null) {
-                order.setId(SnowflakeIdUtil.nextId());
+                order.setId(snowflakeIdUtil.nextId());
             }
             if (order.getOrderNo() == null) {
                 order.setOrderNo(generateOrderNo());

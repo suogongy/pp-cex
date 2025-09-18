@@ -9,8 +9,7 @@ import com.ppcex.match.service.OrderService;
 import com.alibaba.fastjson2.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.stream.annotation.StreamListener;
-import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,8 +22,8 @@ public class OrderMessageConsumer {
 
     private final OrderService orderService;
 
-    @StreamListener("order-input")
-    public void handleOrderMessage(@Payload String message) {
+    @Async
+    public void handleOrderMessage(String message) {
         try {
             OrderMessage orderMessage = JSON.parseObject(message, OrderMessage.class);
 
