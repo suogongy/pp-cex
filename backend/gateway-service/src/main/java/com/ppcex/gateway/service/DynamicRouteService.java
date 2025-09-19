@@ -9,13 +9,18 @@ import org.springframework.cloud.gateway.event.RefreshRoutesEvent;
 import org.springframework.cloud.gateway.route.RouteDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteDefinitionWriter;
+import org.springframework.cloud.gateway.handler.predicate.PredicateDefinition;
+import org.springframework.cloud.gateway.filter.FilterDefinition;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 动态路由管理服务
@@ -91,16 +96,21 @@ public class DynamicRouteService {
     private RouteDefinition buildRouteDefinition(RouteInfo routeInfo) {
         RouteDefinition definition = new RouteDefinition();
         definition.setId(routeInfo.getId());
-        definition.setUri(routeInfo.getUri());
+        definition.setUri(URI.create(routeInfo.getUri()));
         definition.setOrder(routeInfo.getOrder());
-        definition.setMetadata(routeInfo.getMetadata());
+
+        // 转换metadata类型
+        Map<String, Object> metadata = new HashMap<>();
+        if (routeInfo.getMetadata() != null) {
+            metadata.putAll(routeInfo.getMetadata());
+        }
+        definition.setMetadata(metadata);
 
         // 构建断言
-        List<org.springframework.cloud.gateway.filter.FilterDefinition> predicates = new ArrayList<>();
+        List<PredicateDefinition> predicates = new ArrayList<>();
         if (routeInfo.getPredicates() != null) {
             for (PredicateInfo predicateInfo : routeInfo.getPredicates()) {
-                org.springframework.cloud.gateway.filter.FilterDefinition predicate =
-                    new org.springframework.cloud.gateway.filter.FilterDefinition();
+                PredicateDefinition predicate = new PredicateDefinition();
                 predicate.setName(predicateInfo.getName());
                 predicate.setArgs(predicateInfo.getArgs());
                 predicates.add(predicate);

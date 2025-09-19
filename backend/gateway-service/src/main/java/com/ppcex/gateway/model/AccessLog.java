@@ -56,8 +56,8 @@ public class AccessLog {
     /** 响应状态码 */
     private Integer responseStatus;
 
-    /** 响应时间（毫秒） */
-    private Long responseTime;
+    /** 响应耗时（毫秒） */
+    private Long duration;
 
     /** 响应大小（字节） */
     private Long responseSize;

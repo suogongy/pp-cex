@@ -21,8 +21,8 @@ redis:
   enabled: true
   host: ${REDIS_HOST:localhost}
   port: ${REDIS_PORT:6379}
-  username: ${REDIS_USER:gateway_user}
-  password: ${REDIS_PASSWORD:gateway123}
+  username: ${REDIS_USER:cex_user}
+  password: ${REDIS_PASSWORD:redis123456}
   database: 1
   timeout: 10000ms
   lettuce:

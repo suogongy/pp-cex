@@ -105,8 +105,8 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
 
             // 响应信息
             accessLog.setResponseStatus(response.getStatusCode() != null ? response.getStatusCode().value() : 500);
-            accessLog.setResponseTime(responseTime);
-            accessLog.setResponseTime(responseTime);
+            accessLog.setDuration(responseTime);
+            accessLog.setResponseTime(LocalDateTime.now());
 
             // 用户代理
             String userAgent = request.getHeaders().getFirst("User-Agent");

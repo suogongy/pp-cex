@@ -2,6 +2,7 @@ package com.ppcex.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
@@ -10,8 +11,9 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  * @author PPCEX Team
  * @version 1.0.0
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.ppcex")
 @EnableDiscoveryClient
+@EnableConfigurationProperties
 public class GatewayServiceApplication {
 
     public static void main(String[] args) {

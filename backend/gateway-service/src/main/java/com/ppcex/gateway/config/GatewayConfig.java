@@ -3,6 +3,7 @@ package com.ppcex.gateway.config;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -16,9 +17,10 @@ import reactor.core.publisher.Mono;
 public class GatewayConfig {
 
     /**
-     * IP限流解析器
+     * IP限流解析器（主要解析器）
      */
     @Bean
+    @Primary
     public KeyResolver ipKeyResolver() {
         return new KeyResolver() {
             @Override

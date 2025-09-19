@@ -1,8 +1,7 @@
 package com.ppcex.gateway.filter;
 
 import com.alibaba.fastjson2.JSON;
-import com.ppcex.common.utils.JwtTokenProvider;
-import com.ppcex.common.utils.RedisUtil;
+import com.ppcex.common.service.JwtService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +39,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthenticationFilter implements GlobalFilter, Ordered {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtService jwtService;
     private final RedisTemplate<String, Object> redisTemplate;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -80,7 +79,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         // 验证JWT令牌
         try {
-            Claims claims = jwtTokenProvider.parseToken(token);
+            Claims claims = jwtService.parseToken(token);
             String userId = claims.getSubject();
             String username = claims.get("username", String.class);
 
