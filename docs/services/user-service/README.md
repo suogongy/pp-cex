@@ -25,14 +25,16 @@
 graph TB
     subgraph "接口层"
         direction LR
+        INTERFACE[接口层]
         API[REST API]
         WS[WebSocket]
         ADMIN[Admin API]
-        HC[Health Check]
+        Health[健康检查]
     end
 
     subgraph "业务层"
         direction LR
+        BUSINESS[业务层]
         UM[用户管理<br>User Manager]
         AUTH[认证授权<br>Auth Service]
         KYC[KYC认证<br>KYC Service]
@@ -45,6 +47,7 @@ graph TB
 
     subgraph "数据层"
         direction LR
+        DATA[数据层]
         UD[用户数据<br>User DAO]
         KD[KYC数据<br>KYC DAO]
         AD[资产数据<br>Asset DAO]
@@ -57,41 +60,17 @@ graph TB
 
     subgraph "基础设施"
         direction LR
+        INFRA[基础设施]
         MY[MySQL数据库<br>User DB]
         RD[Redis缓存<br>Cache]
         MQM[RocketMQ<br>Message]
         NC[Nacos配置<br>Config]
     end
 
-    %% 接口层到业务层的连接
-    API -.-> UM
-    WS -.-> AUTH
-    ADMIN -.-> SEC
-    HC -.-> AUDIT
-
-    %% 业务层到数据层的连接
-    UM -.-> UD
-    AUTH -.-> UD
-    KYC -.-> KD
-    SEC -.-> UD
-    AM -.-> AD
-    RISK -.-> UD
-    NOTY -.-> LD
-    AUDIT -.-> LD
-    AUTH -.-> CA
-    NOTY -.-> MQP
-    RISK -.-> EA
-    KYC -.-> FS
-
-    %% 数据层到基础设施的连接
-    UD --> MY
-    KD --> MY
-    AD --> MY
-    LD --> MY
-    CA --> RD
-    MQP --> MQM
-    EA --> MY
-    FS --> MY
+    %% 层级关系连接
+    INTERFACE --> BUSINESS
+    BUSINESS --> DATA
+    DATA --> INFRA
 
     %% 样式定义
     classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
@@ -99,7 +78,7 @@ graph TB
     classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
     classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-    class API,WS,ADMIN,HC interfaceLayer
+    class API,WS,ADMIN,Health interfaceLayer
     class UM,AUTH,KYC,SEC,AM,RISK,NOTY,AUDIT businessLayer
     class UD,KD,AD,LD,CA,MQP,EA,FS dataLayer
     class MY,RD,MQM,NC infraLayer

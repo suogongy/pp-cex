@@ -21,49 +21,70 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接口层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  REST API   │  │ WebSocket   │  │  Admin API  │ │ Health Check│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              业务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 订单管理     │  │ 撮合引擎     │  │ 成交管理     │  │ 交易对管理   │             │
-│  │Order Manager│ │Match Engine │ │Trade Manager│ │Pair Manager │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 手续费计算   │  │ 风控检查     │  │ 数据统计     │  │ 消息通知     │             │
-│  │Fee Calculator│ │Risk Service │ │Statistics   │ │Notify Service│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              数据层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 订单数据     │  │ 成交数据     │  │ 交易对数据   │  │ 统计数据     │             │
-│  │Order DAO    │ │Trade DAO    │ │Pair DAO     │ │Stats DAO    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 缓存访问     │  │ 消息生产     │  │ 外部服务     │  │ 订单簿存储   │             │
-│  │Cache Access │ │MQ Producer  │ │External API │ │Order Book   │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ MySQL数据库  │  │ Redis缓存    │  │ RocketMQ    │  │ Nacos配置   │             │
-│  │ Trade DB    │ │ Cache       │ │ Message     │ │ Config      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                             │
-│  │ 内存数据库   │  │ 分布式锁     │  │ 链路追踪     │                             │
-│  │ In-Memory   │ │Redis Lock   │ │SkyWalking  │                             │
-│  └─────────────┘  └─────────────┘  └─────────────┘                             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "接口层"
+        direction LR
+        INTERFACE[接口层]
+        API[REST API]
+        WS[WebSocket]
+        ADMIN[Admin API]
+        Health[健康检查]
+    end
+
+    subgraph "业务层"
+        direction LR
+        BUSINESS[业务层]
+        OM[订单管理<br>Order Manager]
+        ME[撮合引擎<br>Match Engine]
+        TM[成交管理<br>Trade Manager]
+        PM[交易对管理<br>Pair Manager]
+        FC[手续费计算<br>Fee Calculator]
+        RS[风控检查<br>Risk Service]
+        ST[数据统计<br>Statistics]
+        NS[消息通知<br>Notify Service]
+    end
+
+    subgraph "数据层"
+        direction LR
+        DATA[数据层]
+        OD[订单数据<br>Order DAO]
+        TD[成交数据<br>Trade DAO]
+        PD[交易对数据<br>Pair DAO]
+        SD[统计数据<br>Stats DAO]
+        CA[缓存访问<br>Cache Access]
+        MQP[消息生产<br>MQ Producer]
+        EA[外部服务<br>External API]
+        OB[订单簿存储<br>Order Book]
+    end
+
+    subgraph "基础设施"
+        direction LR
+        INFRA[基础设施]
+        MY[MySQL数据库<br>Trade DB]
+        RD[Redis缓存<br>Cache]
+        MQM[RocketMQ<br>Message]
+        NC[Nacos配置<br>Config]
+        IM[内存数据库<br>In-Memory]
+        RL[分布式锁<br>Redis Lock]
+        SW[链路追踪<br>SkyWalking]
+    end
+
+    %% 层级关系连接
+    INTERFACE --> BUSINESS
+    BUSINESS --> DATA
+    DATA --> INFRA
+
+    %% 样式定义
+    classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+
+    class API,WS,ADMIN,Health interfaceLayer
+    class OM,ME,TM,PM,FC,RS,ST,NS businessLayer
+    class OD,TD,PD,SD,CA,MQP,EA,OB dataLayer
+    class MY,RD,MQM,NC,IM,RL,SW infraLayer
 ```
 
 ### 2.2 技术栈

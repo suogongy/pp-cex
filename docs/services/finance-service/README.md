@@ -25,7 +25,7 @@
 ```mermaid
 graph TB
     subgraph "接口层"
-        direction LR
+        INTERFACE[接口层总节点]
         REST[REST API]
         WS[WebSocket]
         Admin[Admin API]
@@ -33,7 +33,7 @@ graph TB
     end
 
     subgraph "业务层"
-        direction LR
+        BUSINESS[业务层总节点]
         FM[财务管理<br>Finance Mgr]
         FS[流水统计<br>Flow Stats]
         RG[报表生成<br>Report Gen]
@@ -45,7 +45,7 @@ graph TB
     end
 
     subgraph "数据层"
-        direction LR
+        DATA[数据层总节点]
         FD[财务数据<br>Finance DAO]
         FLD[流水数据<br>Flow DAO]
         RD[报表数据<br>Report DAO]
@@ -57,7 +57,7 @@ graph TB
     end
 
     subgraph "基础设施"
-        direction LR
+        INFRA[基础设施总节点]
         DB[MySQL数据库<br>Finance DB]
         Cache[Redis缓存<br>Cache]
         MQ[RocketMQ<br>Message]
@@ -68,39 +68,21 @@ graph TB
         JS[任务调度<br>Job Scheduler]
     end
 
-    %% 层级连接
-    REST -.-> FM
-    WS -.-> FS
-    Admin -.-> RG
-    Health -.-> RS
-
-    FM --> FD
-    FS --> FLD
-    RG --> RD
-    RS --> MQP
-    RM --> CA
-    DA --> EA
-    EM --> FS2
-    AM --> SD
-
-    FD --> DB
-    FLD --> Cache
-    RD --> MQ
-    SD --> RL
-    CA --> SW
-    MQP --> JS
-    EA --> IDB
+    %% 简单层级连接
+    INTERFACE --> BUSINESS
+    BUSINESS --> DATA
+    DATA --> INFRA
 
     %% 样式定义
     classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
     classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
     classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
-    classDef infraLayer fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000
+    classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-    class REST,WS,Admin,Health interfaceLayer
-    class FM,FS,RG,RS,RM,DA,EM,AM businessLayer
-    class FD,FLD,RD,SD,CA,MQP,EA,FS2 dataLayer
-    class DB,Cache,MQ,NC,IDB,RL,SW,JS infraLayer
+    class INTERFACE,REST,WS,Admin,Health interfaceLayer
+    class BUSINESS,FM,FS,RG,RS,RM,DA,EM,AM businessLayer
+    class DATA,FD,FLD,RD,SD,CA,MQP,EA,FS2 dataLayer
+    class INFRA,DB,Cache,MQ,NC,IDB,RL,SW,JS infraLayer
 ```
 
 ### 2.2 技术栈

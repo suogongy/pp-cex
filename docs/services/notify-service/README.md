@@ -25,7 +25,7 @@
 ```mermaid
 graph TB
     subgraph "接口层"
-        direction LR
+        INTERFACE[接口层总节点]
         REST[REST API]
         WS[WebSocket]
         Admin[Admin API]
@@ -33,7 +33,7 @@ graph TB
     end
 
     subgraph "业务层"
-        direction LR
+        BUSINESS[业务层总节点]
         MM[消息管理<br>Message Mgr]
         CM[通道管理<br>Channel Mgr]
         TM[模板管理<br>Template Mgr]
@@ -45,7 +45,7 @@ graph TB
     end
 
     subgraph "数据层"
-        direction LR
+        DATA[数据层总节点]
         MD[消息数据<br>Message DAO]
         CD[通道数据<br>Channel DAO]
         TD[模板数据<br>Template DAO]
@@ -57,7 +57,7 @@ graph TB
     end
 
     subgraph "基础设施"
-        direction LR
+        INFRA[基础设施总节点]
         DB[MySQL数据库<br>Notify DB]
         Cache[Redis缓存<br>Cache]
         MQ[RocketMQ<br>Message]
@@ -68,39 +68,21 @@ graph TB
         MQC[消息队列<br>MQ Cluster]
     end
 
-    %% 层级连接
-    REST -.-> MM
-    WS -.-> CM
-    Admin -.-> TM
-    Health -.-> PM
-
-    MM --> MD
-    CM --> CD
-    TM --> TD
-    PM --> MQP
-    PMG --> CA
-    SM --> SD
-    TMG --> EA
-    DM --> FS
-
-    MD --> DB
-    CD --> Cache
-    TD --> MQ
-    SD --> RL
-    CA --> SW
-    MQP --> JS
-    EA --> MQC
+    %% 简单层级连接
+    INTERFACE --> BUSINESS
+    BUSINESS --> DATA
+    DATA --> INFRA
 
     %% 样式定义
     classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
     classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
     classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
-    classDef infraLayer fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000
+    classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-    class REST,WS,Admin,Health interfaceLayer
-    class MM,CM,TM,PM,PMG,SM,TMG,DM businessLayer
-    class MD,CD,TD,SD,CA,MQP,EA,FS dataLayer
-    class DB,Cache,MQ,NC,RL,SW,JS,MQC infraLayer
+    class INTERFACE,REST,WS,Admin,Health interfaceLayer
+    class BUSINESS,MM,CM,TM,PM,PMG,SM,TMG,DM businessLayer
+    class DATA,MD,CD,TD,SD,CA,MQP,EA,FS dataLayer
+    class INFRA,DB,Cache,MQ,NC,RL,SW,JS,MQC infraLayer
 ```
 
 ### 2.2 技术栈

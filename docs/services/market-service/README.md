@@ -25,7 +25,7 @@
 ```mermaid
 graph TB
     subgraph "接口层"
-        direction LR
+        INTERFACE[接口层总节点]
         API[REST API]
         WS[WebSocket]
         ADMIN[Admin API]
@@ -33,7 +33,7 @@ graph TB
     end
 
     subgraph "业务层"
-        direction LR
+        BUSINESS[业务层总节点]
         DC[行情采集<br>Data Collector]
         KH[K线处理<br>KLine Handler]
         DM[深度管理<br>Depth Manager]
@@ -45,7 +45,7 @@ graph TB
     end
 
     subgraph "数据层"
-        direction LR
+        DATA[数据层总节点]
         MD[行情数据<br>Market DAO]
         KD[K线数据<br>KLine DAO]
         DD[深度数据<br>Depth DAO]
@@ -57,7 +57,7 @@ graph TB
     end
 
     subgraph "基础设施"
-        direction LR
+        INFRA[基础设施总节点]
         MY[MySQL数据库<br>Market DB]
         RD[Redis缓存<br>Cache]
         MQM[RocketMQ<br>Message]
@@ -68,35 +68,10 @@ graph TB
         JS[任务调度<br>Job Scheduler]
     end
 
-    %% 接口层到业务层的连接
-    API -.-> DC
-    WS -.-> PM
-    ADMIN -.-> MM
-    HC -.-> SM
-
-    %% 业务层到数据层的连接
-    DC -.-> MD
-    KH -.-> KD
-    DM -.-> DD
-    SM -.-> SD
-    CM -.-> CA
-    SYM -.-> MQP
-    DC -.-> EA
-    SM -.-> IDB
-
-    %% 数据层到基础设施的连接
-    MD --> MY
-    KD --> MY
-    DD --> MY
-    SD --> MY
-    CA --> RD
-    MQP --> MQM
-    EA --> MY
-    IDB --> MY
-    DC --> WSC
-    SM --> RL
-    SYM --> SW
-    SM --> JS
+    %% 简单层级连接
+    INTERFACE --> BUSINESS
+    BUSINESS --> DATA
+    DATA --> INFRA
 
     %% 样式定义
     classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
@@ -104,10 +79,10 @@ graph TB
     classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
     classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-    class API,WS,ADMIN,HC interfaceLayer
-    class DC,KH,DM,PM,SM,CM,SYM,MM businessLayer
-    class MD,KD,DD,SD,CA,MQP,EA,IDB dataLayer
-    class MY,RD,MQM,NC,WSC,RL,SW,JS infraLayer
+    class INTERFACE,API,WS,ADMIN,HC interfaceLayer
+    class BUSINESS,DC,KH,DM,PM,SM,CM,SYM,MM businessLayer
+    class DATA,MD,KD,DD,SD,CA,MQP,EA,IDB dataLayer
+    class INFRA,MY,RD,MQM,NC,WSC,RL,SW,JS infraLayer
 ```
 
 ### 2.2 技术栈

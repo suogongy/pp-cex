@@ -22,110 +22,56 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-
 ```mermaid
-graph TD
-    direction TB
-
-    %% 接口层
+graph TB
     subgraph "接口层"
-        direction LR
+        INTERFACE[接口层总节点]
         REST[REST API]
         WS[WebSocket]
         Admin[Admin API]
         Health[Health Check]
     end
 
-    %% 业务层
     subgraph "业务层"
-        direction LR
-
-        subgraph "核心业务"
-            direction TB
-            MatchEngine[撮合引擎<br>Match Engine]
-            OrderBook[订单簿管理<br>OrderBook Mgr]
-            PriceDisc[价格发现<br>Price Disc]
-            TradeProc[成交处理<br>Trade Proc]
-        end
-
-        subgraph "支持业务"
-            direction TB
-            Algorithm[算法管理<br>Algorithm Mgr]
-            PerfOpt[性能优化<br>Perf Optimize]
-            Monitor[监控管理<br>Monitor Mgr]
-            Disaster[容灾管理<br>Disaster Mgr]
-        end
+        BUSINESS[业务层总节点]
+        MatchEngine[撮合引擎<br>Match Engine]
+        OrderBook[订单簿管理<br>OrderBook Mgr]
+        PriceDisc[价格发现<br>Price Disc]
+        TradeProc[成交处理<br>Trade Proc]
+        Algorithm[算法管理<br>Algorithm Mgr]
+        PerfOpt[性能优化<br>Perf Optimize]
+        Monitor[监控管理<br>Monitor Mgr]
+        Disaster[容灾管理<br>Disaster Mgr]
     end
 
-    %% 数据层
     subgraph "数据层"
-        direction LR
-
-        subgraph "数据访问"
-            direction TB
-            OrderDAO[订单数据<br>Order DAO]
-            TradeDAO[成交数据<br>Trade DAO]
-            OrderBookDAO[订单簿数据<br>OrderBook DAO]
-            StatsDAO[统计数据<br>Stats DAO]
-        end
-
-        subgraph "存储访问"
-            direction TB
-            MemoryDB[内存数据库<br>Memory DB]
-            Cache[缓存访问<br>Cache Access]
-            MQProducer[消息生产<br>MQ Producer]
-            ExternalAPI[外部服务<br>External API]
-        end
+        DATA[数据层总节点]
+        OrderDAO[订单数据<br>Order DAO]
+        TradeDAO[成交数据<br>Trade DAO]
+        OrderBookDAO[订单簿数据<br>OrderBook DAO]
+        StatsDAO[统计数据<br>Stats DAO]
+        MemoryDB[内存数据库<br>Memory DB]
+        Cache[缓存访问<br>Cache Access]
+        MQProducer[消息生产<br>MQ Producer]
+        ExternalAPI[外部服务<br>External API]
     end
 
-    %% 基础设施
     subgraph "基础设施"
-        direction LR
-
-        subgraph "数据存储"
-            direction TB
-            MySQL[MySQL数据库<br>Match DB]
-            Redis[Redis缓存<br>Cache]
-            RocketMQ[RocketMQ<br>Message]
-            Nacos[Nacos配置<br>Config]
-        end
-
-        subgraph "系统支持"
-            direction TB
-            MemoryCalc[内存计算<br>Memory Calc]
-            RedisLock[分布式锁<br>Redis Lock]
-            SkyWalking[链路追踪<br>SkyWalking]
-            Cluster[集群管理<br>Cluster Mgr]
-        end
+        INFRA[基础设施总节点]
+        MySQL[MySQL数据库<br>Match DB]
+        Redis[Redis缓存<br>Cache]
+        RocketMQ[RocketMQ<br>Message]
+        Nacos[Nacos配置<br>Config]
+        MemoryCalc[内存计算<br>Memory Calc]
+        RedisLock[分布式锁<br>Redis Lock]
+        SkyWalking[链路追踪<br>SkyWalking]
+        Cluster[集群管理<br>Cluster Mgr]
     end
 
-    %% 垂直连接线
-    REST -.-> MatchEngine
-    WS -.-> OrderBook
-    Admin -.-> Monitor
-    Health -.-> Disaster
-
-    MatchEngine -.-> OrderDAO
-    OrderBook -.-> OrderBookDAO
-    PriceDisc -.-> TradeDAO
-    TradeProc -.-> StatsDAO
-    Algorithm -.-> MemoryDB
-    PerfOpt -.-> Cache
-    Monitor -.-> MQProducer
-    Disaster -.-> ExternalAPI
-
-    OrderDAO -.-> MySQL
-    TradeDAO -.-> MySQL
-    OrderBookDAO -.-> Redis
-    StatsDAO -.-> Cache
-    MemoryDB -.-> MemoryCalc
-    Cache -.-> Redis
-    MQProducer -.-> RocketMQ
-    ExternalAPI -.-> Nacos
-    MySQL -.-> RedisLock
-    Redis -.-> SkyWalking
-    RocketMQ -.-> Cluster
-    Nacos -.-> Cluster
+    %% 简单层级连接
+    INTERFACE --> BUSINESS
+    BUSINESS --> DATA
+    DATA --> INFRA
 
     %% 样式定义
     classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
@@ -133,10 +79,10 @@ graph TD
     classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
     classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-    class REST,WS,Admin,Health interfaceLayer
-    class MatchEngine,OrderBook,PriceDisc,TradeProc,Algorithm,PerfOpt,Monitor,Disaster businessLayer
-    class OrderDAO,TradeDAO,OrderBookDAO,StatsDAO,MemoryDB,Cache,MQProducer,ExternalAPI dataLayer
-    class MySQL,Redis,RocketMQ,Nacos,MemoryCalc,RedisLock,SkyWalking,Cluster infraLayer
+    class INTERFACE,REST,WS,Admin,Health interfaceLayer
+    class BUSINESS,MatchEngine,OrderBook,PriceDisc,TradeProc,Algorithm,PerfOpt,Monitor,Disaster businessLayer
+    class DATA,OrderDAO,TradeDAO,OrderBookDAO,StatsDAO,MemoryDB,Cache,MQProducer,ExternalAPI dataLayer
+    class INFRA,MySQL,Redis,RocketMQ,Nacos,MemoryCalc,RedisLock,SkyWalking,Cluster infraLayer
 ```
 
 ### 2.2 技术栈

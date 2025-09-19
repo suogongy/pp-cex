@@ -26,14 +26,16 @@
 graph TB
     subgraph "接口层"
         direction LR
+        INTERFACE[接口层]
         API[REST API]
         WS[WebSocket]
         ADMIN[Admin API]
-        HC[Health Check]
+        Health[健康检查]
     end
 
     subgraph "业务层"
         direction LR
+        BUSINESS[业务层]
         WM[钱包管理<br>Wallet Mgr]
         DM[充值处理<br>Deposit Mgr]
         WDM[提现处理<br>Withdraw Mgr]
@@ -46,6 +48,7 @@ graph TB
 
     subgraph "数据层"
         direction LR
+        DATA[数据层]
         WD[钱包数据<br>Wallet DAO]
         DD[充值数据<br>Deposit DAO]
         WDD[提现数据<br>Withdraw DAO]
@@ -58,6 +61,7 @@ graph TB
 
     subgraph "基础设施"
         direction LR
+        INFRA[基础设施]
         MY[MySQL数据库<br>Wallet DB]
         RD[Redis缓存<br>Cache]
         MQM[RocketMQ<br>Message]
@@ -68,38 +72,10 @@ graph TB
         FS[文件存储<br>File Storage]
     end
 
-    %% 接口层到业务层的连接
-    API -.-> WM
-    WS -.-> SM
-    ADMIN -.-> SEC
-    HC -.-> MM
-
-    %% 业务层到数据层的连接
-    WM -.-> WD
-    DM -.-> DD
-    WDM -.-> WDD
-    SM -.-> WD
-    BC -.-> BCN
-    SEC -.-> WD
-    AM -.-> AD
-    MM -.-> WD
-    WM -.-> CA
-    DM -.-> MQP
-    WDM -.-> MQP
-    BC -.-> EA
-
-    %% 数据层到基础设施的连接
-    WD --> MY
-    DD --> MY
-    WDD --> MY
-    AD --> MY
-    CA --> RD
-    MQP --> MQM
-    EA --> MY
-    BCN --> NCN
-    WD --> RL
-    SM --> SW
-    AM --> FS
+    %% 层级关系连接
+    INTERFACE --> BUSINESS
+    BUSINESS --> DATA
+    DATA --> INFRA
 
     %% 样式定义
     classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
@@ -107,7 +83,7 @@ graph TB
     classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
     classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-    class API,WS,ADMIN,HC interfaceLayer
+    class API,WS,ADMIN,Health interfaceLayer
     class WM,DM,WDM,SM,BC,SEC,AM,MM businessLayer
     class WD,DD,WDD,AD,CA,MQP,EA,BCN dataLayer
     class MY,RD,MQM,NC,NCN,RL,SW,FS infraLayer

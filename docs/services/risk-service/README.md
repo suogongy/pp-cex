@@ -25,7 +25,7 @@
 ```mermaid
 graph TB
     subgraph "接口层"
-        direction LR
+        INTERFACE[接口层]
         REST[REST API]
         WS[WebSocket]
         Admin[Admin API]
@@ -33,7 +33,7 @@ graph TB
     end
 
     subgraph "业务层"
-        direction LR
+        BUSINESS[业务层]
         RM[风险监控<br>Risk Monitor]
         RE[规则引擎<br>Rule Engine]
         AD[异常检测<br>Anomaly Det]
@@ -45,7 +45,7 @@ graph TB
     end
 
     subgraph "数据层"
-        direction LR
+        DATA[数据层]
         RD[风险数据<br>Risk DAO]
         RUD[规则数据<br>Rule DAO]
         PD[策略数据<br>Policy DAO]
@@ -57,7 +57,7 @@ graph TB
     end
 
     subgraph "基础设施"
-        direction LR
+        INFRA[基础设施]
         DB[MySQL数据库<br>Risk DB]
         Cache[Redis缓存<br>Cache]
         MQ[RocketMQ<br>Message]
@@ -68,39 +68,21 @@ graph TB
         JS[任务调度<br>Job Scheduler]
     end
 
-    %% 层级连接
-    REST -.-> RM
-    WS -.-> RE
-    Admin -.-> AD
-    Health -.-> PM
-
-    RM --> RD
-    RE --> RUD
-    AD --> MLE
-    PM --> PD
-    AM --> MQP
-    RA --> CA
-    CR --> EA
-    AMG --> ADT
-
-    RD --> DB
-    RUD --> Cache
-    PD --> MQ
-    ADT --> RL
-    CA --> SW
-    MQP --> JS
-    EA --> IDB
+    %% 简单层级连接
+    INTERFACE --> BUSINESS
+    BUSINESS --> DATA
+    DATA --> INFRA
 
     %% 样式定义
     classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
     classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
     classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
-    classDef infraLayer fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000
+    classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
-    class REST,WS,Admin,Health interfaceLayer
-    class RM,RE,AD,PM,AM,RA,CR,AMG businessLayer
-    class RD,RUD,PD,ADT,CA,MQP,EA,MLE dataLayer
-    class DB,Cache,MQ,NC,IDB,RL,SW,JS infraLayer
+    class INTERFACE,REST,WS,Admin,Health interfaceLayer
+    class BUSINESS,RM,RE,AD,PM,AM,RA,CR,AMG businessLayer
+    class DATA,RD,RUD,PD,ADT,CA,MQP,EA,MLE dataLayer
+    class INFRA,DB,Cache,MQ,NC,IDB,RL,SW,JS infraLayer
 ```
 
 ### 2.2 技术栈
