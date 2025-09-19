@@ -22,49 +22,92 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接口层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  REST API   │  │ WebSocket   │  │  Admin API  │ │ Health Check│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              业务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 行情采集     │  │ K线处理     │  │ 深度管理     │  │ 实时推送     │             │
-│  │Data Collector│ │KLine Handler│ │Depth Manager│ │Push Manager │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 行情统计     │  │ 数据缓存     │  │ 数据同步     │  │ 监控管理     │             │
-│  │Stats Manager │ │Cache Manager │ │Sync Manager │ │Monitor Mgr  │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              数据层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 行情数据     │  │ K线数据     │  │ 深度数据     │  │ 统计数据     │             │
-│  │Market DAO   │ │KLine DAO    │ │Depth DAO    │ │Stats DAO    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 缓存访问     │  │ 消息生产     │  │ 外部服务     │  │ 时序数据库   │             │
-│  │Cache Access │ │MQ Producer  │ │External API │ │ InfluxDB    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ MySQL数据库  │  │ Redis缓存    │  │ RocketMQ    │  │ Nacos配置   │             │
-│  │ Market DB   │ │ Cache       │ │ Message     │ │ Config      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ WebSocket   │  │ 分布式锁     │  │ 链路追踪     │  │ 任务调度     │             │
-│  │ WebSocket   │ │Redis Lock   │ │SkyWalking  │ │Job Scheduler│           │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "接口层"
+        direction LR
+        API[REST API]
+        WS[WebSocket]
+        ADMIN[Admin API]
+        HC[Health Check]
+    end
+
+    subgraph "业务层"
+        direction LR
+        DC[行情采集<br>Data Collector]
+        KH[K线处理<br>KLine Handler]
+        DM[深度管理<br>Depth Manager]
+        PM[实时推送<br>Push Manager]
+        SM[行情统计<br>Stats Manager]
+        CM[数据缓存<br>Cache Manager]
+        SYM[数据同步<br>Sync Manager]
+        MM[监控管理<br>Monitor Mgr]
+    end
+
+    subgraph "数据层"
+        direction LR
+        MD[行情数据<br>Market DAO]
+        KD[K线数据<br>KLine DAO]
+        DD[深度数据<br>Depth DAO]
+        SD[统计数据<br>Stats DAO]
+        CA[缓存访问<br>Cache Access]
+        MQP[消息生产<br>MQ Producer]
+        EA[外部服务<br>External API]
+        IDB[时序数据库<br>InfluxDB]
+    end
+
+    subgraph "基础设施"
+        direction LR
+        MY[MySQL数据库<br>Market DB]
+        RD[Redis缓存<br>Cache]
+        MQM[RocketMQ<br>Message]
+        NC[Nacos配置<br>Config]
+        WSC[WebSocket<br>WebSocket]
+        RL[分布式锁<br>Redis Lock]
+        SW[链路追踪<br>SkyWalking]
+        JS[任务调度<br>Job Scheduler]
+    end
+
+    %% 接口层到业务层的连接
+    API -.-> DC
+    WS -.-> PM
+    ADMIN -.-> MM
+    HC -.-> SM
+
+    %% 业务层到数据层的连接
+    DC -.-> MD
+    KH -.-> KD
+    DM -.-> DD
+    SM -.-> SD
+    CM -.-> CA
+    SYM -.-> MQP
+    DC -.-> EA
+    SM -.-> IDB
+
+    %% 数据层到基础设施的连接
+    MD --> MY
+    KD --> MY
+    DD --> MY
+    SD --> MY
+    CA --> RD
+    MQP --> MQM
+    EA --> MY
+    IDB --> MY
+    DC --> WSC
+    SM --> RL
+    SYM --> SW
+    SM --> JS
+
+    %% 样式定义
+    classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+
+    class API,WS,ADMIN,HC interfaceLayer
+    class DC,KH,DM,PM,SM,CM,SYM,MM businessLayer
+    class MD,KD,DD,SD,CA,MQP,EA,IDB dataLayer
+    class MY,RD,MQM,NC,WSC,RL,SW,JS infraLayer
 ```
 
 ### 2.2 技术栈

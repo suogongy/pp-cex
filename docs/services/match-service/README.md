@@ -22,49 +22,121 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接口层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  REST API   │  │ WebSocket   │  │  Admin API  │ │ Health Check│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              业务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 撮合引擎     │  │ 订单簿管理   │  │ 价格发现     │  │ 成交处理     │             │
-│  │Match Engine │ │OrderBook Mgr │ │Price Disc   │ │Trade Proc   │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 算法管理     │  │ 性能优化     │  │ 监控管理     │  │ 容灾管理     │             │
-│  │Algorithm Mgr│ │Perf Optimize │ │Monitor Mgr  │ │Disaster Mgr │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              数据层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 订单数据     │  │ 成交数据     │  │ 订单簿数据   │  │ 统计数据     │             │
-│  │Order DAO    │ │Trade DAO    │ │OrderBook DAO│ │Stats DAO    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 内存数据库   │  │ 缓存访问     │  │ 消息生产     │  │ 外部服务     │             │
-│  │Memory DB    │ │Cache Access │ │MQ Producer  │ │External API │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ MySQL数据库  │  │ Redis缓存    │  │ RocketMQ    │  │ Nacos配置   │             │
-│  │ Match DB    │ │ Cache       │ │ Message     │ │ Config      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 内存计算     │  │ 分布式锁     │  │ 链路追踪     │  │ 集群管理     │             │
-│  │Memory Calc  │ │Redis Lock   │ │SkyWalking  │ │Cluster Mgr  │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+
+```mermaid
+graph TD
+    direction TB
+
+    %% 接口层
+    subgraph "接口层"
+        direction LR
+        REST[REST API]
+        WS[WebSocket]
+        Admin[Admin API]
+        Health[Health Check]
+    end
+
+    %% 业务层
+    subgraph "业务层"
+        direction LR
+
+        subgraph "核心业务"
+            direction TB
+            MatchEngine[撮合引擎<br>Match Engine]
+            OrderBook[订单簿管理<br>OrderBook Mgr]
+            PriceDisc[价格发现<br>Price Disc]
+            TradeProc[成交处理<br>Trade Proc]
+        end
+
+        subgraph "支持业务"
+            direction TB
+            Algorithm[算法管理<br>Algorithm Mgr]
+            PerfOpt[性能优化<br>Perf Optimize]
+            Monitor[监控管理<br>Monitor Mgr]
+            Disaster[容灾管理<br>Disaster Mgr]
+        end
+    end
+
+    %% 数据层
+    subgraph "数据层"
+        direction LR
+
+        subgraph "数据访问"
+            direction TB
+            OrderDAO[订单数据<br>Order DAO]
+            TradeDAO[成交数据<br>Trade DAO]
+            OrderBookDAO[订单簿数据<br>OrderBook DAO]
+            StatsDAO[统计数据<br>Stats DAO]
+        end
+
+        subgraph "存储访问"
+            direction TB
+            MemoryDB[内存数据库<br>Memory DB]
+            Cache[缓存访问<br>Cache Access]
+            MQProducer[消息生产<br>MQ Producer]
+            ExternalAPI[外部服务<br>External API]
+        end
+    end
+
+    %% 基础设施
+    subgraph "基础设施"
+        direction LR
+
+        subgraph "数据存储"
+            direction TB
+            MySQL[MySQL数据库<br>Match DB]
+            Redis[Redis缓存<br>Cache]
+            RocketMQ[RocketMQ<br>Message]
+            Nacos[Nacos配置<br>Config]
+        end
+
+        subgraph "系统支持"
+            direction TB
+            MemoryCalc[内存计算<br>Memory Calc]
+            RedisLock[分布式锁<br>Redis Lock]
+            SkyWalking[链路追踪<br>SkyWalking]
+            Cluster[集群管理<br>Cluster Mgr]
+        end
+    end
+
+    %% 垂直连接线
+    REST -.-> MatchEngine
+    WS -.-> OrderBook
+    Admin -.-> Monitor
+    Health -.-> Disaster
+
+    MatchEngine -.-> OrderDAO
+    OrderBook -.-> OrderBookDAO
+    PriceDisc -.-> TradeDAO
+    TradeProc -.-> StatsDAO
+    Algorithm -.-> MemoryDB
+    PerfOpt -.-> Cache
+    Monitor -.-> MQProducer
+    Disaster -.-> ExternalAPI
+
+    OrderDAO -.-> MySQL
+    TradeDAO -.-> MySQL
+    OrderBookDAO -.-> Redis
+    StatsDAO -.-> Cache
+    MemoryDB -.-> MemoryCalc
+    Cache -.-> Redis
+    MQProducer -.-> RocketMQ
+    ExternalAPI -.-> Nacos
+    MySQL -.-> RedisLock
+    Redis -.-> SkyWalking
+    RocketMQ -.-> Cluster
+    Nacos -.-> Cluster
+
+    %% 样式定义
+    classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+
+    class REST,WS,Admin,Health interfaceLayer
+    class MatchEngine,OrderBook,PriceDisc,TradeProc,Algorithm,PerfOpt,Monitor,Disaster businessLayer
+    class OrderDAO,TradeDAO,OrderBookDAO,StatsDAO,MemoryDB,Cache,MQProducer,ExternalAPI dataLayer
+    class MySQL,Redis,RocketMQ,Nacos,MemoryCalc,RedisLock,SkyWalking,Cluster infraLayer
 ```
 
 ### 2.2 技术栈

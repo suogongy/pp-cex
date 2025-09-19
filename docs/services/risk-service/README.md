@@ -22,49 +22,85 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接口层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  REST API   │  │ WebSocket   │  │  Admin API  │ │ Health Check│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              业务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 风险监控     │  │ 规则引擎     │  │ 异常检测     │  │ 策略管理     │             │
-│  │Risk Monitor │ │Rule Engine  │ │Anomaly Det  │ │Policy Mgr   │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 预警告警     │  │ 风险评估     │  │ 信用评级     │  │ 审计管理     │             │
-│  │Alert Mgr    │ │Risk Assess  │ │Credit Rating│ │Audit Mgr    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              数据层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 风险数据     │  │ 规则数据     │  │ 策略数据     │  │ 审计数据     │             │
-│  │Risk DAO     │ │Rule DAO     │ │Policy DAO   │ │Audit DAO    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 缓存访问     │  │ 消息生产     │  │ 外部服务     │  │ 机器学习     │             │
-│  │Cache Access │ │MQ Producer  │ │External API │ │ML Engine    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ MySQL数据库  │  │ Redis缓存    │  │ RocketMQ    │  │ Nacos配置   │             │
-│  │ Risk DB     │ │ Cache       │ │ Message     │ │ Config      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 时序数据库   │  │ 分布式锁     │  │ 链路追踪     │  │ 任务调度     │             │
-│  │ InfluxDB    │ │Redis Lock   │ │SkyWalking  │ │Job Scheduler│           │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "接口层"
+        direction LR
+        REST[REST API]
+        WS[WebSocket]
+        Admin[Admin API]
+        Health[Health Check]
+    end
+
+    subgraph "业务层"
+        direction LR
+        RM[风险监控<br>Risk Monitor]
+        RE[规则引擎<br>Rule Engine]
+        AD[异常检测<br>Anomaly Det]
+        PM[策略管理<br>Policy Mgr]
+        AM[预警告警<br>Alert Mgr]
+        RA[风险评估<br>Risk Assess]
+        CR[信用评级<br>Credit Rating]
+        AMG[审计管理<br>Audit Mgr]
+    end
+
+    subgraph "数据层"
+        direction LR
+        RD[风险数据<br>Risk DAO]
+        RUD[规则数据<br>Rule DAO]
+        PD[策略数据<br>Policy DAO]
+        ADT[审计数据<br>Audit DAO]
+        CA[缓存访问<br>Cache Access]
+        MQP[消息生产<br>MQ Producer]
+        EA[外部服务<br>External API]
+        MLE[机器学习<br>ML Engine]
+    end
+
+    subgraph "基础设施"
+        direction LR
+        DB[MySQL数据库<br>Risk DB]
+        Cache[Redis缓存<br>Cache]
+        MQ[RocketMQ<br>Message]
+        NC[Nacos配置<br>Config]
+        IDB[时序数据库<br>InfluxDB]
+        RL[分布式锁<br>Redis Lock]
+        SW[SkyWalking<br>链路追踪]
+        JS[任务调度<br>Job Scheduler]
+    end
+
+    %% 层级连接
+    REST -.-> RM
+    WS -.-> RE
+    Admin -.-> AD
+    Health -.-> PM
+
+    RM --> RD
+    RE --> RUD
+    AD --> MLE
+    PM --> PD
+    AM --> MQP
+    RA --> CA
+    CR --> EA
+    AMG --> ADT
+
+    RD --> DB
+    RUD --> Cache
+    PD --> MQ
+    ADT --> RL
+    CA --> SW
+    MQP --> JS
+    EA --> IDB
+
+    %% 样式定义
+    classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef infraLayer fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000
+
+    class REST,WS,Admin,Health interfaceLayer
+    class RM,RE,AD,PM,AM,RA,CR,AMG businessLayer
+    class RD,RUD,PD,ADT,CA,MQP,EA,MLE dataLayer
+    class DB,Cache,MQ,NC,IDB,RL,SW,JS infraLayer
 ```
 
 ### 2.2 技术栈

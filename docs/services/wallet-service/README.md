@@ -22,49 +22,95 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接口层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  REST API   │  │ WebSocket   │  │  Admin API  │ │ Health Check│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              业务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 钱包管理     │  │ 充值处理     │  │ 提现处理     │  │ 资产结算     │             │
-│  │Wallet Mgr   │ │Deposit Mgr  │ │Withdraw Mgr │ │Settlement Mgr│           │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 区块链交互   │  │ 安全管理     │  │ 地址管理     │  │ 监控告警     │             │
-│  │Blockchain   │ │Security Mgr │ │Address Mgr  │ │Monitor Mgr  │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              数据层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 钱包数据     │  │ 充值数据     │  │ 提现数据     │  │ 地址数据     │             │
-│  │Wallet DAO   │ │Deposit DAO  │ │Withdraw DAO │ │Address DAO  │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 缓存访问     │  │ 消息生产     │  │ 外部服务     │  │ 区块链节点   │             │
-│  │Cache Access │ │MQ Producer  │ │External API │ │Blockchain   │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ MySQL数据库  │  │ Redis缓存    │  │ RocketMQ    │  │ Nacos配置   │             │
-│  │ Wallet DB   │ │ Cache       │ │ Message     │ │ Config      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 区块链节点   │  │ 分布式锁     │  │ 链路追踪     │  │ 文件存储     │             │
-│  │ Node Client │ │Redis Lock   │ │SkyWalking  │ │File Storage │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "接口层"
+        direction LR
+        API[REST API]
+        WS[WebSocket]
+        ADMIN[Admin API]
+        HC[Health Check]
+    end
+
+    subgraph "业务层"
+        direction LR
+        WM[钱包管理<br>Wallet Mgr]
+        DM[充值处理<br>Deposit Mgr]
+        WDM[提现处理<br>Withdraw Mgr]
+        SM[资产结算<br>Settlement Mgr]
+        BC[区块链交互<br>Blockchain]
+        SEC[安全管理<br>Security Mgr]
+        AM[地址管理<br>Address Mgr]
+        MM[监控告警<br>Monitor Mgr]
+    end
+
+    subgraph "数据层"
+        direction LR
+        WD[钱包数据<br>Wallet DAO]
+        DD[充值数据<br>Deposit DAO]
+        WDD[提现数据<br>Withdraw DAO]
+        AD[地址数据<br>Address DAO]
+        CA[缓存访问<br>Cache Access]
+        MQP[消息生产<br>MQ Producer]
+        EA[外部服务<br>External API]
+        BCN[区块链节点<br>Blockchain]
+    end
+
+    subgraph "基础设施"
+        direction LR
+        MY[MySQL数据库<br>Wallet DB]
+        RD[Redis缓存<br>Cache]
+        MQM[RocketMQ<br>Message]
+        NC[Nacos配置<br>Config]
+        NCN[区块链节点<br>Node Client]
+        RL[分布式锁<br>Redis Lock]
+        SW[链路追踪<br>SkyWalking]
+        FS[文件存储<br>File Storage]
+    end
+
+    %% 接口层到业务层的连接
+    API -.-> WM
+    WS -.-> SM
+    ADMIN -.-> SEC
+    HC -.-> MM
+
+    %% 业务层到数据层的连接
+    WM -.-> WD
+    DM -.-> DD
+    WDM -.-> WDD
+    SM -.-> WD
+    BC -.-> BCN
+    SEC -.-> WD
+    AM -.-> AD
+    MM -.-> WD
+    WM -.-> CA
+    DM -.-> MQP
+    WDM -.-> MQP
+    BC -.-> EA
+
+    %% 数据层到基础设施的连接
+    WD --> MY
+    DD --> MY
+    WDD --> MY
+    AD --> MY
+    CA --> RD
+    MQP --> MQM
+    EA --> MY
+    BCN --> NCN
+    WD --> RL
+    SM --> SW
+    AM --> FS
+
+    %% 样式定义
+    classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+
+    class API,WS,ADMIN,HC interfaceLayer
+    class WM,DM,WDM,SM,BC,SEC,AM,MM businessLayer
+    class WD,DD,WDD,AD,CA,MQP,EA,BCN dataLayer
+    class MY,RD,MQM,NC,NCN,RL,SW,FS infraLayer
 ```
 
 ### 2.2 技术栈

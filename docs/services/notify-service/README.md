@@ -22,49 +22,85 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接口层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  REST API   │  │ WebSocket   │  │  Admin API  │ │ Health Check│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              业务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 消息管理     │  │ 通道管理     │  │ 模板管理     │  │ 推送管理     │             │
-│  │Message Mgr  │ │Channel Mgr  │ │Template Mgr │ │Push Mgr     │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 策略管理     │  │ 统计分析     │  │ 追踪管理     │  │ 投递管理     │             │
-│  │Policy Mgr   │ │Stats Mgr    │ │Track Mgr    │ │Delivery Mgr │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              数据层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 消息数据     │  │ 通道数据     │  │ 模板数据     │  │ 统计数据     │             │
-│  │Message DAO  │ │Channel DAO  │ │Template DAO │ │Stats DAO    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 缓存访问     │  │ 消息生产     │  │ 外部服务     │  │ 文件存储     │             │
-│  │Cache Access │ │MQ Producer  │ │External API │ │File Storage │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ MySQL数据库  │  │ Redis缓存    │  │ RocketMQ    │  │ Nacos配置   │             │
-│  │ Notify DB   │ │ Cache       │ │ Message     │ │ Config      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 分布式锁     │  │ 链路追踪     │  │ 任务调度     │  │ 消息队列     │             │
-│  │Redis Lock   │ │SkyWalking  │ │Job Scheduler│ │ MQ Cluster  │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "接口层"
+        direction LR
+        REST[REST API]
+        WS[WebSocket]
+        Admin[Admin API]
+        Health[Health Check]
+    end
+
+    subgraph "业务层"
+        direction LR
+        MM[消息管理<br>Message Mgr]
+        CM[通道管理<br>Channel Mgr]
+        TM[模板管理<br>Template Mgr]
+        PM[推送管理<br>Push Mgr]
+        PMG[策略管理<br>Policy Mgr]
+        SM[统计分析<br>Stats Mgr]
+        TMG[追踪管理<br>Track Mgr]
+        DM[投递管理<br>Delivery Mgr]
+    end
+
+    subgraph "数据层"
+        direction LR
+        MD[消息数据<br>Message DAO]
+        CD[通道数据<br>Channel DAO]
+        TD[模板数据<br>Template DAO]
+        SD[统计数据<br>Stats DAO]
+        CA[缓存访问<br>Cache Access]
+        MQP[消息生产<br>MQ Producer]
+        EA[外部服务<br>External API]
+        FS[文件存储<br>File Storage]
+    end
+
+    subgraph "基础设施"
+        direction LR
+        DB[MySQL数据库<br>Notify DB]
+        Cache[Redis缓存<br>Cache]
+        MQ[RocketMQ<br>Message]
+        NC[Nacos配置<br>Config]
+        RL[分布式锁<br>Redis Lock]
+        SW[SkyWalking<br>链路追踪]
+        JS[任务调度<br>Job Scheduler]
+        MQC[消息队列<br>MQ Cluster]
+    end
+
+    %% 层级连接
+    REST -.-> MM
+    WS -.-> CM
+    Admin -.-> TM
+    Health -.-> PM
+
+    MM --> MD
+    CM --> CD
+    TM --> TD
+    PM --> MQP
+    PMG --> CA
+    SM --> SD
+    TMG --> EA
+    DM --> FS
+
+    MD --> DB
+    CD --> Cache
+    TD --> MQ
+    SD --> RL
+    CA --> SW
+    MQP --> JS
+    EA --> MQC
+
+    %% 样式定义
+    classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef infraLayer fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000
+
+    class REST,WS,Admin,Health interfaceLayer
+    class MM,CM,TM,PM,PMG,SM,TMG,DM businessLayer
+    class MD,CD,TD,SD,CA,MQP,EA,FS dataLayer
+    class DB,Cache,MQ,NC,RL,SW,JS,MQC infraLayer
 ```
 
 ### 2.2 技术栈

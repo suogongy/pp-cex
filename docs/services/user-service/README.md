@@ -21,45 +21,88 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接口层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  REST API   │  │ WebSocket   │  │  Admin API  │  │ Health Check│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              业务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 用户管理     │  │ 认证授权     │  │ KYC认证     │  │ 安全管理     │             │
-│  │User Manager │ │Auth Service │ │KYC Service │ │Security Mgr │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 资产管理     │  │ 风控检查     │  │ 消息通知     │  │ 日志审计     │             │
-│  │Asset Manager │ │Risk Service │ │Notify Service│ │Audit Logger │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              数据层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 用户数据     │  │ KYC数据     │  │ 资产数据     │  │ 日志数据     │             │
-│  │User DAO     │ │KYC DAO      │ │Asset DAO    │ │Log DAO      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 缓存访问     │  │ 消息生产     │  │ 外部服务     │  │ 文件存储     │             │
-│  │Cache Access │ │MQ Producer  │ │External API │ │File Storage │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ MySQL数据库  │  │ Redis缓存    │  │ RocketMQ    │  │ Nacos配置   │             │
-│  │ User DB     │ │ Cache       │ │ Message     │ │ Config      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "接口层"
+        direction LR
+        API[REST API]
+        WS[WebSocket]
+        ADMIN[Admin API]
+        HC[Health Check]
+    end
+
+    subgraph "业务层"
+        direction LR
+        UM[用户管理<br>User Manager]
+        AUTH[认证授权<br>Auth Service]
+        KYC[KYC认证<br>KYC Service]
+        SEC[安全管理<br>Security Mgr]
+        AM[资产管理<br>Asset Manager]
+        RISK[风控检查<br>Risk Service]
+        NOTY[消息通知<br>Notify Service]
+        AUDIT[日志审计<br>Audit Logger]
+    end
+
+    subgraph "数据层"
+        direction LR
+        UD[用户数据<br>User DAO]
+        KD[KYC数据<br>KYC DAO]
+        AD[资产数据<br>Asset DAO]
+        LD[日志数据<br>Log DAO]
+        CA[缓存访问<br>Cache Access]
+        MQP[消息生产<br>MQ Producer]
+        EA[外部服务<br>External API]
+        FS[文件存储<br>File Storage]
+    end
+
+    subgraph "基础设施"
+        direction LR
+        MY[MySQL数据库<br>User DB]
+        RD[Redis缓存<br>Cache]
+        MQM[RocketMQ<br>Message]
+        NC[Nacos配置<br>Config]
+    end
+
+    %% 接口层到业务层的连接
+    API -.-> UM
+    WS -.-> AUTH
+    ADMIN -.-> SEC
+    HC -.-> AUDIT
+
+    %% 业务层到数据层的连接
+    UM -.-> UD
+    AUTH -.-> UD
+    KYC -.-> KD
+    SEC -.-> UD
+    AM -.-> AD
+    RISK -.-> UD
+    NOTY -.-> LD
+    AUDIT -.-> LD
+    AUTH -.-> CA
+    NOTY -.-> MQP
+    RISK -.-> EA
+    KYC -.-> FS
+
+    %% 数据层到基础设施的连接
+    UD --> MY
+    KD --> MY
+    AD --> MY
+    LD --> MY
+    CA --> RD
+    MQP --> MQM
+    EA --> MY
+    FS --> MY
+
+    %% 样式定义
+    classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+
+    class API,WS,ADMIN,HC interfaceLayer
+    class UM,AUTH,KYC,SEC,AM,RISK,NOTY,AUDIT businessLayer
+    class UD,KD,AD,LD,CA,MQP,EA,FS dataLayer
+    class MY,RD,MQM,NC infraLayer
 ```
 
 ### 2.2 技术栈

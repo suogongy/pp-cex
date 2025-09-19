@@ -22,49 +22,72 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接入层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  HTTP/HTTPS │  │ WebSocket   │  │  RPC接口    │ │ 健康检查     │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              网关层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 路由管理     │  │ 负载均衡     │  │ 认证授权     │  │ 限流熔断     │             │
-│  │Route Manager│ │Load Balance │ │Auth Manager │ │Rate Limit   │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 缓存管理     │  │ 日志管理     │  │ 监控管理     │  │ 配置管理     │             │
-│  │Cache Mgr    │ │Log Manager  │ │Monitor Mgr  │ │Config Mgr   │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              服务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 用户服务     │  │ 交易服务     │  │ 钱包服务     │  │ 财务服务     │             │
-│  │User Service │ │Trade Service│ │Wallet Service│  │Finance Service│           │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 行情服务     │  │ 风控服务     │  │ 通知服务     │  │ 撮合服务     │             │
-│  │Market Service│ │Risk Service │ │Notify Service│ │Match Service │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ Nacos注册    │  │ Redis缓存    │  │ RocketMQ    │  │ Sentinel     │             │
-│  │ Service Reg │ │ Cache       │ │ Message     │ │ Circuit      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 配置中心     │  │ 链路追踪     │  │ 监控告警     │  │ 日志收集     │             │
-│  │Config Center│ │SkyWalking  │ │Prometheus  │ │ELK Stack    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "接入层"
+        direction LR
+        ACCESS[接入层]
+        HTTP[HTTP/HTTPS]
+        WS[WebSocket]
+        RPC[RPC接口]
+        Health[健康检查]
+    end
+
+    subgraph "网关层"
+        direction LR
+        GATEWAY[网关层]
+        RM[路由管理<br>Route Manager]
+        LB[负载均衡<br>Load Balance]
+        AUTH[认证授权<br>Auth Manager]
+        RL[限流熔断<br>Rate Limit]
+        CM[缓存管理<br>Cache Mgr]
+        LM[日志管理<br>Log Manager]
+        MM[监控管理<br>Monitor Mgr]
+        CFG[配置管理<br>Config Mgr]
+    end
+
+    subgraph "服务层"
+        direction LR
+        SERVICE[服务层]
+        US[用户服务<br>User Service]
+        TS[交易服务<br>Trade Service]
+        WLS[钱包服务<br>Wallet Service]
+        FS[财务服务<br>Finance Service]
+        MKT[行情服务<br>Market Service]
+        RSK[风控服务<br>Risk Service]
+        NS[通知服务<br>Notify Service]
+        MS[撮合服务<br>Match Service]
+    end
+
+    subgraph "基础设施"
+        direction LR
+        INFRA[基础设施]
+        NC1[Nacos注册<br>Service Reg]
+        RD[Redis缓存<br>Cache]
+        MQ[RocketMQ<br>Message]
+        SENT[Sentinel<br>Circuit]
+        CC[配置中心<br>Config Center]
+        SW[SkyWalking<br>链路追踪]
+        PROM[Prometheus<br>监控告警]
+        ELK[ELK Stack<br>日志收集]
+        IDB[InfluxDB<br>时序数据库]
+    end
+
+    %% 层级关系连接
+    ACCESS --> GATEWAY
+    GATEWAY --> SERVICE
+    SERVICE --> INFRA
+
+    %% 样式定义
+    classDef accessLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef gatewayLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef serviceLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef infraLayer fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000
+
+    class HTTP,WS,RPC,Health accessLayer
+    class RM,LB,AUTH,RL,CM,LM,MM,CFG gatewayLayer
+    class US,TS,WLS,FS,MKT,RSK,NS,MS serviceLayer
+    class NC1,RD,MQ,SENT,CC,SW,PROM,ELK,IDB infraLayer
 ```
 
 ### 2.2 技术栈
@@ -784,7 +807,7 @@ graph TB
         MKT[行情服务]
         RS[风控服务]
         NS[通知服务]
-        MS[撮合服务]
+        MS2[撮合服务]
     end
 
     subgraph 基础设施
@@ -820,7 +843,7 @@ graph TB
     GW -.->|请求路由| MKT
     GW -.->|请求路由| RS
     GW -.->|请求路由| NS
-    GW -.->|请求路由| MS
+    GW -.->|请求路由| MS2
 
     GW -.->|服务发现| NC
     GW -.->|配置获取| NC
@@ -837,7 +860,7 @@ graph TB
     style MKT fill:#f8bbd0
     style RS fill:#e1bee7
     style NS fill:#c8e6c9
-    style MS fill:#d7ccc8
+    style MS2 fill:#d7ccc8
     style NC fill:#b3e5fc
     style R fill:#ffccbc
     style MQ fill:#dcedc8

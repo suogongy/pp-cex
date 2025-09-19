@@ -22,49 +22,85 @@
 ## 2. 技术架构
 
 ### 2.1 整体架构
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              接口层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │  REST API   │  │ WebSocket   │  │  Admin API  │ │ Health Check│             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              业务层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 财务管理     │  │ 流水统计     │  │ 报表生成     │  │ 收入结算     │             │
-│  │Finance Mgr  │ │Flow Stats   │ │Report Gen   │ │Revenue Settle│           │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 风控监控     │  │ 数据分析     │  │ 导出管理     │  │ 审计管理     │             │
-│  │Risk Monitor │ │Data Analysis│ │Export Mgr   │ │Audit Mgr    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              数据层                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 财务数据     │  │ 流水数据     │  │ 报表数据     │  │ 统计数据     │             │
-│  │Finance DAO  │ │Flow DAO     │ │Report DAO   │ │Stats DAO    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 缓存访问     │  │ 消息生产     │  │ 外部服务     │  │ 文件存储     │             │
-│  │Cache Access │ │MQ Producer  │ │External API │ │File Storage │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              基础设施                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ MySQL数据库  │  │ Redis缓存    │  │ RocketMQ    │  │ Nacos配置   │             │
-│  │ Finance DB  │ │ Cache       │ │ Message     │ │ Config      │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ 时序数据库   │  │ 分布式锁     │  │ 链路追踪     │  │ 任务调度     │             │
-│  │ InfluxDB    │ │Redis Lock   │ │SkyWalking  │ │Job Scheduler│           │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "接口层"
+        direction LR
+        REST[REST API]
+        WS[WebSocket]
+        Admin[Admin API]
+        Health[Health Check]
+    end
+
+    subgraph "业务层"
+        direction LR
+        FM[财务管理<br>Finance Mgr]
+        FS[流水统计<br>Flow Stats]
+        RG[报表生成<br>Report Gen]
+        RS[收入结算<br>Revenue Settle]
+        RM[风控监控<br>Risk Monitor]
+        DA[数据分析<br>Data Analysis]
+        EM[导出管理<br>Export Mgr]
+        AM[审计管理<br>Audit Mgr]
+    end
+
+    subgraph "数据层"
+        direction LR
+        FD[财务数据<br>Finance DAO]
+        FLD[流水数据<br>Flow DAO]
+        RD[报表数据<br>Report DAO]
+        SD[统计数据<br>Stats DAO]
+        CA[缓存访问<br>Cache Access]
+        MQP[消息生产<br>MQ Producer]
+        EA[外部服务<br>External API]
+        FS2[文件存储<br>File Storage]
+    end
+
+    subgraph "基础设施"
+        direction LR
+        DB[MySQL数据库<br>Finance DB]
+        Cache[Redis缓存<br>Cache]
+        MQ[RocketMQ<br>Message]
+        NC[Nacos配置<br>Config]
+        IDB[时序数据库<br>InfluxDB]
+        RL[分布式锁<br>Redis Lock]
+        SW[SkyWalking<br>链路追踪]
+        JS[任务调度<br>Job Scheduler]
+    end
+
+    %% 层级连接
+    REST -.-> FM
+    WS -.-> FS
+    Admin -.-> RG
+    Health -.-> RS
+
+    FM --> FD
+    FS --> FLD
+    RG --> RD
+    RS --> MQP
+    RM --> CA
+    DA --> EA
+    EM --> FS2
+    AM --> SD
+
+    FD --> DB
+    FLD --> Cache
+    RD --> MQ
+    SD --> RL
+    CA --> SW
+    MQP --> JS
+    EA --> IDB
+
+    %% 样式定义
+    classDef interfaceLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef businessLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef dataLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef infraLayer fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000
+
+    class REST,WS,Admin,Health interfaceLayer
+    class FM,FS,RG,RS,RM,DA,EM,AM businessLayer
+    class FD,FLD,RD,SD,CA,MQP,EA,FS2 dataLayer
+    class DB,Cache,MQ,NC,IDB,RL,SW,JS infraLayer
 ```
 
 ### 2.2 技术栈
