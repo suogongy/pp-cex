@@ -1,0 +1,47 @@
+[
+  {
+    "resource": "user-service",
+    "grade": 1,
+    "count": 0.3,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 0.8,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "trade-service",
+    "grade": 1,
+    "count": 0.5,
+    "timeWindow": 30,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "wallet-service",
+    "grade": 1,
+    "count": 0.2,
+    "timeWindow": 120,
+    "minRequestAmount": 3,
+    "slowRatioThreshold": 0.2,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "finance-service",
+    "grade": 1,
+    "count": 0.4,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "risk-service",
+    "grade": 1,
+    "count": 0.6,
+    "timeWindow": 30,
+    "minRequestAmount": 8,
+    "slowRatioThreshold": 0.7,
+    "statIntervalMs": 1000
+  }
+]

@@ -2,6 +2,8 @@ package com.ppcex.gateway.config;
 
 import com.alibaba.csp.sentinel.adapter.gateway.common.rule.GatewayFlowRule;
 import com.alibaba.csp.sentinel.adapter.gateway.common.rule.GatewayRuleManager;
+import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRule;
+import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRuleManager;
 import com.alibaba.csp.sentinel.adapter.gateway.sc.SentinelGatewayFilter;
 import com.alibaba.csp.sentinel.adapter.gateway.sc.callback.BlockRequestHandler;
 import com.alibaba.csp.sentinel.adapter.gateway.sc.callback.GatewayCallbackManager;
@@ -23,6 +25,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Sentinel配置类
@@ -90,6 +94,72 @@ public class SentinelConfig {
 
         GatewayRuleManager.loadRules(rules);
         log.info("Sentinel gateway rules loaded: {}", rules.size());
+
+        // 初始化熔断规则
+        initDegradeRules();
+    }
+
+    /**
+     * 初始化熔断规则
+     */
+    private void initDegradeRules() {
+        List<DegradeRule> rules = new ArrayList<>();
+
+        // 用户服务熔断规则
+        DegradeRule userRule = new DegradeRule("user-service")
+                .setGrade(1) // 异常比例熔断 (1: 异常比例, 0: 异常数)
+                .setCount(0.3) // 30%异常率触发熔断
+                .setTimeWindow(60) // 熔断持续时间60秒
+                .setMinRequestAmount(10) // 最小请求数
+                .setSlowRatioThreshold(0.8); // 慢调用比例80%
+
+        // 交易服务熔断规则
+        DegradeRule tradeRule = new DegradeRule("trade-service")
+                .setGrade(1)
+                .setCount(0.5) // 50%异常率触发熔断
+                .setTimeWindow(30) // 熔断持续时间30秒
+                .setMinRequestAmount(5)
+                .setSlowRatioThreshold(0.5);
+
+        // 钱包服务熔断规则
+        DegradeRule walletRule = new DegradeRule("wallet-service")
+                .setGrade(1)
+                .setCount(0.2) // 20%异常率触发熔断
+                .setTimeWindow(120) // 熔断持续时间120秒
+                .setMinRequestAmount(3)
+                .setSlowRatioThreshold(0.2);
+
+        // 财务服务熔断规则
+        DegradeRule financeRule = new DegradeRule("finance-service")
+                .setGrade(1)
+                .setCount(0.4) // 40%异常率触发熔断
+                .setTimeWindow(60) // 熔断持续时间60秒
+                .setMinRequestAmount(5)
+                .setSlowRatioThreshold(0.6);
+
+        // 风控服务熔断规则
+        DegradeRule riskRule = new DegradeRule("risk-service")
+                .setGrade(1)
+                .setCount(0.6) // 60%异常率触发熔断
+                .setTimeWindow(30) // 熔断持续时间30秒
+                .setMinRequestAmount(8)
+                .setSlowRatioThreshold(0.7);
+
+        // 行情服务不启用熔断，保证数据可用性
+        // DegradeRule marketRule = new DegradeRule("market-service")
+        //         .setGrade(1)
+        //         .setCount(0.8)
+        //         .setTimeWindow(10)
+        //         .setMinRequestAmount(20);
+
+        rules.add(userRule);
+        rules.add(tradeRule);
+        rules.add(walletRule);
+        rules.add(financeRule);
+        rules.add(riskRule);
+
+        DegradeRuleManager.loadRules(rules);
+        log.info("Sentinel degrade rules loaded: {}", rules.size());
     }
 
     /**

@@ -51,7 +51,7 @@ routes:
       - name: StripPrefix
         args:
           parts: 2
-      - name: CircuitBreaker
+      - name: Sentinel
         args:
           name: tradeServiceCircuitBreaker
           fallbackUri: forward:/fallback/trade

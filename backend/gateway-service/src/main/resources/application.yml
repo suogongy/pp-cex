@@ -17,6 +17,8 @@ spring:
       - optional:nacos:gateway-circuit-breaker.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
       - optional:nacos:gateway-cache.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
       - optional:nacos:common-config.yaml?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:sentinel-degrade-rules?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:sentinel-flow-rules?group=gateway-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
 
   cloud:
     nacos:
@@ -32,6 +34,29 @@ spring:
         namespace: d8a0e588-e615-448b-994c-0ad931c56808
         group: gateway-service
         file-extension: yaml
+    sentinel:
+      transport:
+        dashboard: localhost:8080
+        port: 8719
+        client-ip: localhost
+      eager: true
+      datasource:
+        ds1:
+          nacos:
+            server-addr: localhost:8848
+            namespace: d8a0e588-e615-448b-994c-0ad931c56808
+            group-id: gateway-service
+            data-id: sentinel-degrade-rules
+            rule-type: degrade
+            data-type: json
+        ds2:
+          nacos:
+            server-addr: localhost:8848
+            namespace: d8a0e588-e615-448b-994c-0ad931c56808
+            group-id: gateway-service
+            data-id: sentinel-flow-rules
+            rule-type: flow
+            data-type: json
 
     gateway:
       discovery:
@@ -57,10 +82,6 @@ spring:
             - Path=/api/v1/trade/**
           filters:
             - StripPrefix=2
-            - name: CircuitBreaker
-              args:
-                name: tradeServiceCircuitBreaker
-                fallbackUri: forward:/fallback/trade
 
         - id: wallet-service
           uri: lb://wallet-service
@@ -118,7 +139,7 @@ knife4j:
     enableHomeCustom: true
     homeCustomLocation: classpath:markdown/home.md
     enableAfterScript: true
-    enableSwaggerAuth: true
+    enableSwaggerAuth: false
   enableRequestCache: true
   enableHost: false
   openapi:

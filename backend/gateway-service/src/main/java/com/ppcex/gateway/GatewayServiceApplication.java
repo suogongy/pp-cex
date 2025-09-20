@@ -2,6 +2,8 @@ package com.ppcex.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
@@ -11,7 +13,13 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  * @author PPCEX Team
  * @version 1.0.0
  */
-@SpringBootApplication(scanBasePackages = "com.ppcex")
+@SpringBootApplication(
+    scanBasePackages = "com.ppcex",
+    exclude = {
+        ReactiveSecurityAutoConfiguration.class,
+        ReactiveUserDetailsServiceAutoConfiguration.class
+    }
+)
 @EnableDiscoveryClient
 @EnableConfigurationProperties
 public class GatewayServiceApplication {

@@ -1,233 +1,260 @@
 # =================================================================
-# 网关熔断配置 - Gateway Circuit Breaker Configuration
+# 网关熔断配置 - Sentinel Circuit Breaker Configuration
 # 服务名称: gateway-service
 # 配置组: gateway-service
 # 适用于: 所有环境的熔断配置
 # =================================================================
 
 # 熔断器总开关
-circuit-breaker:
+sentinel:
   enabled: true
-  default-strategy: resilience4j
-  fallback-strategy: forward
-  health-check-interval: 10s
-  state-cache-ttl: 60s
+  transport:
+    dashboard: localhost:8080 # Sentinel控制台地址
+    port: 8719 # Sentinel客户端端口
+  datasource:
+    ds1:
+      nacos:
+        server-addr: localhost:8848
+        namespace: d8a0e588-e615-448b-994c-0ad931c56808
+        group-id: gateway-service
+        data-id: sentinel-degrade-rules
+        rule-type: degrade
+        data-type: json
+    ds2:
+      nacos:
+        server-addr: localhost:8848
+        namespace: d8a0e588-e615-448b-994c-0ad931c56808
+        group-id: gateway-service
+        data-id: sentinel-flow-rules
+        rule-type: flow
+        data-type: json
 
-# 默认熔断配置
-default-config:
-  failure-rate-threshold: 50 # 50%失败率触发熔断
-  wait-duration-in-open-state: 30s # 熔断器打开状态持续时间
-  permitted-number-of-calls-in-half-open-state: 10 # 半开状态允许的调用次数
-  sliding-window-size: 20 # 滑动窗口大小
-  sliding-window-type: COUNT_BASED # 基于计数的滑动窗口
-  slow-call-duration-threshold: 5000ms # 慢调用阈值
-  slow-call-rate-threshold: 100 # 慢调用比例阈值
-  max-wait-duration-in-half-open-state: 0 # 半开状态最大等待时间
-  automatic-transition-from-open-to-half-open-enabled: true # 自动从打开状态转换到半开状态
+# 熔断降级规则
+degrade:
+  rules:
+    # 用户服务熔断规则
+    - resource: user-service
+      grade: 1 # 1: 异常比例熔断, 0: 异常数熔断
+      count: 0.3 # 30%异常率触发熔断
+      timeWindow: 60 # 熔断持续时间60秒
+      minRequestAmount: 10 # 最小请求数
+      slowRatioThreshold: 0.8 # 慢调用比例80%
+      statIntervalMs: 1000 # 统计时长(ms)
 
-# 服务熔断配置
-services:
-  user-service:
-    enabled: true
-    failure-rate-threshold: 30
-    wait-duration-in-open-state: 60s
-    permitted-number-of-calls-in-half-open-state: 10
-    sliding-window-size: 20
-    sliding-window-type: COUNT_BASED
-    slow-call-duration-threshold: 3000ms
-    slow-call-rate-threshold: 80
-    fallback-uri: forward:/fallback/user
-    retry-config:
-      max-attempts: 3
-      wait-duration: 1s
-      retry-exceptions:
-        - "java.io.IOException"
-        - "java.net.ConnectException"
+    # 交易服务熔断规则
+    - resource: trade-service
+      grade: 1
+      count: 0.5 # 50%异常率触发熔断
+      timeWindow: 30 # 熔断持续时间30秒
+      minRequestAmount: 5
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
 
-  trade-service:
-    enabled: true
-    failure-rate-threshold: 50
-    wait-duration-in-open-state: 30s
-    permitted-number-of-calls-in-half-open-state: 5
-    sliding-window-size: 10
-    sliding-window-type: COUNT_BASED
-    slow-call-duration-threshold: 2000ms
-    slow-call-rate-threshold: 50
-    fallback-uri: forward:/fallback/trade
-    retry-config:
-      max-attempts: 2
-      wait-duration: 500ms
-      retry-exceptions:
-        - "java.net.SocketTimeoutException"
-        - "org.springframework.web.client.ResourceAccessException"
+    # 钱包服务熔断规则
+    - resource: wallet-service
+      grade: 1
+      count: 0.2 # 20%异常率触发熔断
+      timeWindow: 120 # 熔断持续时间120秒
+      minRequestAmount: 3
+      slowRatioThreshold: 0.2
+      statIntervalMs: 1000
 
-  wallet-service:
-    enabled: true
-    failure-rate-threshold: 20
-    wait-duration-in-open-state: 120s
-    permitted-number-of-calls-in-half-open-state: 3
-    sliding-window-size: 10
-    sliding-window-type: COUNT_BASED
-    slow-call-duration-threshold: 1000ms
-    slow-call-rate-threshold: 20
-    fallback-uri: forward:/fallback/wallet
-    retry-config:
-      max-attempts: 1
-      wait-duration: 0
+    # 财务服务熔断规则
+    - resource: finance-service
+      grade: 1
+      count: 0.4 # 40%异常率触发熔断
+      timeWindow: 60 # 熔断持续时间60秒
+      minRequestAmount: 5
+      slowRatioThreshold: 0.6
+      statIntervalMs: 1000
 
-  finance-service:
-    enabled: true
-    failure-rate-threshold: 40
-    wait-duration-in-open-state: 60s
-    permitted-number-of-calls-in-half-open-state: 5
-    sliding-window-size: 15
-    sliding-window-type: COUNT_BASED
-    slow-call-duration-threshold: 5000ms
-    slow-call-rate-threshold: 60
-    fallback-uri: forward:/fallback/finance
-    retry-config:
-      max-attempts: 2
-      wait-duration: 2s
+    # 风控服务熔断规则
+    - resource: risk-service
+      grade: 1
+      count: 0.6 # 60%异常率触发熔断
+      timeWindow: 30 # 熔断持续时间30秒
+      minRequestAmount: 8
+      slowRatioThreshold: 0.7
+      statIntervalMs: 1000
 
-  market-service:
-    enabled: false # 行情服务不启用熔断，保证数据可用性
-    failure-rate-threshold: 80
-    wait-duration-in-open-state: 10s
-    permitted-number-of-calls-in-half-open-state: 20
-    sliding-window-size: 50
-    sliding-window-type: COUNT_BASED
-    slow-call-duration-threshold: 10000ms
-    slow-call-rate-threshold: 90
+# 限流规则
+flow:
+  rules:
+    # 用户服务限流规则
+    - resource: user-service
+      count: 1000 # QPS阈值
+      grade: 1 # QPS模式
+      controlBehavior: 0 # 直接拒绝
+      burst: 200 # 突发流量
+      maxQueueingTimeMs: 0
 
-  risk-service:
-    enabled: true
-    failure-rate-threshold: 60
-    wait-duration-in-open-state: 30s
-    permitted-number-of-calls-in-half-open-state: 8
-    sliding-window-size: 12
-    sliding-window-type: COUNT_BASED
-    slow-call-duration-threshold: 3000ms
-    slow-call-rate-threshold: 70
-    fallback-uri: forward:/fallback/risk
+    # 交易服务限流规则
+    - resource: trade-service
+      count: 500
+      grade: 1
+      controlBehavior: 0
+      burst: 100
+      maxQueueingTimeMs: 0
 
-# 熔断器状态监听
-state-listener:
+    # 钱包服务限流规则
+    - resource: wallet-service
+      count: 200
+      grade: 1
+      controlBehavior: 0
+      burst: 50
+      maxQueueingTimeMs: 0
+
+    # 行情服务限流规则
+    - resource: market-service
+      count: 5000
+      grade: 1
+      controlBehavior: 1 # 匀速排队
+      burst: 1000
+      maxQueueingTimeMs: 500
+
+    # 财务服务限流规则
+    - resource: finance-service
+      count: 300
+      grade: 1
+      controlBehavior: 0
+      burst: 50
+      maxQueueingTimeMs: 0
+
+    # 风控服务限流规则
+    - resource: risk-service
+      count: 800
+      grade: 1
+      controlBehavior: 0
+      burst: 100
+      maxQueueingTimeMs: 0
+
+# 系统保护规则
+system:
+  rules:
+    - resource: default
+      grade: 0 # CPU使用率
+      count: 70 # 70% CPU使用率触发系统保护
+      strategy: 0
+
+# 授权规则
+authority:
+  rules:
+    - resource: default
+      strategy: 0 # 白名单
+      limitApp: gateway-service
+
+# 热点参数限流规则
+param-flow:
+  rules:
+    - resource: user-service
+      count: 100
+      grade: 1
+      paramIdx: 0
+      paramFlowItemList:
+        - classType: java.lang.String
+          count: 50
+          object: "admin"
+
+# 熔断降级处理器配置
+fallback:
+  handlers:
+    # 用户服务降级处理器
+    - resource: user-service
+      class: com.ppcex.gateway.handler.UserFallbackHandler
+
+    # 交易服务降级处理器
+    - resource: trade-service
+      class: com.ppcex.gateway.handler.TradeFallbackHandler
+
+    # 钱包服务降级处理器
+    - resource: wallet-service
+      class: com.ppcex.gateway.handler.WalletFallbackHandler
+
+    # 财务服务降级处理器
+    - resource: finance-service
+      class: com.ppcex.gateway.handler.FinanceFallbackHandler
+
+    # 风控服务降级处理器
+    - resource: risk-service
+      class: com.ppcex.gateway.handler.RiskFallbackHandler
+
+# 监控配置
+metrics:
+  enabled: true
+  file:
+    single:
+      size: 10485760 # 10MB
+      maxTotalSize: 52428800 # 50MB
+      maxFileSize: 5242880 # 5MB
+    charset: UTF-8
+  log:
+    usePid: true
+    dir: logs/csp/
+    flushIntervalSec: 1
+
+# 日志配置
+log:
+  switchPid: true
+  dir: logs/sentinel/
+
+# 熔断状态监听
+listeners:
   enabled: true
   events:
-    - state-transition
-    - error
-    - success
-    - timeout
-    - not-permitted
+    - DEGRADE
+    - FLOW
+    - SYSTEM
+    - AUTHORITY
+    - PARAM_FLOW
 
-# 熔断器恢复策略
-recovery-strategy:
-  auto-recovery: true
-  recovery-check-interval: 30s
-  max-recovery-attempts: 3
-  recovery-wait-multiplier: 2.0
-
-# 熔断器监控配置
-monitoring:
-  enabled: true
-  metrics:
-    - state
-    - failure-rate
-    - success-rate
-    - slow-call-rate
-    - buffered-calls
-    - failed-calls
-    - success-calls
-    - not-permitted-calls
-  collect-interval: 10s
-  retention-hours: 24
-
-# 熔断器告警配置
-alerts:
+# 告警配置
+alert:
   enabled: true
   rules:
     - name: "circuit-breaker-open"
-      condition: "state == OPEN"
+      condition: "degrade_grade == 1"
+      threshold: 0.5
       duration: 300 # 持续5分钟
       severity: "high"
-      channels: ["email", "webhook", "sms"]
       message: "服务熔断器已打开，需要立即处理"
 
     - name: "high-failure-rate"
-      condition: "failure_rate > 0.8" # 超过80%失败率
+      condition: "exception_ratio > 0.8"
       duration: 180 # 持续3分钟
       severity: "medium"
-      channels: ["email", "webhook"]
       message: "服务失败率过高，可能触发熔断"
 
     - name: "slow-calls"
-      condition: "slow_call_rate > 0.6" # 超过60%慢调用
+      condition: "slow_ratio > 0.6"
       duration: 180
       severity: "medium"
-      channels: ["email"]
       message: "服务响应缓慢，可能影响用户体验"
 
-# 熔断器统计配置
-statistics:
-  enabled: true
-  window-size: 60 # 60秒统计窗口
-  sample-interval: 1s # 1秒采样间隔
-  metrics:
-    - total-calls
-    - successful-calls
-    - failed-calls
-    - slow-calls
-    - buffered-calls
-    - not-permitted-calls
-    - success-percentage
-    - failure-percentage
-    - slow-call-percentage
+# 熔断恢复策略
+recovery:
+  autoRecovery: true
+  checkInterval: 30s
+  maxRecoveryAttempts: 3
+  waitMultiplier: 2.0
 
-# 熔断器事件配置
-events:
+# 健康检查
+health:
   enabled: true
-  event-types:
-    - STATE_TRANSITION
-    - ERROR
-    - SUCCESS
-    - TIMEOUT
-    - NOT_PERMITTED
-  event-handlers:
-    - logging
-    - metrics
-    - alerting
-    - webhooks
-
-# 熔断器Webhook配置
-webhooks:
-  enabled: true
-  endpoints:
-    - url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
-      events: ["STATE_TRANSITION", "ERROR"]
-      format: "slack"
-
-    - url: "https://your-monitoring-system.com/webhook"
-      events: ["STATE_TRANSITION"]
-      format: "json"
-
-# 熔断器健康检查
-health-check:
-  enabled: true
-  check-interval: 30s
+  checkInterval: 30s
   timeout: 5s
   endpoints:
     - "/actuator/health"
     - "/api/v1/health"
     - "/health"
 
-# 熔断器测试配置
+# 测试配置
 testing:
   enabled: false # 生产环境应该关闭
-  test-endpoints:
-    - path: "/api/v1/test/circuit-breaker"
-      service: "test-service"
-      failure-rate: 0.8
-      duration: 60s
+  endpoints:
+    - path: "/api/v1/test/sentinel"
+      resource: "test-service"
+      count: 10
+      grade: 1
 
 # 环境特定配置注释
 # =================================================================
