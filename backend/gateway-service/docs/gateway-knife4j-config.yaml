@@ -1,23 +1,121 @@
-# =================================================================
-# Knife4j配置
-# Service: gateway-service
-# Environment: All
-# =================================================================
-
+# Knife4j 网关聚合配置
 knife4j:
+  # 开启增强配置
   enable: true
-  openapi:
-    title: PPCEX Gateway API
-    description: "PPCEX网关服务API文档"
-    email: admin@ppcex.com
-    concat: PPCEX Team
-    url: https://www.ppcex.com
-    version: v1.0
-    license: Apache 2.0
-    license-url: https://www.apache.org/licenses/LICENSE-2.0
-    terms-of-service-url: https://www.ppcex.com/terms
-  setting:
-    language: zh_cn
-    enable-version: true
-    enable-swagger-models: true
-    swagger-model-name: 实体类列表
+  # 开启生产环境屏蔽（生产环境建议关闭）
+  production: false
+  # 开启Swagger文档聚合
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    doc-expansion: list
+    filter: ""
+    display-request-duration: true
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  group-configs:
+    - group: '网关服务'
+      paths-to-match: '/api/**'
+      display-name: '网关服务'
+      packages-to-scan: com.ppcex.gateway.controller
+  gateway:
+    # 开启网关聚合
+    enabled: true
+    # 网关聚合策略
+    strategy: discover
+    # 服务发现类型
+    discover:
+      # 开启服务发现
+      enabled: true
+      # 服务发现版本（2:Spring Cloud Gateway）
+      version: gateway
+      # 服务名称排序方式
+      service-name-sort-asc: true
+      # 需要聚合的服务列表（留空表示聚合所有服务）
+      include-services:
+        - user-service
+        - trade-service
+        - wallet-service
+        - finance-service
+        - market-service
+        - risk-service
+        - notify-service
+        - match-service
+      # 排除的服务列表
+      exclude-services:
+        - gateway-service
+    # 聚合文档的排序方式
+    order: 1
+    # 聚合文档的标签
+    tags:
+      - name: 网关聚合文档
+        description: PPCEX网关聚合所有微服务的API文档
+
+# 网关路由配置
+spring:
+  cloud:
+    gateway:
+      routes:
+        # Knife4j文档路由
+        - id: knife4j-docs
+          uri: lb://gateway-service
+          predicates:
+            - Path=/doc.html,/doc.html/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+
+        # Swagger UI路由
+        - id: swagger-ui
+          uri: lb://gateway-service
+          predicates:
+            - Path=/swagger-ui,/swagger-ui/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+
+        # Swagger资源路由
+        - id: swagger-resources
+          uri: lb://gateway-service
+          predicates:
+            - Path=/swagger-resources,/swagger-resources/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+
+        # v3 API文档路由
+        - id: v3-api-docs
+          uri: lb://gateway-service
+          predicates:
+            - Path=/v3/api-docs,/v3/api-docs/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+
+        # WebJars路由
+        - id: webjars
+          uri: lb://gateway-service
+          predicates:
+            - Path=/webjars,/webjars/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+
+# 日志配置
+logging:
+  level:
+    com.github.xiaoymin.knife4j: DEBUG
+    com.ppcex.gateway.filter: DEBUG
+    org.springframework.cloud.gateway: DEBUG

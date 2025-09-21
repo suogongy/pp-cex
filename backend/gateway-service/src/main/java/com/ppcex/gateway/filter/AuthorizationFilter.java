@@ -38,13 +38,6 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
     private static final String PERMISSION_CACHE_PREFIX = "permission:user:";
     private static final String ROLE_PERMISSIONS_PREFIX = "role:permissions:";
 
-    // 免权限检查的路径
-    private static final List<String> PERMIT_ALL_PATHS = Arrays.asList(
-            "/api/v1/**",
-            "/actuator/**",
-            "/fallback/**"
-    );
-
     // API权限映射
     private static final Map<String, String> API_PERMISSION_MAP = new HashMap<>();
     static {

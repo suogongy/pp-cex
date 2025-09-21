@@ -50,19 +50,34 @@ public class LoggingFilter implements GlobalFilter, Ordered {
 
         long startTime = System.currentTimeMillis();
 
-        return chain.filter(mutatedExchange)
+        // 使用响应装饰器来添加响应头
+        ServerHttpResponseDecorator decoratedResponse = new ServerHttpResponseDecorator(response) {
+            @Override
+            public Mono<Void> writeWith(org.reactivestreams.Publisher<? extends DataBuffer> body) {
+                // 在写入响应体之前添加响应头
+                if (!getHeaders().containsKey("X-Trace-Id")) {
+                    getHeaders().add("X-Trace-Id", traceId);
+                }
+                if (!getHeaders().containsKey("X-Response-Time")) {
+                    getHeaders().add("X-Response-Time", String.valueOf(System.currentTimeMillis() - startTime));
+                }
+                return super.writeWith(body);
+            }
+        };
+
+        ServerWebExchange finalExchange = mutatedExchange.mutate()
+                .response(decoratedResponse)
+                .build();
+
+        return chain.filter(finalExchange)
                 .doOnSuccess(v -> {
                     long duration = System.currentTimeMillis() - startTime;
-                    logRequestSuccess(mutatedExchange, response, traceId, duration);
+                    logRequestSuccess(finalExchange, decoratedResponse, traceId, duration);
                 })
                 .doOnError(error -> {
                     long duration = System.currentTimeMillis() - startTime;
-                    logRequestError(mutatedExchange, traceId, duration, error);
-                })
-                .then(Mono.fromRunnable(() -> {
-                    response.getHeaders().add("X-Trace-Id", traceId);
-                    response.getHeaders().add("X-Response-Time", String.valueOf(System.currentTimeMillis() - startTime));
-                }));
+                    logRequestError(finalExchange, traceId, duration, error);
+                });
     }
 
     private void logRequestStart(ServerWebExchange exchange, String traceId) {
