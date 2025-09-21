@@ -1,0 +1,23 @@
+# =================================================================
+# Knife4j配置
+# Service: gateway-service
+# Environment: All
+# =================================================================
+
+knife4j:
+  enable: true
+  openapi:
+    title: PPCEX Gateway API
+    description: "PPCEX网关服务API文档"
+    email: admin@ppcex.com
+    concat: PPCEX Team
+    url: https://www.ppcex.com
+    version: v1.0
+    license: Apache 2.0
+    license-url: https://www.apache.org/licenses/LICENSE-2.0
+    terms-of-service-url: https://www.ppcex.com/terms
+  setting:
+    language: zh_cn
+    enable-version: true
+    enable-swagger-models: true
+    swagger-model-name: 实体类列表

@@ -1,0 +1,127 @@
+# =================================================================
+# Gateway路由配置
+# Service: gateway-service
+# Environment: All
+# =================================================================
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # 用户服务路由
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/user/api/v1/user/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=1
+
+        # 交易服务路由
+        - id: trade-service
+          uri: lb://trade-service
+          predicates:
+            - Path=/api/v1/trade/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 钱包服务路由
+        - id: wallet-service
+          uri: lb://wallet-service
+          predicates:
+            - Path=/api/v1/wallet/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 财务服务路由
+        - id: finance-service
+          uri: lb://finance-service
+          predicates:
+            - Path=/api/v1/finance/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 行情服务路由
+        - id: market-service
+          uri: lb://market-service
+          predicates:
+            - Path=/api/v1/market/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 风控服务路由
+        - id: risk-service
+          uri: lb://risk-service
+          predicates:
+            - Path=/api/v1/risk/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 通知服务路由
+        - id: notify-service
+          uri: lb://notify-service
+          predicates:
+            - Path=/api/v1/notify/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 撮合服务路由
+        - id: match-service
+          uri: lb://match-service
+          predicates:
+            - Path=/api/v1/match/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+              - "http://localhost:3000"
+              - "http://127.0.0.1:3000"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+
+# 网关配置
+gateway:
+  security:
+    # 免认证路径
+    permit-all:
+      - /api/v1/auth/**
+      - /api/v1/user/info
+      - /actuator/**
+      - /api/v1/market/**
+      - /fallback/**
+      - /doc.html
+      - /v3/api-docs/**
+    # IP白名单
+    ip-whitelist:
+      - 127.0.0.1
+      - 192.168.1.0/24
+  # 限流配置
+  rate-limit:
+    default-replenish-rate: 100
+    default-burst-capacity: 200
+    user-replenish-rate: 50
+    user-burst-capacity: 100
+    ip-replenish-rate: 200
+    ip-burst-capacity: 400
+  # 缓存配置
+  cache:
+    auth-ttl: 1800 # 30分钟
+    route-ttl: 300  # 5分钟
+    rate-limit-ttl: 60 # 1分钟
