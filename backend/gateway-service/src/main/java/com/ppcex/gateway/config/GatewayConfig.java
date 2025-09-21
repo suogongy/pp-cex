@@ -100,7 +100,7 @@ public class GatewayConfig {
         }
 
         public void setAuthTtl(int authTtl) {
-            this.authTtl = authTtl;
+            this.authTtl = validateTtl("authTtl", authTtl, 60, 86400); // 1分钟到24小时
         }
 
         public int getRouteTtl() {
@@ -108,7 +108,7 @@ public class GatewayConfig {
         }
 
         public void setRouteTtl(int routeTtl) {
-            this.routeTtl = routeTtl;
+            this.routeTtl = validateTtl("routeTtl", routeTtl, 60, 3600); // 1分钟到1小时
         }
 
         public int getRateLimitTtl() {
@@ -116,7 +116,20 @@ public class GatewayConfig {
         }
 
         public void setRateLimitTtl(int rateLimitTtl) {
-            this.rateLimitTtl = rateLimitTtl;
+            this.rateLimitTtl = validateTtl("rateLimitTtl", rateLimitTtl, 60, 3600); // 1分钟到1小时
+        }
+
+        /**
+         * 验证TTL值是否在合理范围内
+         */
+        private int validateTtl(String name, int value, int min, int max) {
+            if (value < min) {
+                throw new IllegalArgumentException(String.format("%s值%d秒小于最小值%d秒", name, value, min));
+            }
+            if (value > max) {
+                throw new IllegalArgumentException(String.format("%s值%d秒大于最大值%d秒", name, value, max));
+            }
+            return value;
         }
     }
 

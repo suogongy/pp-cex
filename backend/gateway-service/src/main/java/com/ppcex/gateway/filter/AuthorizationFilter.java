@@ -1,12 +1,13 @@
 package com.ppcex.gateway.filter;
 
+import com.alibaba.fastjson2.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AuthorizationFilter implements GlobalFilter, Ordered {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
     private final GatewayConfig gatewayConfig;
 
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
@@ -132,10 +133,10 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
     @SuppressWarnings("unchecked")
     private List<String> getUserRoles(String userId) {
         String key = "user:roles:" + userId;
-        Object roles = redisTemplate.opsForValue().get(key);
+        String roles = redisTemplate.opsForValue().get(key);
 
-        if (roles instanceof List) {
-            List<String> roleList = (List<String>) roles;
+        if (roles != null) {
+            List<String> roleList = JSON.parseArray(roles, String.class);
             log.debug("用户角色缓存命中 - 用户ID: {} 角色: {}", userId, roleList);
             return roleList;
         } else {
@@ -150,7 +151,8 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
 
         // 1. 检查用户个人权限
         String userPermissionKey = PERMISSION_CACHE_PREFIX + userId;
-        List<String> userPermissions = (List<String>) redisTemplate.opsForValue().get(userPermissionKey);
+        String userPermissionsStr = redisTemplate.opsForValue().get(userPermissionKey);
+        List<String> userPermissions = userPermissionsStr != null ? JSON.parseArray(userPermissionsStr, String.class) : null;
 
         if (userPermissions != null) {
             log.debug("用户个人权限缓存命中 - 用户ID: {} 权限: {}", userId, userPermissions);
@@ -165,7 +167,8 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
         // 2. 检查角色权限
         for (String role : userRoles) {
             String rolePermissionKey = ROLE_PERMISSIONS_PREFIX + role;
-            List<String> rolePermissions = (List<String>) redisTemplate.opsForValue().get(rolePermissionKey);
+            String rolePermissionsStr = redisTemplate.opsForValue().get(rolePermissionKey);
+            List<String> rolePermissions = rolePermissionsStr != null ? JSON.parseArray(rolePermissionsStr, String.class) : null;
 
             if (rolePermissions != null) {
                 log.debug("角色权限缓存命中 - 角色: {} 权限: {}", role, rolePermissions);

@@ -7,7 +7,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,20 +18,18 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import jakarta.annotation.PostConstruct;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class RateLimitFilter implements GlobalFilter, Ordered {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
     private final GatewayConfig gatewayConfig;
     private final GatewayConfig.RateLimit rateLimitConfig;
 
@@ -183,44 +181,56 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
 
     private boolean executeRateLimitScript(String key, int limit, int windowSeconds) {
         try {
-            log.debug("执行限流脚本 - Key: {}, Limit: {}, Window: {}s", key, limit, windowSeconds);
+            log.info("执行限流脚本 - Key: {}, Limit: {}, Window: {}s", key, limit, windowSeconds);
 
             // 参数验证
             if (key == null || key.trim().isEmpty()) {
-                log.warn("限流脚本参数无效 - Key为空");
+                log.error("限流脚本参数无效 - Key为空");
                 return true;
             }
 
-            if (limit <= 0 || windowSeconds <= 0) {
-                log.warn("限流脚本参数无效 - Limit: {}, Window: {}", limit, windowSeconds);
+            if (limit <= 0) {
+                log.error("限流脚本参数无效 - Limit值{}小于等于0", limit);
                 return true;
             }
+
+            if (windowSeconds <= 0) {
+                log.error("限流脚本参数无效 - Window值{}秒小于等于0", windowSeconds);
+                return true;
+            }
+
+            // 记录详细的参数信息用于调试
+            log.debug("限流参数详情 - Key类型: {}, Limit类型: {}, Window类型: {}, " +
+                     "Key长度: {}, Limit位数: {}, Window位数: {}",
+                     key.getClass().getSimpleName(),
+                     ((Object)limit).getClass().getSimpleName(),
+                     ((Object)windowSeconds).getClass().getSimpleName(),
+                     key.length(), String.valueOf(limit).length(), String.valueOf(windowSeconds).length());
 
             // 确保参数类型正确
             List<String> keys = Collections.singletonList(key);
-            List<String> args = Arrays.asList(String.valueOf(limit), String.valueOf(windowSeconds));
 
-            Long result = redisTemplate.execute(rateLimitScript, keys, args);
+            Long result = stringRedisTemplate.execute(rateLimitScript, keys, String.valueOf(limit), String.valueOf(windowSeconds));
 
-            log.debug("限流脚本执行结果 - Key: {}, Result: {}", key, result);
+            log.info("限流脚本执行结果 - Key: {}, Result: {}", key, result);
 
-            // 处理Lua脚本返回的错误码
-            if (result == null) {
-                log.warn("限流脚本返回null - Key: {}", key);
-                return true;
+            switch (result.intValue()) {
+                case -1:
+                    log.error("限流脚本参数错误 - Key为空或无效");
+                    return true;
+                case -2:
+                    log.error("限流脚本参数错误 - Limit({})或Window({})无效，请检查参数值和类型", limit, windowSeconds);
+                    return true;
+                case 0:
+                    log.debug("限流触发 - Key: {} 已达到限制", key);
+                    return false;
+                case 1:
+                    log.debug("限流通过 - Key: {} 允许请求", key);
+                    return true;
+                default:
+                    log.warn("限流脚本返回未知结果 - Key: {}, Result: {}", key, result);
+                    return true;
             }
-
-            if (result == -1) {
-                log.error("限流脚本参数错误 - Key为空");
-                return true;
-            }
-
-            if (result == -2) {
-                log.error("限流脚本参数错误 - Limit或Window无效: {}, {}", limit, windowSeconds);
-                return true;
-            }
-
-            return result > 0;
         } catch (Exception e) {
             log.error("限流脚本执行失败 - Key: {}, Limit: {}, Window: {}s, Error: {}",
                      key, limit, windowSeconds, e.getMessage(), e);

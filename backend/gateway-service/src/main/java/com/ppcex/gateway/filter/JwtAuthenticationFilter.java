@@ -1,5 +1,6 @@
 package com.ppcex.gateway.filter;
 
+import com.alibaba.fastjson2.JSON;
 import com.ppcex.gateway.config.GatewayConfig;
 import com.ppcex.gateway.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +9,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
     private final GatewayConfig gatewayConfig;
 
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
@@ -218,10 +219,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isUserActive(String userId) {
         String key = AUTH_CACHE_PREFIX + userId;
-        Object cached = redisTemplate.opsForValue().get(key);
+        String cached = redisTemplate.opsForValue().get(key);
 
         if (cached != null) {
-            boolean isActive = Boolean.TRUE.equals(cached);
+            boolean isActive = Boolean.parseBoolean(cached);
             log.debug("用户状态缓存命中 - 用户ID: {} 状态: {}", userId, isActive ? "活跃" : "禁用");
             return isActive;
         }
@@ -238,7 +239,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         userInfo.put("userId", userId);
         userInfo.put("username", username);
 
-        redisTemplate.opsForValue().set(key, userInfo,
+        redisTemplate.opsForValue().set(key, JSON.toJSONString(userInfo),
                 gatewayConfig.getCache().getAuthTtl(), TimeUnit.SECONDS);
         log.info("认证结果缓存成功 - 用户: {} ({}) - TTL: {}秒 - Key: {}",
                 username, userId, gatewayConfig.getCache().getAuthTtl(),

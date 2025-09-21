@@ -1,10 +1,11 @@
 package com.ppcex.gateway.service;
 
+import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -23,13 +24,13 @@ import java.util.concurrent.TimeUnit;
 public class HealthCheckService {
 
     private final DiscoveryClient discoveryClient;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
     private final RestTemplate restTemplate;
 
     // 初始化状态标志，防止重复初始化
     private volatile boolean initialized = false;
 
-    public HealthCheckService(DiscoveryClient discoveryClient, RedisTemplate<String, Object> redisTemplate, RestTemplate restTemplate) {
+    public HealthCheckService(DiscoveryClient discoveryClient, StringRedisTemplate redisTemplate, RestTemplate restTemplate) {
         this.discoveryClient = discoveryClient;
         this.redisTemplate = redisTemplate;
         this.restTemplate = restTemplate;
@@ -371,7 +372,7 @@ public class HealthCheckService {
         healthData.put("responseTime", responseTime);
         healthData.put("checkTime", System.currentTimeMillis());
 
-        redisTemplate.opsForValue().set(key, healthData, Duration.ofMinutes(5));
+        redisTemplate.opsForValue().set(key, JSON.toJSONString(healthData), Duration.ofMinutes(5));
     }
 
     /**
@@ -380,7 +381,7 @@ public class HealthCheckService {
     private void updateServiceStatusToCache() {
         serviceHealthCache.forEach((serviceId, health) -> {
             String key = SERVICE_STATUS_PREFIX + serviceId;
-            redisTemplate.opsForValue().set(key, health, Duration.ofMinutes(5));
+            redisTemplate.opsForValue().set(key, JSON.toJSONString(health), Duration.ofMinutes(5));
         });
     }
 

@@ -133,8 +133,8 @@ gateway:
     user-burst-capacity: 100
     ip-replenish-rate: 200
     ip-burst-capacity: 400
-  # 缓存配置
+  # 缓存配置 (单位：秒)
   cache:
-    auth-ttl: 1800 # 30分钟
-    route-ttl: 300  # 5分钟
-    rate-limit-ttl: 60 # 1分钟
+    auth-ttl: 1800
+    route-ttl: 300
+    rate-limit-ttl: 300

@@ -10,7 +10,7 @@ import org.springframework.cloud.gateway.route.RouteDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteDefinitionWriter;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
@@ -30,11 +30,10 @@ public class DynamicRouteService {
     private final RouteDefinitionWriter routeDefinitionWriter;
     private final RouteDefinitionLocator routeDefinitionLocator;
     private final ApplicationEventPublisher publisher;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
 
     private static final String ROUTE_CACHE_PREFIX = "gateway:route:";
     private static final String ROUTE_LIST_KEY = "gateway:routes:list";
-    private static final String ROUTE_LOCK_PREFIX = "gateway:route:lock:";
 
     // 路由配置缓存
     private final Map<String, RouteDefinition> routeCache = new ConcurrentHashMap<>();
@@ -192,7 +191,7 @@ public class DynamicRouteService {
      */
     public void loadRoutesFromCache() {
         try {
-            Object cached = redisTemplate.opsForValue().get(ROUTE_LIST_KEY);
+            Object cached = stringRedisTemplate.opsForValue().get(ROUTE_LIST_KEY);
             if (cached instanceof String) {
                 JSONArray routesArray = JSON.parseArray((String) cached);
                 for (int i = 0; i < routesArray.size(); i++) {
@@ -224,7 +223,7 @@ public class DynamicRouteService {
                 routesArray.add(routeJson);
             });
 
-            redisTemplate.opsForValue().set(ROUTE_LIST_KEY, routesArray.toJSONString(),
+            stringRedisTemplate.opsForValue().set(ROUTE_LIST_KEY, routesArray.toJSONString(),
                     Duration.ofMinutes(5));
 
             log.info("Saved {} routes to cache", routeCache.size());
@@ -263,7 +262,7 @@ public class DynamicRouteService {
         routeCache.put(definition.getId(), definition);
 
         String routeKey = ROUTE_CACHE_PREFIX + definition.getId();
-        redisTemplate.opsForValue().set(routeKey, JSON.toJSONString(definition),
+        stringRedisTemplate.opsForValue().set(routeKey, JSON.toJSONString(definition),
                 Duration.ofMinutes(5));
     }
 
@@ -274,7 +273,7 @@ public class DynamicRouteService {
         routeCache.remove(routeId);
 
         String routeKey = ROUTE_CACHE_PREFIX + routeId;
-        redisTemplate.delete(routeKey);
+        stringRedisTemplate.delete(routeKey);
     }
 
     /**
@@ -322,12 +321,12 @@ public class DynamicRouteService {
      */
     public void clearRouteCache() {
         routeCache.clear();
-        redisTemplate.delete(ROUTE_LIST_KEY);
+        stringRedisTemplate.delete(ROUTE_LIST_KEY);
 
         // 清理所有路由键
-        Set<String> keys = redisTemplate.keys(ROUTE_CACHE_PREFIX + "*");
+        Set<String> keys = stringRedisTemplate.keys(ROUTE_CACHE_PREFIX + "*");
         if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
+            stringRedisTemplate.delete(keys);
         }
 
         log.info("Route cache cleared");

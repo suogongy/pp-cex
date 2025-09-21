@@ -1,9 +1,10 @@
 package com.ppcex.gateway.service;
 
+import com.alibaba.fastjson2.JSON;
 import com.ppcex.gateway.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class JwtTokenService {
 
     private final JwtUtil jwtUtil;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
 
     private static final String TOKEN_BLACKLIST_PREFIX = "token:blacklist:";
     private static final String TOKEN_REFRESH_PREFIX = "token:refresh:";
@@ -56,7 +57,7 @@ public class JwtTokenService {
         refreshInfo.put("username", username);
         refreshInfo.put("createdAt", System.currentTimeMillis());
 
-        redisTemplate.opsForValue().set(refreshKey, refreshInfo, 7, TimeUnit.DAYS);
+        redisTemplate.opsForValue().set(refreshKey, JSON.toJSONString(refreshInfo), 7, TimeUnit.DAYS);
         log.info("刷新令牌缓存完成 - Key: {}", refreshKey.substring(0, Math.min(refreshKey.length(), 50)) + "...");
 
         log.info("刷新令牌生成成功 - 用户: {} ({})", username, userId);
@@ -157,11 +158,14 @@ public class JwtTokenService {
 
         // 检查刷新令牌是否在缓存中
         String refreshKey = TOKEN_REFRESH_PREFIX + refreshToken;
-        Object cached = redisTemplate.opsForValue().get(refreshKey);
+        String cached = redisTemplate.opsForValue().get(refreshKey);
         if (cached == null) {
             log.warn("刷新令牌不在缓存中 - Key: {}", refreshKey.substring(0, Math.min(refreshKey.length(), 50)) + "...");
             return false;
         }
+
+        // 解析JSON字符串为Map
+        Map<String, Object> refreshInfo = JSON.parseObject(cached, Map.class);
         log.info("刷新令牌缓存验证通过");
 
         log.info("刷新令牌验证成功");
@@ -301,7 +305,7 @@ public class JwtTokenService {
         sessionInfo.put("accessToken", token);
         sessionInfo.put("lastActivity", System.currentTimeMillis());
 
-        redisTemplate.opsForValue().set(sessionKey, sessionInfo, 1, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(sessionKey, JSON.toJSONString(sessionInfo), 1, TimeUnit.HOURS);
         log.info("用户会话缓存成功 - Key: {}", sessionKey);
     }
 
@@ -312,17 +316,17 @@ public class JwtTokenService {
         log.info("检查用户会话有效性 - 用户ID: {}", userId);
 
         String sessionKey = USER_SESSION_PREFIX + userId;
-        Object session = redisTemplate.opsForValue().get(sessionKey);
+        String session = redisTemplate.opsForValue().get(sessionKey);
 
-        if (session instanceof Map) {
-            Map<String, Object> sessionInfo = (Map<String, Object>) session;
+        if (session != null) {
+            Map<String, Object> sessionInfo = JSON.parseObject(session, Map.class);
             String cachedToken = (String) sessionInfo.get("accessToken");
 
             // 检查令牌是否匹配
             if (token.equals(cachedToken)) {
                 // 更新最后活动时间
                 sessionInfo.put("lastActivity", System.currentTimeMillis());
-                redisTemplate.opsForValue().set(sessionKey, sessionInfo, 1, TimeUnit.HOURS);
+                redisTemplate.opsForValue().set(sessionKey, JSON.toJSONString(sessionInfo), 1, TimeUnit.HOURS);
                 log.info("用户会话有效且已更新活动时间 - 用户ID: {}", userId);
                 return true;
             } else {
@@ -351,10 +355,10 @@ public class JwtTokenService {
      */
     public Map<String, Object> getUserSession(String userId) {
         String sessionKey = USER_SESSION_PREFIX + userId;
-        Object session = redisTemplate.opsForValue().get(sessionKey);
+        String session = redisTemplate.opsForValue().get(sessionKey);
 
-        if (session instanceof Map) {
-            return (Map<String, Object>) session;
+        if (session != null) {
+            return JSON.parseObject(session, Map.class);
         }
 
         return null;
@@ -374,10 +378,10 @@ public class JwtTokenService {
             log.info("发现 {} 个刷新令牌需要检查", refreshKeys.size());
 
             for (String key : refreshKeys) {
-                Object session = redisTemplate.opsForValue().get(key);
-                if (session instanceof Map) {
-                    Map<String, Object> refreshInfo = (Map<String, Object>) session;
-                    long createdAt = (Long) refreshInfo.get("createdAt");
+                String session = redisTemplate.opsForValue().get(key);
+                if (session != null) {
+                    Map<String, Object> refreshInfo = JSON.parseObject(session, Map.class);
+                    long createdAt = Long.parseLong(refreshInfo.get("createdAt").toString());
                     if (System.currentTimeMillis() - createdAt > 7 * 24 * 60 * 60 * 1000L) { // 7天
                         redisTemplate.delete(key);
                         cleanedCount++;
