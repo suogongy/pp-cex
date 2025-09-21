@@ -10,13 +10,13 @@ spring:
     nacos:
       discovery:
         enabled: true
-        server-addr: nacos:8848
+        server-addr: localhost:8848
         metadata:
           version: 1.0.0
           context-path: /
       config:
         enabled: true
-        server-addr: nacos:8848
+        server-addr: localhost:8848
         file-extension: yaml
 
     # 负载均衡配置
@@ -36,7 +36,7 @@ spring:
 # Sentinel配置
 spring.cloud.sentinel:
   transport:
-    dashboard: sentinel:8080
+    dashboard: localhost:8080
     port: 8719
   filter:
     enabled: true
@@ -49,15 +49,13 @@ spring.cloud.sentinel:
   datasource:
     ds1:
       nacos:
-        server-addr: nacos:8848
+        server-addr: localhost:8848
         dataId: sentinel-gateway-service-flow-rules.json
-        groupId: DEFAULT_GROUP
         rule-type: flow
     ds2:
       nacos:
-        server-addr: nacos:8848
+        server-addr: localhost:8848
         dataId: sentinel-gateway-service-degrade-rules.json
-        groupId: DEFAULT_GROUP
         rule-type: degrade
 
 # 暴露监控端点
@@ -75,10 +73,14 @@ management:
         enabled: true
 
 # JWT配置
-jwt:
-  secret: mySecretKey123456789
-  expiration: 86400000
-  refresh-expiration: 604800000
+cex:
+  # JWT 配置
+  jwt:
+    enabled: true
+    secret: your-jwt-secret-key-at-least-32-bytes-long-for-security
+    expiration: 86400000  # 24小时过期时间
+    refresh-expiration: 604800000  # 7天刷新token过期时间
+    issuer: PPCEX
 
 # 日志配置
 logging:

@@ -15,13 +15,13 @@ import java.util.Map;
 @Slf4j
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
+    @Value("${cex.jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration}")
+    @Value("${cex.jwt.expiration}")
     private Long expiration;
 
-    @Value("${jwt.refresh-expiration}")
+    @Value("${cex.jwt.refresh-expiration}")
     private Long refreshExpiration;
 
     private SecretKey getSigningKey() {

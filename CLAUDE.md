@@ -78,6 +78,69 @@ cd frontend && npm run dev
 - 数据库：使用Flyway管理数据库版本
 - 测试：单元测试覆盖率 > 80%
 
+## JWT认证架构
+
+### JWT实现架构
+项目中采用**两套JWT实现**的架构设计，分别服务于不同的场景：
+
+#### 1. Common模块JWT服务
+**文件位置**: `backend/common/src/main/java/com/ppcex/common/service/JwtService.java`
+
+**适用场景**: 传统Spring MVC微服务（user-service, trade-service, wallet-service等）
+
+**特点**:
+- 基于配置属性的条件注入：`@ConditionalOnProperty(name = "cex.jwt.enabled", havingValue = "true")`
+- 配置前缀：`cex.jwt`
+- 支持访问令牌和刷新令牌
+- 功能完备的JWT工具类
+
+**配置示例**:
+```yaml
+cex:
+  jwt:
+    enabled: true
+    secret: your-jwt-secret-key-at-least-32-bytes-long-for-security
+    expiration: 86400000  # 24小时
+    refresh-expiration: 604800000  # 7天
+    issuer: PPCEX
+```
+
+#### 2. Gateway-service JWT服务
+**文件位置**: `backend/gateway-service/src/main/java/com/ppcex/gateway/service/JwtTokenService.java`
+
+**适用场景**: 基于WebFlux的响应式网关服务
+
+**特点**:
+- 集成Redis缓存和会话管理
+- 支持令牌黑名单机制
+- 专门为网关设计的高性能认证服务
+- 统一配置前缀：`cex.jwt`
+
+**增强功能**:
+- 用户会话管理
+- 令牌黑名单机制
+- 分布式会话同步
+- 响应式编程支持
+
+### 统一配置管理
+两个实现都使用统一的配置前缀`cex.jwt`，确保配置的一致性：
+
+```yaml
+cex:
+  jwt:
+    enabled: true
+    secret: your-jwt-secret-key-at-least-32-bytes-long-for-security
+    expiration: 86400000  # 24小时过期时间
+    refresh-expiration: 604800000  # 7天刷新token过期时间
+    issuer: PPCEX
+```
+
+### 使用建议
+- **微服务层**: 使用common模块的JwtService
+- **网关层**: 使用gateway-service的JwtTokenService
+- **配置**: 统一使用`cex.jwt`前缀
+- **密钥**: 生产环境务必使用强密钥并妥善保管
+
 ## 核心功能模块
 
 ### 1. 用户系统

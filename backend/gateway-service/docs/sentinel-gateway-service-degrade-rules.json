@@ -1,0 +1,18 @@
+[
+  {
+    "resource": "/api/trade/**",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 0.5
+  },
+  {
+    "resource": "/api/wallet/**",
+    "grade": 0,
+    "count": 3,
+    "timeWindow": 30,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6
+  }
+]
