@@ -10,7 +10,7 @@ spring:
     sentinel:
       # Transport configuration
       transport:
-        dashboard: sentinel:8080
+        dashboard: localhost:8858
         port: 8719
         client-ip: ${spring.cloud.client.ip-address}
       eager: true
@@ -20,7 +20,7 @@ spring:
         # Flow control rules
         flow-rules:
           nacos:
-            server-addr: nacos:8848
+            server-addr: localhost:8848
             dataId: sentinel-wallet-service-flow-rules.json
             rule-type: flow
             data-type: json
@@ -28,7 +28,7 @@ spring:
         # Degrade rules
         degrade-rules:
           nacos:
-            server-addr: nacos:8848
+            server-addr: localhost:8848
             dataId: sentinel-wallet-service-degrade-rules.json
             rule-type: degrade
             data-type: json
@@ -36,7 +36,7 @@ spring:
         # System rules
         system-rules:
           nacos:
-            server-addr: nacos:8848
+            server-addr: localhost:8848
             dataId: sentinel-wallet-service-system-rules.json
             rule-type: system
             data-type: json
@@ -44,7 +44,7 @@ spring:
         # Authority rules
         authority-rules:
           nacos:
-            server-addr: nacos:8848
+            server-addr: localhost:8848
             dataId: sentinel-wallet-service-authority-rules.json
             rule-type: authority
             data-type: json

@@ -1,37 +1,217 @@
-# Wallet Service RocketMQ Configuration
+# =================================================================
+# RocketMQ Configuration
+# Service: wallet-service
+# Group: wallet-service
+# Environment: All
+# =================================================================
+
 spring:
   rocketmq:
-    name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
+    # NameServer configuration
+    name-server: localhost:9876
+
+    # Producer configuration
     producer:
       group: wallet-producer
       send-message-timeout: 3000
       retry-times-when-send-failed: 3
       retry-times-when-send-async-failed: 3
-    consumer:
-      listeners:
-        wallet-consumer:
-          group: wallet-consumer
-          topic: wallet-topic
-          selector-expression: "WALLET_RECHARGE || WALLET_WITHDRAW || WALLET_TRANSFER"
-          consume-thread-min: 20
-          consume-thread-max: 64
-          pull-batch-size: 32
-        asset-consumer:
-          group: asset-consumer
-          topic: asset-topic
-          selector-expression: "ASSET_CHANGE"
-          consume-thread-min: 20
-          consume-thread-max: 64
-          consume-mode: ORDERLY
+      max-message-size: 4194304  # 4MB
+      compress-message-body-threshold: 4096
+      retry-next-server: true
+      access-key:
+      secret-key:
+      enable-msg-trace: true
+      customized-tracker-topic: RMQ_SYS_TRACE_TOPIC
+      namespace:
 
-# 区块链配置
+    # Consumer configuration
+    consumer:
+      # Wallet transaction consumer
+      wallet-consumer:
+        group: wallet-consumer
+        topic: wallet-topic
+        selector-expression: "WALLET_RECHARGE || WALLET_WITHDRAW || WALLET_TRANSFER"
+        consume-thread-min: 20
+        consume-thread-max: 64
+        pull-batch-size: 32
+        consume-message-batch-max-size: 64
+        pull-interval: 3000
+        consume-timeout: 15
+        max-reconsume-times: 3
+        suspend-current-pull-time-millis: 1000
+        consume-orderly: false
+        message-consume-strategy: CONCURRENTLY
+
+      # Asset change consumer
+      asset-consumer:
+        group: asset-consumer
+        topic: asset-topic
+        selector-expression: "ASSET_CHANGE"
+        consume-thread-min: 20
+        consume-thread-max: 64
+        pull-batch-size: 32
+        consume-message-batch-max-size: 64
+        pull-interval: 3000
+        consume-timeout: 15
+        max-reconsume-times: 3
+        suspend-current-pull-time-millis: 1000
+        consume-orderly: true
+        message-consume-strategy: ORDERLY
+
+      # Blockchain transaction consumer
+      blockchain-consumer:
+        group: blockchain-consumer
+        topic: blockchain-topic
+        selector-expression: "BLOCKCHAIN_TRANSACTION"
+        consume-thread-min: 10
+        consume-thread-max: 32
+        pull-batch-size: 16
+        consume-message-batch-max-size: 32
+        pull-interval: 5000
+        consume-timeout: 30
+        max-reconsume-times: 5
+        suspend-current-pull-time-millis: 2000
+        consume-orderly: false
+        message-consume-strategy: CONCURRENTLY
+
+    # Stream configuration (Spring Cloud Stream)
+    stream:
+      rocketmq:
+        binder:
+          name-server: localhost:9876
+          group: wallet-service
+      bindings:
+        wallet-output:
+          destination: wallet-topic
+          producer:
+            group: wallet-producer
+            sync: false
+            compress-message-body: true
+        wallet-input:
+          destination: wallet-topic
+          consumer:
+            subscription: wallet-subscription
+            broadcasting: false
+            pull-mode: false
+        asset-output:
+          destination: asset-topic
+          producer:
+            group: asset-producer
+            sync: true
+        asset-input:
+          destination: asset-topic
+          consumer:
+            subscription: asset-subscription
+            broadcasting: false
+            pull-mode: false
+
+# Message topic configuration
+message-topics:
+  wallet:
+    name: wallet-topic
+    read-queue-nums: 8
+    write-queue-nums: 8
+    perm: 6
+    order: false
+    attributes:
+      business-type: wallet
+      service-name: wallet-service
+  asset:
+    name: asset-topic
+    read-queue-nums: 4
+    write-queue-nums: 4
+    perm: 6
+    order: false
+    attributes:
+      business-type: asset
+      service-name: wallet-service
+  blockchain:
+    name: blockchain-topic
+    read-queue-nums: 4
+    write-queue-nums: 4
+    perm: 6
+    order: false
+    attributes:
+      business-type: blockchain
+      service-name: wallet-service
+
+# Message trace configuration
+message-trace:
+  enabled: true
+  topic: RMQ_SYS_TRACE_TOPIC
+  dispatcher-type: DIRECT
+  access-key:
+  secret-key:
+  normalized-topic: true
+
+# Transaction message configuration
+transaction:
+  enabled: true
+  check-immunity-time: 6000  # 事务消息检查间隔（毫秒）
+  transaction-timeout: 60000   # 事务消息超时时间（毫秒）
+  check-thread-max: 10         # 最大检查线程数
+  min-check-thread: 1          # 最小检查线程数
+
+# Blockchain configuration (integrated with RocketMQ messages)
 blockchain:
   ethereum:
-    rpc-url: ${ETH_RPC_URL:https://mainnet.infura.io/v3/YOUR_PROJECT_ID}
+    rpc-url: https://mainnet.infura.io/v3/YOUR_PROJECT_ID
     chain-id: 1
     gas-limit: 21000
     gas-price: 20000000000
+    confirmations-required: 12
+    transaction-timeout: 1800000  # 30 minutes
   tron:
-    rpc-url: ${TRON_RPC_URL:https://api.trongrid.io}
+    rpc-url: https://api.trongrid.io
     chain-id: 1
     fee-limit: 1000000
+    confirmations-required: 19
+    transaction-timeout: 1800000  # 30 minutes
+  bitcoin:
+    rpc-url: http://localhost:8332
+    rpc-username: bitcoinrpc
+    rpc-password: bitcoinrpcpassword
+    confirmations-required: 6
+    transaction-timeout: 3600000  # 60 minutes
+
+# Message monitoring configuration
+message-monitor:
+  enabled: true
+  interval: 60  # 监控间隔（秒）
+  metrics:
+    - message_count
+    - message_delay
+    - message_size
+    - consumer_lag
+    - producer_success_rate
+    - consumer_success_rate
+    - message_retry_count
+    - message_error_count
+
+# Dead letter queue configuration
+dead-letter:
+  enabled: true
+  topic: "%DLQ%wallet-service"
+  max-retry-times: 3
+  retry-interval: 300000  # 5 minutes
+  ttl: 86400000  # 24 hours
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (rocketmq-config-dev.yaml):
+# - spring.rocketmq.name-server: dev-rocketmq:9876
+# - blockchain.ethereum.rpc-url: https://goerli.infura.io/v3/YOUR_PROJECT_ID
+#
+# 测试环境 (rocketmq-config-test.yaml):
+# - spring.rocketmq.name-server: test-rocketmq-cluster:9876
+# - blockchain.ethereum.rpc-url: https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+#
+# 生产环境 (rocketmq-config-prod.yaml):
+# - spring.rocketmq.name-server: prod-rocketmq-cluster:9876
+# - spring.rocketmq.producer.access-key: ${ROCKETMQ_ACCESS_KEY}
+# - spring.rocketmq.producer.secret-key: ${ROCKETMQ_SECRET_KEY}
+# - blockchain.ethereum.rpc-url: ${ETH_RPC_URL}
+# =================================================================

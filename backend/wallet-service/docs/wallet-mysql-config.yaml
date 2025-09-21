@@ -1,14 +1,128 @@
-# Wallet Service MySQL Configuration
+# =================================================================
+# MySQL 数据库配置 - MySQL Database Configuration
+# 服务名称: wallet-service
+# 配置组: wallet-service
+# 适用于: 所有环境的MySQL配置
+# =================================================================
+
+# 数据源配置
 spring:
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/wallet_db?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: ${MYSQL_USERNAME:root}
-    password: ${MYSQL_PASSWORD:password}
+    # 基础连接配置
     driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ppcex_wallet?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&maxReconnects=3
+    username: root
+    password: root123
+
+    # HikariCP 连接池配置
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 10
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      # 基础配置
+      pool-name: WalletServiceHikariCP
+      connection-timeout: 30000        # 连接超时时间（毫秒）
+      validation-timeout: 5000        # 验证超时时间（毫秒）
+      idle-timeout: 600000             # 空闲连接超时时间（毫秒）
+      max-lifetime: 1800000            # 连接最大生命周期（毫秒）
+      leak-detection-threshold: 60000 # 连接泄漏检测阈值（毫秒）
+
+      # 连接池大小配置
+      minimum-idle: 10                 # 最小空闲连接数
+      maximum-pool-size: 50           # 最大连接池大小
+
+      # 连接测试配置
       connection-test-query: SELECT 1
+      connection-init-sql: SET NAMES utf8mb4
+
+      # 性能优化配置
+      register-mbeans: true
+      allow-pool-suspension: false
+      read-only: false
+      isolate-internal-queries: false
+
+  # MyBatis Plus 配置
+  mybatis-plus:
+    # 基础配置
+    mapper-locations: classpath:mapper/*.xml
+    type-aliases-package: com.ppcex.wallet.entity
+
+    # 配置项
+    configuration:
+      map-underscore-to-camel-case: true    # 下划线转驼峰
+      cache-enabled: true                   # 启用缓存
+      lazy-loading-enabled: true            # 延迟加载
+      multiple-result-sets-enabled: true     # 多结果集
+      use-column-label: true                # 使用列标签
+      use-generated-keys: false             # 使用生成键
+      auto-mapping-behavior: partial        # 自动映射行为
+      default-statement-timeout: 25000     # 默认语句超时
+      call-setters-on-nulls: false          # 空值调用setter
+      return-instance-for-empty-row: false # 空行返回实例
+
+      # 日志配置
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+      # 执行器类型
+      default-executor-type: reuse
+
+      # 本地缓存配置
+      local-cache-scope: statement
+
+    # 全局配置
+    global-config:
+      db-config:
+        id-type: auto                      # ID生成策略
+        table-underline: true              # 表名下划线
+        logic-delete-field: deleted        # 逻辑删除字段
+        logic-delete-value: 1              # 逻辑删除值
+        logic-not-delete-value: 0          # 逻辑未删除值
+        table-prefix: ""                   # 表名前缀
+        capital-mode: false                # 是否大写命名
+        db-type: mysql                     # 数据库类型
+
+      # 配置项
+      banner: false                        # 是否打印banner
+      enable-sql-runner: false             # 是否启用sql runner
+
+# 数据库健康检查
+datasource-health:
+  enabled: true
+  timeout: 3000
+  check-query: SELECT 1
+  expected-result: 1
+
+# 数据库监控配置
+datasource-monitor:
+  enabled: true
+  interval: 60  # 监控间隔（秒）
+  metrics:
+    - active_connections
+    - idle_connections
+    - total_connections
+    - threads_connections
+    - max_used_connections
+    - connection_errors_max_connections
+    - connection_errors_select
+    - connection_errors_timeout
+    - slow_queries
+    - questions
+    - uptime
+
+# 环境特定配置注释
+# =================================================================
+# 不同环境需要覆盖的配置示例：
+#
+# 开发环境 (mysql-config-dev.yaml):
+# - spring.datasource.url: jdbc:mysql://dev-mysql:3306/wallet_db_dev?...
+# - spring.datasource.username: dev_user
+# - spring.datasource.password: dev_password
+#
+# 测试环境 (mysql-config-test.yaml):
+# - spring.datasource.url: jdbc:mysql://test-mysql:3306/wallet_db_test?...
+# - spring.datasource.username: test_user
+# - spring.datasource.password: test_password
+#
+# 生产环境 (mysql-config-prod.yaml):
+# - spring.datasource.url: jdbc:mysql://prod-mysql:3306/wallet_db?...
+# - spring.datasource.username: ${DB_USERNAME}
+# - spring.datasource.password: ${DB_PASSWORD}
+# - spring.datasource.hikari.maximum-pool-size: 100
+# =================================================================

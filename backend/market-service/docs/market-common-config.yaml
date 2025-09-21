@@ -167,6 +167,44 @@ security:
     api-limits:
       "/market/api/v1/market/ticker/*": 1000  # 行情接口限流
       "/market/api/v1/market/klines": 2000   # K线接口限流
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+      export:
+        prometheus:
+          enabled: true
+    info:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+    web:
+      server:
+        request:
+          autotime:
+            enabled: true
       "/market/api/v1/market/trades": 1000   # 成交接口限流
       "/market/api/v1/market/depth": 2000   # 深度接口限流
       "/market/api/v1/pairs": 500           # 交易对接口限流

@@ -45,3 +45,62 @@ knife4j:
     language: zh_cn
     enable-swagger-models: true
     swagger-model-name: 实体类列表
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+      export:
+        prometheus:
+          enabled: true
+    info:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+    web:
+      server:
+        request:
+          autotime:
+            enabled: true
+
+# 安全配置
+security:
+  # 允许匿名访问的路径
+  permit-all:
+    - /notify/api/v1/public/**
+    - /notify/doc.html
+    - /notify/swagger-ui/**
+    - /notify/v3/api-docs/**
+    - /notify/actuator/**
+    - /notify/favicon.ico
+    - /notify/error
+
+  # 跨域配置
+  cors:
+    allowed-origins: ["*"]
+    allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed-headers: ["*"]
+    exposed-headers: ["Authorization", "Content-Disposition"]
+    allow-credentials: true
+    max-age: 3600
