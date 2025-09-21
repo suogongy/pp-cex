@@ -108,6 +108,92 @@ spring:
           filters:
             - StripPrefix=2
 
+        # OpenAPI文档聚合路由 - 为每个微服务添加文档路由
+        - id: user-service-docs
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/v3/api-docs/**
+          filters:
+            - StripPrefix=1
+
+        - id: trade-service-docs
+          uri: lb://trade-service
+          predicates:
+            - Path=/trade-service/v3/api-docs/**
+          filters:
+            - StripPrefix=1
+
+        - id: wallet-service-docs
+          uri: lb://wallet-service
+          predicates:
+            - Path=/wallet-service/v3/api-docs/**
+          filters:
+            - StripPrefix=1
+
+        - id: finance-service-docs
+          uri: lb://finance-service
+          predicates:
+            - Path=/finance-service/v3/api-docs/**
+          filters:
+            - StripPrefix=1
+
+        - id: market-service-docs
+          uri: lb://market-service
+          predicates:
+            - Path=/market-service/v3/api-docs/**
+          filters:
+            - StripPrefix=1
+
+        - id: risk-service-docs
+          uri: lb://risk-service
+          predicates:
+            - Path=/risk-service/v3/api-docs/**
+          filters:
+            - StripPrefix=1
+
+        - id: notify-service-docs
+          uri: lb://notify-service
+          predicates:
+            - Path=/notify-service/v3/api-docs/**
+          filters:
+            - StripPrefix=1
+
+        - id: match-service-docs
+          uri: lb://match-service
+          predicates:
+            - Path=/match-service/v3/api-docs/**
+          filters:
+            - StripPrefix=1
+
+        # 为Knife4j发现的路径添加路由
+        - id: user-service-api-docs
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/user/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+
+        - id: trade-service-api-docs
+          uri: lb://trade-service
+          predicates:
+            - Path=/api/v1/trade/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+
+        - id: wallet-service-api-docs
+          uri: lb://wallet-service
+          predicates:
+            - Path=/api/v1/wallet/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+
+        - id: match-service-api-docs
+          uri: lb://match-service
+          predicates:
+            - Path=/api/v1/match/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+
       globalcors:
         cors-configurations:
           '[/**]':
@@ -224,6 +310,24 @@ gateway:
       - /webjars/**
       - /actuator/**
       - /api/v1/gateway/health
+      # OpenAPI文档路径 - Knife4j发现的路径
+      - /api/v1/user/v3/api-docs/**
+      - /api/v1/trade/v3/api-docs/**
+      - /api/v1/wallet/v3/api-docs/**
+      - /api/v1/finance/v3/api-docs/**
+      - /api/v1/market/v3/api-docs/**
+      - /api/v1/risk/v3/api-docs/**
+      - /api/v1/notify/v3/api-docs/**
+      - /api/v1/match/v3/api-docs/**
+      # 直接服务名称的OpenAPI路径
+      - /user-service/v3/api-docs/**
+      - /trade-service/v3/api-docs/**
+      - /wallet-service/v3/api-docs/**
+      - /finance-service/v3/api-docs/**
+      - /market-service/v3/api-docs/**
+      - /risk-service/v3/api-docs/**
+      - /notify-service/v3/api-docs/**
+      - /match-service/v3/api-docs/**
     # IP白名单 - 对应GatewayConfig.Security.ipWhitelist
     ip-whitelist:
       - 127.0.0.1
@@ -254,15 +358,31 @@ knife4j:
   # 开启增强配置
   enable: true
   # 开启Swagger文档聚合
-  # gateway:
-  #   # 开启网关聚合
-  #   enabled: true
-  #   # 网关聚合策略
-  #   strategy: discover
-  #   # 服务发现类型
-  #   discover:
-  #     # 开启服务发现
-  #     enabled: true
+  gateway:
+    # 开启网关聚合
+    enabled: true
+    # 网关聚合策略
+    strategy: discover
+    # 服务发现类型
+    discover:
+      # 开启服务发现
+      enabled: true
+      # 版本号
+      version: OpenAPI3
+    # 聚合排序
+    routes:
+      # 排序值，数值越小优先级越高
+      order: 1
+    # 文档聚合配置
+    aggregate:
+      # 是否启用聚合
+      enabled: true
+      # 聚合模式
+      mode: service
+      # 文档标题
+      title: PPCEX API 文档
+      # 文档描述
+      description: PPCEX 微服务API文档聚合中心
 
 # 日志配置
 logging:

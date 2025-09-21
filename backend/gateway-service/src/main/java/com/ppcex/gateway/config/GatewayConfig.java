@@ -21,7 +21,25 @@ public class GatewayConfig {
             "/v3/api-docs/swagger-config",
             "/webjars/**",
             "/actuator/**",
-            "/api/v1/gateway/health"
+            "/api/v1/gateway/health",
+            // OpenAPI文档路径 - Knife4j发现的路径
+            "/api/v1/user/v3/api-docs/**",
+            "/api/v1/trade/v3/api-docs/**",
+            "/api/v1/wallet/v3/api-docs/**",
+            "/api/v1/finance/v3/api-docs/**",
+            "/api/v1/market/v3/api-docs/**",
+            "/api/v1/risk/v3/api-docs/**",
+            "/api/v1/notify/v3/api-docs/**",
+            "/api/v1/match/v3/api-docs/**",
+            // 直接服务名称的OpenAPI路径
+            "/user-service/v3/api-docs/**",
+            "/trade-service/v3/api-docs/**",
+            "/wallet-service/v3/api-docs/**",
+            "/finance-service/v3/api-docs/**",
+            "/market-service/v3/api-docs/**",
+            "/risk-service/v3/api-docs/**",
+            "/notify-service/v3/api-docs/**",
+            "/match-service/v3/api-docs/**"
         };
         private String[] ipWhitelist = {"127.0.0.1", "0:0:0:0:0:0:0:1", "192.168.0.0/16", "10.0.0.0/8"};
 

@@ -207,12 +207,50 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isSwaggerRequest(String path) {
-        return path.startsWith("/doc.html") ||
-               path.startsWith("/swagger-ui/") ||
-               path.startsWith("/swagger-resources/") ||
-               path.startsWith("/v3/api-docs/") ||
-               path.startsWith("/webjars/") ||
-               path.equals("/v3/api-docs/swagger-config");
+        // 基础Swagger UI路径
+        if (path.startsWith("/doc.html") ||
+            path.startsWith("/swagger-ui/") ||
+            path.startsWith("/swagger-resources/") ||
+            path.startsWith("/webjars/") ||
+            path.equals("/v3/api-docs/swagger-config")) {
+            return true;
+        }
+
+        // 各服务的OpenAPI文档路径 - 支持服务名称前缀
+        if (path.startsWith("/v3/api-docs/") || path.equals("/v3/api-docs")) {
+            return true;
+        }
+
+        // Knife4j增强文档路径
+        if (path.startsWith("/knife4j/") || path.startsWith("/doc.html")) {
+            return true;
+        }
+
+        // 为Knife4j发现的路径添加支持 - 匹配 /api/v1/{service}/v3/api-docs/**
+        if (path.startsWith("/api/v1/user/v3/api-docs") ||
+            path.startsWith("/api/v1/trade/v3/api-docs") ||
+            path.startsWith("/api/v1/wallet/v3/api-docs") ||
+            path.startsWith("/api/v1/finance/v3/api-docs") ||
+            path.startsWith("/api/v1/market/v3/api-docs") ||
+            path.startsWith("/api/v1/risk/v3/api-docs") ||
+            path.startsWith("/api/v1/notify/v3/api-docs") ||
+            path.startsWith("/api/v1/match/v3/api-docs")) {
+            return true;
+        }
+
+        // 直接服务名称前缀的路径 - 匹配 /{service-name}/v3/api-docs/**
+        if (path.startsWith("/user-service/v3/api-docs") ||
+            path.startsWith("/trade-service/v3/api-docs") ||
+            path.startsWith("/wallet-service/v3/api-docs") ||
+            path.startsWith("/finance-service/v3/api-docs") ||
+            path.startsWith("/market-service/v3/api-docs") ||
+            path.startsWith("/risk-service/v3/api-docs") ||
+            path.startsWith("/notify-service/v3/api-docs") ||
+            path.startsWith("/match-service/v3/api-docs")) {
+            return true;
+        }
+
+        return false;
     }
 
     private boolean isIpInCidr(String ip, String cidrIp, int prefix) {
@@ -270,6 +308,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -100; // 高优先级，在认证相关的过滤器中最早执行
+        return -1; // 高优先级，确保在认证相关的过滤器中最早执行，但在CORS过滤器之后
     }
 }
