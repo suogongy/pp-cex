@@ -1,18 +1,17 @@
 package com.ppcex.gateway.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -21,12 +20,20 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class HealthCheckService {
 
     private final DiscoveryClient discoveryClient;
     private final RedisTemplate<String, Object> redisTemplate;
     private final RestTemplate restTemplate;
+
+    // 初始化状态标志，防止重复初始化
+    private volatile boolean initialized = false;
+
+    public HealthCheckService(DiscoveryClient discoveryClient, RedisTemplate<String, Object> redisTemplate, RestTemplate restTemplate) {
+        this.discoveryClient = discoveryClient;
+        this.redisTemplate = redisTemplate;
+        this.restTemplate = restTemplate;
+    }
 
     private static final String HEALTH_CACHE_PREFIX = "health:service:";
     private static final String SERVICE_STATUS_PREFIX = "service:status:";
@@ -80,10 +87,16 @@ public class HealthCheckService {
     /**
      * 初始化健康检查服务
      */
+    @PostConstruct
     public void init() {
+        if (initialized) {
+            log.warn("HealthCheckService already initialized, skipping duplicate initialization");
+            return;
+        }
+
         // 确保参数为正数
-        int interval = Math.max(1, healthCheckInterval);
-        int timeout = Math.max(1, healthCheckTimeout);
+        int interval = Math.max(30, healthCheckInterval); // 最小30秒
+        int timeout = Math.max(5, healthCheckTimeout);    // 最小5秒
 
         log.info("Initializing HealthCheckService with interval: {}s, timeout: {}s",
                 interval, timeout);
@@ -104,7 +117,8 @@ public class HealthCheckService {
                 TimeUnit.SECONDS
         );
 
-        log.info("HealthCheckService initialized successfully");
+        initialized = true;
+        log.info("HealthCheckService initialized successfully with interval: {}s", interval);
     }
 
     /**
@@ -204,7 +218,7 @@ public class HealthCheckService {
             return false;
         }
         String instanceId = generateInstanceId(instance);
-        log.info("开始检查实例健康状态 - 实例ID: {}",  generateInstanceId(instance)); 
+        log.debug("开始检查实例健康状态 - 实例ID: {}",  generateInstanceId(instance)); 
 
         String instanceUri = instance.getUri() != null ? instance.getUri().toString() : "null";
 
@@ -223,7 +237,7 @@ public class HealthCheckService {
 
             // 构建健康检查URL
             String healthUrl = instanceUri + contextPath + "/actuator/health";
-            log.info("构建健康检查URL - URL: {}", healthUrl);
+            log.debug("构建健康检查URL - URL: {}", healthUrl);
 
             // 测试多个可能的健康检查URL
             String[] possibleUrls = {
@@ -249,12 +263,12 @@ public class HealthCheckService {
                     boolean isServiceHealthy = checkServiceHealthStatus(responseBody);
                     boolean isOverallHealthy = isHttpHealthy && isServiceHealthy;
 
-                    log.info("URL检查结果 - URL: {} HTTP状态码: {} 服务状态: {} 响应时间: {}ms 整体健康: {}",
+                    log.debug("URL检查结果 - URL: {} HTTP状态码: {} 服务状态: {} 响应时间: {}ms 整体健康: {}",
                             testUrl, statusCode, isServiceHealthy ? "UP" : "DOWN", responseTime,
                             isOverallHealthy ? "健康" : "不健康");
 
                     if (isOverallHealthy) {
-                        log.info("实例健康检查成功 - 实例ID: {} 使用的URL: {} 响应时间: {}ms",
+                        log.debug("实例健康检查成功 - 实例ID: {} 使用的URL: {} 响应时间: {}ms",
                                 instanceId, testUrl, responseTime);
                         return true;
                     } else if (isHttpHealthy) {
@@ -502,6 +516,7 @@ public class HealthCheckService {
     /**
      * 销毁服务
      */
+    @PreDestroy
     public void destroy() {
         if (scheduler != null) {
             scheduler.shutdown();

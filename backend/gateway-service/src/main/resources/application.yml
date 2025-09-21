@@ -34,3 +34,10 @@ spring:
         file-extension: yaml
 
 debug: false
+
+# 网关健康检查配置
+gateway:
+  health:
+    check:
+      interval: 60  # 健康检查间隔，单位秒（默认60秒）
+      timeout: 10   # 健康检查超时时间，单位秒（默认10秒）
