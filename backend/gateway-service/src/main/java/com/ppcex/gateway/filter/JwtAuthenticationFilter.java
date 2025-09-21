@@ -209,10 +209,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private boolean isSwaggerRequest(String path) {
         // 基础Swagger UI路径
         if (path.startsWith("/doc.html") ||
-            path.startsWith("/swagger-ui/") ||
-            path.startsWith("/swagger-resources/") ||
-            path.startsWith("/webjars/") ||
-            path.equals("/v3/api-docs/swagger-config")) {
+                path.startsWith("/swagger-ui/") ||
+                path.startsWith("/swagger-resources/") ||
+                path.startsWith("/webjars/") ||
+                path.equals("/v3/api-docs/swagger-config") ||
+                path.startsWith("/favicon.ico")) {
             return true;
         }
 
@@ -221,34 +222,35 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return true;
         }
 
-        // Knife4j增强文档路径
-        if (path.startsWith("/knife4j/") || path.startsWith("/doc.html")) {
-            return true;
-        }
-
         // 为Knife4j发现的路径添加支持 - 匹配 /api/v1/{service}/v3/api-docs/**
         if (path.startsWith("/api/v1/user/v3/api-docs") ||
-            path.startsWith("/api/v1/trade/v3/api-docs") ||
-            path.startsWith("/api/v1/wallet/v3/api-docs") ||
-            path.startsWith("/api/v1/finance/v3/api-docs") ||
-            path.startsWith("/api/v1/market/v3/api-docs") ||
-            path.startsWith("/api/v1/risk/v3/api-docs") ||
-            path.startsWith("/api/v1/notify/v3/api-docs") ||
-            path.startsWith("/api/v1/match/v3/api-docs")) {
+                path.startsWith("/api/v1/trade/v3/api-docs") ||
+                path.startsWith("/api/v1/wallet/v3/api-docs") ||
+                path.startsWith("/api/v1/finance/v3/api-docs") ||
+                path.startsWith("/api/v1/market/v3/api-docs") ||
+                path.startsWith("/api/v1/risk/v3/api-docs") ||
+                path.startsWith("/api/v1/notify/v3/api-docs") ||
+                path.startsWith("/api/v1/match/v3/api-docs")) {
             return true;
         }
 
         // 直接服务名称前缀的路径 - 匹配 /{service-name}/v3/api-docs/**
         if (path.startsWith("/user-service/v3/api-docs") ||
-            path.startsWith("/trade-service/v3/api-docs") ||
-            path.startsWith("/wallet-service/v3/api-docs") ||
-            path.startsWith("/finance-service/v3/api-docs") ||
-            path.startsWith("/market-service/v3/api-docs") ||
-            path.startsWith("/risk-service/v3/api-docs") ||
-            path.startsWith("/notify-service/v3/api-docs") ||
-            path.startsWith("/match-service/v3/api-docs")) {
+                path.startsWith("/trade-service/v3/api-docs") ||
+                path.startsWith("/wallet-service/v3/api-docs") ||
+                path.startsWith("/finance-service/v3/api-docs") ||
+                path.startsWith("/market-service/v3/api-docs") ||
+                path.startsWith("/risk-service/v3/api-docs") ||
+                path.startsWith("/notify-service/v3/api-docs") ||
+                path.startsWith("/match-service/v3/api-docs")) {
             return true;
         }
+
+        // 特殊路径 - favicon.ico 等常被请求的资源
+        if (path.equals("/favicon.ico")) {
+            return true;
+        }
+
 
         return false;
     }

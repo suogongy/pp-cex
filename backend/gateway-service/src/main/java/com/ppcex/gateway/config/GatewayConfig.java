@@ -19,10 +19,12 @@ public class GatewayConfig {
             "/swagger-resources/**",
             "/v3/api-docs/**",
             "/v3/api-docs/swagger-config",
+            "/v3/api-docs",
             "/webjars/**",
             "/actuator/**",
             "/api/v1/gateway/health",
-            // OpenAPI文档路径 - Knife4j发现的路径
+            "/favicon.ico",
+            // OpenAPI文档路径
             "/api/v1/user/v3/api-docs/**",
             "/api/v1/trade/v3/api-docs/**",
             "/api/v1/wallet/v3/api-docs/**",

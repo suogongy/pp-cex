@@ -13,7 +13,6 @@ spring:
     allow-bean-definition-overriding: true
     banner-mode: "off"
     lazy-initialization: false
-
   config:
     import:
       - optional:nacos:gateway-config.yaml
@@ -307,9 +306,11 @@ gateway:
       - /swagger-resources/**
       - /v3/api-docs/**
       - /v3/api-docs/swagger-config
+      - /v3/api-docs
       - /webjars/**
       - /actuator/**
       - /api/v1/gateway/health
+      - /favicon.ico
       # OpenAPI文档路径 - Knife4j发现的路径
       - /api/v1/user/v3/api-docs/**
       - /api/v1/trade/v3/api-docs/**
@@ -357,6 +358,13 @@ gateway:
 knife4j:
   # 开启增强配置
   enable: true
+  # 开启生产环境屏蔽
+  production: false
+  # 基础认证配置 - 完全禁用防止登录弹窗
+  basic:
+    enable: false
+    username: admin
+    password: 123456
   # 开启Swagger文档聚合
   gateway:
     # 开启网关聚合
@@ -383,6 +391,27 @@ knife4j:
       title: PPCEX API 文档
       # 文档描述
       description: PPCEX 微服务API文档聚合中心
+  # UI配置
+  setting:
+    language: zh_cn
+    enableSwaggerModels: true
+    enableDocumentManage: true
+    enableVersion: true
+    enableAfterScript: true
+    # 开启请求缓存
+    enableRequestCache: true
+    # 开启Host文档
+    enableHost: false
+    # 开启自定义主页
+    enableHomeCustom: true
+    # 开启搜索
+    enableSearch: true
+    # 禁用调试功能以避免认证问题
+    enableDebug: false
+    # 启用简单模式，减少复杂功能
+    enableSimpleMarkdown: true
+    # 禁用请求压缩
+    enableRequestCompression: false
 
 # 日志配置
 logging:

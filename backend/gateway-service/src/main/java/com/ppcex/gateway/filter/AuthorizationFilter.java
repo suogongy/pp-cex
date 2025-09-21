@@ -142,6 +142,7 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
                path.startsWith("/swagger-resources/") ||
                path.startsWith("/v3/api-docs/") ||
                path.startsWith("/webjars/") ||
+               path.startsWith("/favicon.ico") ||
                path.equals("/v3/api-docs/swagger-config");
     }
 
