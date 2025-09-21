@@ -4,6 +4,21 @@
 # 环境配置: test
 # =================================================================
 
+# Web服务器配置
+server:
+  port: 8003
+  servlet:
+    context-path: /trade
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+
 spring:
   # 应用基础配置
   application:
@@ -120,11 +135,11 @@ spring:
   # Redis 配置
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:redis123456}
-      database: ${REDIS_DATABASE:1}
-      username: ${REDIS_USERNAME:cex_user}
+      host: localhost
+      port: 6379
+      password: redis123456
+      database: 1
+      username: cex_user
       timeout: 10000ms
       connect-timeout: 10000ms
       lettuce:
@@ -176,20 +191,6 @@ spring:
       db_name: ppcex_trade
       db_user: root
 
-# Web服务器配置
-server:
-  port: 8003
-  servlet:
-    context-path: /trade
-  tomcat:
-    threads:
-      max: 200
-      min-spare: 10
-    accept-count: 100
-    connection-timeout: 20000
-  compression:
-    enabled: true
-    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
 
 # 业务配置
 cex:
@@ -375,9 +376,9 @@ management:
         enabled: true
       group:
         liveness:
-          include: livenessStateProbe
+          include: "*"
         readiness:
-          include: readinessStateProbe
+          include: "*"
     info:
       enabled: true
       git:
@@ -450,7 +451,6 @@ mybatis-plus:
       capital-mode: false
     banner: false
     enable-sql-runner: false
-  type-enums-package: com.ppcex.trade.enums
 
 # API文档配置
 knife4j:
@@ -483,7 +483,7 @@ knife4j:
 
 # RocketMQ 配置
 rocketmq:
-  name-server: ${ROCKETMQ_NAMESERVER:localhost:9876}
+  name-server: localhost:9876
   producer:
     group: trade-producer-group
     send-message-timeout: 3000

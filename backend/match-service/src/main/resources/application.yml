@@ -1,8 +1,18 @@
-# =================================================================
-# Spring Boot 3.1.5 + Spring Cloud 2022.0.4 + Spring Cloud Alibaba 2022.0.0.0
-# 服务名称: match-service
-# 环境配置: test
-# =================================================================
+
+# Web服务器配置
+server:
+  port: 8004
+  servlet:
+    context-path: /match
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
 
 spring:
   # 应用基础配置
@@ -132,21 +142,6 @@ spring:
         size: 5
         thread-name-prefix: match-service-scheduling-
 
-# Web服务器配置
-server:
-  port: 8004
-  servlet:
-    context-path: /match
-  tomcat:
-    threads:
-      max: 200
-      min-spare: 10
-    accept-count: 100
-    connection-timeout: 20000
-  compression:
-    enabled: true
-    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
-
 # 业务配置
 cex:
   # JWT 配置
@@ -234,13 +229,11 @@ management:
         enabled: true
       group:
         liveness:
-          include: livenessStateProbe
+          include: "*"
         readiness:
-          include: readinessStateProbe
+          include: "*"
     info:
       enabled: true
-      git:
-        mode: full
     env:
       enabled: true
     beans:
