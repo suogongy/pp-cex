@@ -452,7 +452,12 @@ mybatis-plus:
     banner: false
     enable-sql-runner: false
 
-# API文档配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui/index.html
+
 knife4j:
   enable: true
   setting:

@@ -470,15 +470,11 @@ mybatis-plus:
     enable-sql-runner: false
 
 springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
   api-docs:
     path: /v3/api-docs
-  packages-to-scan: com.ppcex.wallet.controller # 替换为你的控制器所在包
+  swagger-ui:
+    path: /swagger-ui/index.html
 
-# Knife4j 增强配置
 knife4j:
   enable: true
   setting:

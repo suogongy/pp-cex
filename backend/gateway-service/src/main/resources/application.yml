@@ -249,52 +249,30 @@ gateway:
     route-ttl: 1800       # 路由缓存TTL（秒）- 30分钟
     rate-limit-ttl: 300   # 限流缓存TTL（秒）- 5分钟
 
-# SpringDoc OpenAPI配置
-springdoc:
-  # Swagger UI 配置
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-    doc-expansion: list
-    filter: ""
-    display-request-duration: true
-  # API文档配置
-  api-docs:
-    path: /v3/api-docs
-    enabled: true
-  # 网关聚合配置
-  swagger-config:
-    url: /v3/api-docs/swagger-config
-  # 禁用默认的服务发现配置，使用自定义配置
-  enable-native: false
-
 
 knife4j:
   # 开启增强配置
   enable: true
-  # 开启生产环境屏蔽（生产环境建议关闭）
-  production: false
   # 开启Swagger文档聚合
-  gateway:
-    # 开启网关聚合
-    enabled: true
-    # 网关聚合策略
-    strategy: discover
-    # 服务发现类型
-    discover:
-      # 开启服务发现
-      enabled: true
+  # gateway:
+  #   # 开启网关聚合
+  #   enabled: true
+  #   # 网关聚合策略
+  #   strategy: discover
+  #   # 服务发现类型
+  #   discover:
+  #     # 开启服务发现
+  #     enabled: true
 
 # 日志配置
 logging:
   level:
-    root: debug
+    root: info
     '[com.ppcex.gateway]': debug
     '[org.springframework.cloud.gateway]': debug
-    '[org.springframework.cloud.gateway.route]': debug
-    '[org.springframework.cloud.gateway.handler]': debug
-    '[reactor.netty]': debug
+    '[org.springframework.cloud.gateway.route]': info
+    '[org.springframework.cloud.gateway.handler]': info
+    '[reactor.netty]': info
     '[com.github.xiaoymin.knife4j]': debug
     '[com.ppcex.gateway.filter]': debug
   pattern:
@@ -304,5 +282,3 @@ logging:
     name: logs/gateway-service.log
     max-size: 100MB
     max-history: 30
-
-debug: true

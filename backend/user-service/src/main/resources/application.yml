@@ -425,6 +425,12 @@ mybatis-plus:
   type-enums-package: com.ppcex.user.enums
   sql-injector: com.ppcex.user.config.MySqlInjector
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui/index.html
+
 # API文档配置
 knife4j:
   enable: true

@@ -270,7 +270,12 @@ logging:
       total-size-cap: 1GB
       clean-history-on-start: false
 
-# API文档配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui/index.html
+    
 knife4j:
   enable: true
   setting:
