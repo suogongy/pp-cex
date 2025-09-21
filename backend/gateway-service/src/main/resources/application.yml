@@ -40,10 +40,10 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/user/api/v1/user/**
+            - Path=/api/v1/user/**
             - Method=GET,POST,PUT,DELETE
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
 
         # 交易服务路由
         - id: trade-service
@@ -119,11 +119,6 @@ spring:
             allowed-methods: "*"
             allowed-headers: "*"
             allow-credentials: true
-
-    # 负载均衡配置
-    loadbalancer:
-      ribbon:
-        enabled: false
 
   # Redis配置
   data:
@@ -274,7 +269,7 @@ springdoc:
   # 禁用默认的服务发现配置，使用自定义配置
   enable-native: false
 
-# Knife4j 网关聚合配置
+
 knife4j:
   # 开启增强配置
   enable: true
@@ -290,41 +285,18 @@ knife4j:
     discover:
       # 开启服务发现
       enabled: true
-      # 服务发现版本（gateway）
-      version: gateway
-      # 服务名称排序方式
-      service-name-sort-asc: true
-      # 需要聚合的服务列表
-      include-services:
-        - user-service
-        - trade-service
-        - wallet-service
-        - finance-service
-        - market-service
-        - risk-service
-        - notify-service
-        - match-service
-      # 排除的服务列表
-      exclude-services:
-        - gateway-service
-    # 聚合文档的排序方式
-    order: 1
-    # 聚合文档的标签
-    tags:
-      - name: 网关聚合文档
-        description: PPCEX网关聚合所有微服务的API文档
 
 # 日志配置
 logging:
   level:
-    root: INFO
-    '[com.ppcex.gateway]': INFO
-    '[org.springframework.cloud.gateway]': INFO
-    '[org.springframework.cloud.gateway.route]': INFO
-    '[org.springframework.cloud.gateway.handler]': INFO
-    '[reactor.netty]': INFO
-    '[com.github.xiaoymin.knife4j]': INFO
-    '[com.ppcex.gateway.filter]': INFO
+    root: debug
+    '[com.ppcex.gateway]': debug
+    '[org.springframework.cloud.gateway]': debug
+    '[org.springframework.cloud.gateway.route]': debug
+    '[org.springframework.cloud.gateway.handler]': debug
+    '[reactor.netty]': debug
+    '[com.github.xiaoymin.knife4j]': debug
+    '[com.ppcex.gateway.filter]': debug
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -333,4 +305,4 @@ logging:
     max-size: 100MB
     max-history: 30
 
-debug: false
+debug: true
