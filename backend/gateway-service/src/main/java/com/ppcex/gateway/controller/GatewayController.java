@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.route.RouteDefinition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/gateway")
 @Tag(name = "网关管理", description = "网关服务管理接口")
 @RequiredArgsConstructor
+@Slf4j
 public class GatewayController {
 
     private final DynamicRouteService dynamicRouteService;
@@ -99,11 +101,19 @@ public class GatewayController {
     @Operation(summary = "验证令牌", description = "验证JWT令牌的有效性")
     public Mono<ResponseEntity<Map<String, Object>>> validateToken(
             @Parameter(description = "JWT令牌") @RequestHeader("Authorization") String authHeader) {
+        log.info("开始验证令牌");
+
         try {
             String token = authHeader.substring(7); // 移除 "Bearer " 前缀
+            String tokenPreview = token.length() > 10 ? token.substring(0, 10) + "..." : token;
+            log.info("提取令牌成功 - Token: {}", tokenPreview);
+
             Map<String, Object> tokenInfo = jwtTokenService.getTokenInfo(token);
+            log.info("令牌验证成功 - Token: {}", tokenPreview);
+
             return Mono.just(ResponseEntity.ok(tokenInfo));
         } catch (Exception e) {
+            log.error("令牌验证失败", e);
             return Mono.just(ResponseEntity.badRequest().body(Map.of("valid", false, "error", e.getMessage())));
         }
     }
@@ -112,11 +122,19 @@ public class GatewayController {
     @Operation(summary = "撤销令牌", description = "撤销JWT令牌，使其失效")
     public Mono<ResponseEntity<String>> revokeToken(
             @Parameter(description = "JWT令牌") @RequestHeader("Authorization") String authHeader) {
+        log.info("开始撤销令牌");
+
         try {
             String token = authHeader.substring(7);
+            String tokenPreview = token.length() > 10 ? token.substring(0, 10) + "..." : token;
+            log.info("提取令牌成功 - Token: {}", tokenPreview);
+
             jwtTokenService.revokeToken(token);
+            log.info("令牌撤销成功 - Token: {}", tokenPreview);
+
             return Mono.just(ResponseEntity.ok("Token revoked successfully"));
         } catch (Exception e) {
+            log.error("令牌撤销失败", e);
             return Mono.just(ResponseEntity.badRequest().body("Failed to revoke token: " + e.getMessage()));
         }
     }
@@ -143,7 +161,16 @@ public class GatewayController {
     @PostMapping("/health/cleanup")
     @Operation(summary = "清理健康检查缓存", description = "清理过期的健康检查缓存")
     public Mono<ResponseEntity<String>> cleanupHealthCache() {
-        jwtTokenService.cleanupExpiredSessions();
-        return Mono.just(ResponseEntity.ok("Health cache cleaned successfully"));
+        log.info("开始清理健康检查缓存");
+
+        try {
+            jwtTokenService.cleanupExpiredSessions();
+            log.info("健康检查缓存清理成功");
+
+            return Mono.just(ResponseEntity.ok("Health cache cleaned successfully"));
+        } catch (Exception e) {
+            log.error("健康检查缓存清理失败", e);
+            return Mono.just(ResponseEntity.badRequest().body("Failed to cleanup health cache: " + e.getMessage()));
+        }
     }
 }

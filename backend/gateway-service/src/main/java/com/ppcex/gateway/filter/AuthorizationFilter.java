@@ -36,9 +36,8 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
 
     // 免权限检查的路径
     private static final List<String> PERMIT_ALL_PATHS = Arrays.asList(
-            "/api/v1/auth/**",
+            "/api/v1/**",
             "/actuator/**",
-            "/api/v1/market/**",
             "/fallback/**"
     );
 
@@ -83,52 +82,87 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
         String method = request.getMethod().name();
+        String clientIp = request.getRemoteAddress() != null ?
+                request.getRemoteAddress().getAddress().getHostAddress() : "unknown";
+
+        log.info("开始权限授权检查 - 路径: {} {} - 客户端IP: {}", method, path, clientIp);
 
         // 检查是否是免权限路径
         if (isPermitAllPath(path)) {
+            log.info("路径在免权限列表中，跳过权限检查 - 路径: {}", path);
             return chain.filter(exchange);
         }
 
         // 获取用户ID
         String userId = request.getHeaders().getFirst("X-User-Id");
         if (userId == null) {
+            log.warn("请求头中未找到用户ID - 路径: {} - 客户端IP: {}", path, clientIp);
             return handleError(exchange.getResponse(), 401, "User ID not found in request headers");
         }
+        log.info("获取用户ID成功 - 用户ID: {}", userId);
 
         // 获取用户角色
         List<String> userRoles = getUserRoles(userId);
         if (userRoles == null || userRoles.isEmpty()) {
+            log.warn("用户未分配角色 - 用户ID: {} - 路径: {}", userId, path);
             return handleError(exchange.getResponse(), 403, "User has no roles assigned");
         }
+        log.info("获取用户角色成功 - 用户ID: {} 角色: {}", userId, userRoles);
 
         // 检查权限
         if (!hasPermission(path, method, userId, userRoles)) {
+            log.warn("权限检查失败 - 用户ID: {} 路径: {} {} 角色: {}",
+                    userId, method, path, userRoles);
             return handleError(exchange.getResponse(), 403, "Permission denied");
         }
 
-        log.debug("Authorization successful for user: {}, path: {}", userId, path);
+        log.info("权限授权成功 - 用户ID: {} 路径: {} {} 客户端IP: {}",
+                userId, method, path, clientIp);
         return chain.filter(exchange);
     }
 
     private boolean isPermitAllPath(String path) {
-        return PERMIT_ALL_PATHS.stream()
-                .anyMatch(pattern -> antPathMatcher.match(pattern, path));
+        boolean isPermitAll = PERMIT_ALL_PATHS.stream()
+                .anyMatch(pattern -> {
+                    boolean matches = antPathMatcher.match(pattern, path);
+                    log.debug("免权限路径检查 - 路径: {} 模式: {} 匹配: {}", path, pattern, matches);
+                    return matches;
+                });
+        log.debug("免权限路径检查结果 - 路径: {} 是否免权限: {}", path, isPermitAll);
+        return isPermitAll;
     }
 
     @SuppressWarnings("unchecked")
     private List<String> getUserRoles(String userId) {
         String key = "user:roles:" + userId;
         Object roles = redisTemplate.opsForValue().get(key);
-        return roles instanceof List ? (List<String>) roles : null;
+
+        if (roles instanceof List) {
+            List<String> roleList = (List<String>) roles;
+            log.debug("用户角色缓存命中 - 用户ID: {} 角色: {}", userId, roleList);
+            return roleList;
+        } else {
+            log.debug("用户角色缓存未命中 - 用户ID: {}", userId);
+            return null;
+        }
     }
 
     private boolean hasPermission(String path, String method, String userId, List<String> userRoles) {
+        log.debug("开始权限检查 - 用户ID: {} 路径: {} {} 角色: {}",
+                userId, method, path, userRoles);
+
         // 1. 检查用户个人权限
         String userPermissionKey = PERMISSION_CACHE_PREFIX + userId;
         List<String> userPermissions = (List<String>) redisTemplate.opsForValue().get(userPermissionKey);
 
-        if (userPermissions != null && checkApiPermission(path, method, userPermissions)) {
-            return true;
+        if (userPermissions != null) {
+            log.debug("用户个人权限缓存命中 - 用户ID: {} 权限: {}", userId, userPermissions);
+            if (checkApiPermission(path, method, userPermissions)) {
+                log.debug("用户个人权限检查通过 - 用户ID: {}", userId);
+                return true;
+            }
+        } else {
+            log.debug("用户个人权限缓存未命中 - 用户ID: {}", userId);
         }
 
         // 2. 检查角色权限
@@ -136,30 +170,46 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
             String rolePermissionKey = ROLE_PERMISSIONS_PREFIX + role;
             List<String> rolePermissions = (List<String>) redisTemplate.opsForValue().get(rolePermissionKey);
 
-            if (rolePermissions != null && checkApiPermission(path, method, rolePermissions)) {
-                return true;
+            if (rolePermissions != null) {
+                log.debug("角色权限缓存命中 - 角色: {} 权限: {}", role, rolePermissions);
+                if (checkApiPermission(path, method, rolePermissions)) {
+                    log.debug("角色权限检查通过 - 角色: {} 用户ID: {}", role, userId);
+                    return true;
+                }
+            } else {
+                log.debug("角色权限缓存未命中 - 角色: {}", role);
             }
         }
 
+        log.debug("权限检查失败 - 用户ID: {} 路径: {} {}", userId, method, path);
         return false;
     }
 
     private boolean checkApiPermission(String path, String method, List<String> permissions) {
+        log.debug("检查API权限 - 路径: {} 方法: {} 用户权限: {}",
+                path, method, permissions);
+
         // 简化处理：检查路径权限
         String requiredPermission = API_PERMISSION_MAP.get(path);
         if (requiredPermission != null) {
-            return permissions.contains(requiredPermission);
+            boolean hasPermission = permissions.contains(requiredPermission);
+            log.debug("精确权限匹配 - 路径: {} 所需权限: {} 是否拥有: {}",
+                    path, requiredPermission, hasPermission);
+            return hasPermission;
         }
 
         // 模糊匹配权限
         for (Map.Entry<String, String> entry : API_PERMISSION_MAP.entrySet()) {
             if (antPathMatcher.match(entry.getKey(), path)) {
-                return permissions.contains(entry.getValue());
+                boolean hasPermission = permissions.contains(entry.getValue());
+                log.debug("模糊权限匹配 - 路径: {} 模式: {} 所需权限: {} 是否拥有: {}",
+                        path, entry.getKey(), entry.getValue(), hasPermission);
+                return hasPermission;
             }
         }
 
         // 如果没有具体配置权限，默认允许（实际生产环境应该更严格）
-        log.warn("No permission configured for path: {}", path);
+        log.warn("路径未配置权限，默认允许 - 路径: {}", path);
         return true;
     }
 
@@ -175,7 +225,7 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
         String responseBody = com.alibaba.fastjson2.JSON.toJSONString(errorResponse);
         DataBuffer buffer = response.bufferFactory().wrap(responseBody.getBytes());
 
-        log.warn("Authorization failed: {} - {}", statusCode, message);
+        log.warn("权限授权失败 - 状态码: {} 错误信息: {}", statusCode, message);
         return response.writeWith(Mono.just(buffer));
     }
 

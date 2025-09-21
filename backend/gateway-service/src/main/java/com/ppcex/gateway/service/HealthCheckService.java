@@ -198,17 +198,142 @@ public class HealthCheckService {
      * 检查单个实例的健康状态
      */
     private boolean checkInstanceHealth(ServiceInstance instance) {
-        try {
-            String healthUrl = instance.getUri().toString() + "/actuator/health";
+        log.info("开始检查实例健康状态 - 实例ID: {}", instance.getInstanceId());
 
-            ResponseEntity<String> response = restTemplate.getForEntity(healthUrl, String.class);
-
-            return response.getStatusCode() == HttpStatus.OK;
-
-        } catch (Exception e) {
-            log.debug("Health check failed for instance {}: {}", instance.getInstanceId(), e.getMessage());
+        if (instance == null) {
+            log.warn("实例为null，无法进行健康检查");
             return false;
         }
+
+        String instanceId = instance.getInstanceId();
+        String instanceUri = instance.getUri() != null ? instance.getUri().toString() : "null";
+
+        log.debug("实例基本信息 - 实例ID: {} URI: {}", instanceId, instanceUri);
+
+        try {
+            // 检查URI是否有效
+            if (instance.getUri() == null) {
+                log.warn("实例URI为null - 实例ID: {}", instanceId);
+                return false;
+            }
+
+            // 获取服务的context-path
+            String contextPath = getContextPath(instance);
+            log.debug("获取到context-path: {}", contextPath);
+
+            // 构建健康检查URL
+            String healthUrl = instanceUri + contextPath + "/actuator/health";
+            log.info("构建健康检查URL - URL: {}", healthUrl);
+
+            // 测试多个可能的健康检查URL
+            String[] possibleUrls = {
+                healthUrl,                                    // 带context-path的标准路径
+                instanceUri + "/actuator/health",             // 不带context-path
+                instanceUri + contextPath + "/actuator/health" // 双重context-path（容错）
+            };
+
+            for (int i = 0; i < possibleUrls.length; i++) {
+                String testUrl = possibleUrls[i];
+                log.debug("尝试第{}个URL: {}", i + 1, testUrl);
+
+                try {
+                    long startTime = System.currentTimeMillis();
+                    ResponseEntity<String> response = restTemplate.getForEntity(testUrl, String.class);
+                    long responseTime = System.currentTimeMillis() - startTime;
+
+                    org.springframework.http.HttpStatusCode statusCode = response.getStatusCode();
+                    String responseBody = response.getBody();
+
+                    // 检查HTTP状态码和JSON响应中的状态
+                    boolean isHttpHealthy = statusCode.is2xxSuccessful();
+                    boolean isServiceHealthy = checkServiceHealthStatus(responseBody);
+                    boolean isOverallHealthy = isHttpHealthy && isServiceHealthy;
+
+                    log.info("URL检查结果 - URL: {} HTTP状态码: {} 服务状态: {} 响应时间: {}ms 整体健康: {}",
+                            testUrl, statusCode, isServiceHealthy ? "UP" : "DOWN", responseTime,
+                            isOverallHealthy ? "健康" : "不健康");
+
+                    if (isOverallHealthy) {
+                        log.info("实例健康检查成功 - 实例ID: {} 使用的URL: {} 响应时间: {}ms",
+                                instanceId, testUrl, responseTime);
+                        return true;
+                    } else if (isHttpHealthy) {
+                        // HTTP成功但服务状态为DOWN，记录详细信息
+                        log.warn("实例HTTP可访问但服务状态为DOWN - 实例ID: {} URL: {} 响应: {}",
+                                instanceId, testUrl, responseBody != null ? responseBody.substring(0, Math.min(responseBody.length(), 200)) : "null");
+                    }
+
+                } catch (Exception e) {
+                    log.debug("URL检查失败 - URL: {} 错误: {}", testUrl, e.getMessage());
+                    if (i == possibleUrls.length - 1) {
+                        // 最后一个URL也失败了
+                        log.warn("所有健康检查URL都失败 - 实例ID: {} 最后尝试的URL: {}", instanceId, testUrl);
+                    }
+                }
+            }
+
+            log.warn("实例健康检查失败 - 实例ID: {} 尝试了{}个URL都失败", instanceId, possibleUrls.length);
+            return false;
+
+        } catch (Exception e) {
+            log.error("实例健康检查异常 - 实例ID: {} URI: {} 错误: {}",
+                    instanceId, instanceUri, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 检查服务健康状态（从JSON响应中解析）
+     */
+    private boolean checkServiceHealthStatus(String responseBody) {
+        if (responseBody == null || responseBody.trim().isEmpty()) {
+            log.debug("响应体为空，认为服务不健康");
+            return false;
+        }
+
+        try {
+            // 简单的字符串匹配，查找 "status":"UP" 或 "status":"DOWN"
+            if (responseBody.contains("\"status\":\"UP\"")) {
+                log.debug("从响应体中检测到服务状态: UP");
+                return true;
+            } else if (responseBody.contains("\"status\":\"DOWN\"")) {
+                log.debug("从响应体中检测到服务状态: DOWN");
+                return false;
+            } else if (responseBody.contains("\"status\":\"UNKNOWN\"")) {
+                log.debug("从响应体中检测到服务状态: UNKNOWN");
+                return false;
+            } else {
+                // 如果没有明确的状态，检查是否有关键组件的健康状态
+                if (responseBody.contains("\"discoveryComposite\":{\"status\":\"UP\"")) {
+                    log.debug("发现发现服务组件健康，认为服务整体健康");
+                    return true;
+                }
+                log.debug("无法从响应体中确定服务状态，默认认为不健康");
+                return false;
+            }
+        } catch (Exception e) {
+            log.debug("解析服务健康状态时发生异常: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 获取服务的context-path
+     */
+    private String getContextPath(ServiceInstance instance) {
+        // 从元数据中获取context-path
+        Map<String, String> metadata = instance.getMetadata();
+        if (metadata != null) {
+            String contextPath = metadata.get("context-path");
+            if (contextPath != null && !contextPath.trim().isEmpty()) {
+                log.debug("从元数据获取context-path: {}", contextPath);
+                return contextPath;
+            }
+        }
+
+        // 默认为空字符串
+        log.debug("使用默认context-path: 空");
+        return "";
     }
 
     /**
