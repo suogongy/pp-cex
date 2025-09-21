@@ -72,7 +72,12 @@ public class SwaggerAggregationConfig {
     /**
      * 检查服务是否支持Swagger文档
      */
-    public boolean isServiceSupported(String serviceName) {
+    public boolean isServiceSupported(String routeId) {
+        // 从路由ID中提取服务名，处理ReactiveCompositeDiscoveryClient_前缀情况
+        String serviceName = routeId;
+        if (routeId.contains("_")) {
+            serviceName = routeId.substring(routeId.lastIndexOf("_") + 1);
+        }
         return SWAGGER_SERVICES.contains(serviceName);
     }
 

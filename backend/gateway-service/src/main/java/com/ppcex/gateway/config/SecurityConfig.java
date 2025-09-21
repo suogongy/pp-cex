@@ -40,6 +40,7 @@ public class SecurityConfig {
                 // 其他路径需要认证
                 .anyExchange().authenticated()
             )
+            
             .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
             .formLogin(ServerHttpSecurity.FormLoginSpec::disable);
 

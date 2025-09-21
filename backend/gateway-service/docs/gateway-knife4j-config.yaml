@@ -58,60 +58,39 @@ spring:
   cloud:
     gateway:
       routes:
-        # Knife4j文档路由
+        # Knife4j 文档
         - id: knife4j-docs
-          uri: lb://gateway-service
+          uri: forward:/doc.html
           predicates:
-            - Path=/doc.html,/doc.html/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
+            - Path=/doc.html
+            - Path=/doc.html/**
 
-        # Swagger UI路由
+        # Swagger UI
         - id: swagger-ui
-          uri: lb://gateway-service
+          uri: forward:/swagger-ui/index.html
           predicates:
-            - Path=/swagger-ui,/swagger-ui/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
+            - Path=/swagger-ui
+            - Path=/swagger-ui/**
 
-        # Swagger资源路由
+        # Swagger 资源
         - id: swagger-resources
-          uri: lb://gateway-service
+          uri: forward:/swagger-resources
           predicates:
-            - Path=/swagger-resources,/swagger-resources/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
+            - Path=/swagger-resources
+            - Path=/swagger-resources/**
 
-        # v3 API文档路由
+        # v3 API 文档（聚合微服务）
         - id: v3-api-docs
-          uri: lb://gateway-service
+          uri: forward:/v3/api-docs
           predicates:
-            - Path=/v3/api-docs,/v3/api-docs/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
-
-        # WebJars路由
+            - Path=/v3/api-docs
+            - Path=/v3/api-docs/**
+        # WebJars 静态资源
         - id: webjars
-          uri: lb://gateway-service
+          uri: forward:/webjars
           predicates:
-            - Path=/webjars,/webjars/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
+            - Path=/webjars
+            - Path=/webjars/**
 
 # 日志配置
 logging:

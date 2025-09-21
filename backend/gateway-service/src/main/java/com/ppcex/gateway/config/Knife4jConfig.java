@@ -6,14 +6,11 @@ import org.springframework.cloud.gateway.route.RouteDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springdoc.core.models.GroupedOpenApi;
-import org.springdoc.core.properties.SwaggerUiConfigProperties;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Configuration
 @Slf4j
@@ -40,8 +37,13 @@ public class Knife4jConfig {
                     .filter(route -> route.getId() != null && route.getId().endsWith("-service"))
                     .sorted(Comparator.comparing(RouteDefinition::getId))
                     .forEach(route -> {
-                        String serviceName = route.getId();
-                        if (swaggerAggregationConfig.isServiceSupported(serviceName)) {
+                        String routeId = route.getId();
+                        if (swaggerAggregationConfig.isServiceSupported(routeId)) {
+                            // 从路由ID中提取真实服务名
+                            String serviceName = routeId;
+                            if (routeId.contains("_")) {
+                                serviceName = routeId.substring(routeId.lastIndexOf("_") + 1);
+                            }
                             String servicePath = "/" + serviceName.replace("-service", "");
                             groups.add(GroupedOpenApi.builder()
                                     .group(serviceName)
