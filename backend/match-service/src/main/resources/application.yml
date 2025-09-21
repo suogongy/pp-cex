@@ -1,9 +1,11 @@
-server:
-  port: 8004
-  servlet:
-    context-path: /match
+# =================================================================
+# Spring Boot 3.1.5 + Spring Cloud 2022.0.4 + Spring Cloud Alibaba 2022.0.0.0
+# 服务名称: match-service
+# 环境配置: test
+# =================================================================
 
 spring:
+  # 应用基础配置
   application:
     name: match-service
   profiles:
@@ -12,26 +14,270 @@ spring:
     allow-bean-definition-overriding: true
     lazy-initialization: false
     banner-mode: "off"
+
+  # 配置中心
   config:
     import:
-      - optional:nacos:match-common-config.yaml
-      - optional:nacos:match-redis-config.yaml
-      - optional:nacos:match-rocketmq-config.yaml
-      - optional:nacos:match-sentinel-config.yaml
+      - optional:nacos:match-config.yaml
 
+  # 服务注册与发现
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         metadata:
           version: 1.0.0
           context-path: /match
+          preserved.heart.beat.interval: 5000
+          preserved.heart.beat.timeout: 15000
+          preserved.ip.delete.timeout: 30000
       config:
         enabled: true
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         file-extension: yaml
+        refresh-enabled: true
+        shared-configs:
+          - data-id: common-config.yaml
+            group: DEFAULT_GROUP
+            refresh: true
 
-# Knife4j Configuration
+    # Sentinel 流量控制
+    sentinel:
+      transport:
+        dashboard: localhost:8080
+        port: 8719
+        client-ip: ${spring.cloud.client.ip-address}
+      eager: true
+      datasource:
+        flow-rules:
+          nacos:
+            server-addr: localhost:8848
+            dataId: sentinel-match-service-flow-rules.json
+            groupId: DEFAULT_GROUP
+            rule-type: flow
+            data-type: json
+        degrade-rules:
+          nacos:
+            server-addr: localhost:8848
+            dataId: sentinel-match-service-degrade-rules.json
+            groupId: DEFAULT_GROUP
+            rule-type: degrade
+            data-type: json
+
+    # Stream 配置
+    stream:
+      rocketmq:
+        binder:
+          name-server: rocketmq:9876
+          group: match-service-group
+        bindings:
+          order-input:
+            destination: order-topic
+            group: match-service-group
+            consumer:
+              max-attempts: 3
+              back-off-initial-interval: 1000
+              back-off-multiplier: 2
+              back-off-max-interval: 10000
+          trade-output:
+            destination: trade-topic
+            group: match-service-group
+          orderbook-output:
+            destination: orderbook-topic
+            group: match-service-group
+
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis123456}
+      database: ${REDIS_DATABASE:0}
+      username: ${REDIS_USERNAME:cex_user}
+      timeout: 10000ms
+      connect-timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 10
+          min-idle: 0
+          time-between-eviction-runs: 30000ms
+      client-name: match-service-redis-client
+
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "match:"
+      use-key-prefix: true
+
+  # 线程池配置
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 16
+        queue-capacity: 1000
+        keep-alive: 60s
+        thread-name-prefix: match-service-task-
+    scheduling:
+      pool:
+        size: 5
+        thread-name-prefix: match-service-scheduling-
+
+# Web服务器配置
+server:
+  port: 8004
+  servlet:
+    context-path: /match
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+
+# 业务配置
+cex:
+  # JWT 配置
+  jwt:
+    enabled: true
+    secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
+    expiration: 86400000
+    refresh-expiration: 604800000
+    issuer: PPCEX
+    header-name: Authorization
+    token-prefix: Bearer
+
+  # 撮合引擎配置
+  match:
+    engine:
+      buffer-size: 1024
+      thread-count: 4
+      order-book-depth: 1000
+      trade-history-size: 1000
+      price-precision: 8
+      amount-precision: 8
+      order-timeout: 300000
+      max-orders-per-user: 1000
+      max-orders-total: 100000
+      enable-market-order: true
+      enable-limit-order: true
+      enable-stop-order: false
+      fee-rate: 0.001
+      maker-fee-rate: 0.0005
+      taker-fee-rate: 0.001
+
+    # 缓存配置
+    cache:
+      order:
+        ttl: 3600000
+        max-size: 10000
+      trade:
+        ttl: 86400000
+        max-size: 50000
+      orderbook:
+        ttl: 60000
+        max-size: 1000
+
+# 安全配置
+security:
+  permit-all:
+    - /match/api/v1/public/**
+    - /match/doc.html
+    - /match/swagger-ui/**
+    - /match/v3/api-docs/**
+    - /match/actuator/**
+    - /match/favicon.ico
+    - /match/error
+
+  cors:
+    allowed-origins: ["*"]
+    allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed-headers: ["*"]
+    exposed-headers: ["Authorization", "Content-Disposition"]
+    allow-credentials: true
+    max-age: 3600
+
+  rate-limit:
+    enabled: true
+    global-limit: 1000
+    api-limits:
+      "/match/api/v1/orderbook": 500
+      "/match/api/v1/trades": 200
+      "/match/api/v1/match/process": 100
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+      base-path: /actuator
+      discovery:
+        enabled: true
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessStateProbe
+        readiness:
+          include: readinessStateProbe
+    info:
+      enabled: true
+      git:
+        mode: full
+    env:
+      enabled: true
+    beans:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+      region: default
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.ppcex.match: INFO
+    com.ppcex.common: INFO
+    org.springframework.web: DEBUG
+    org.springframework.cloud: WARN
+    com.alibaba.nacos.client: WARN
+    io.lettuce.core: WARN
+    com.zaxxer.hikari: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 1GB
+      clean-history-on-start: false
+
+# API文档配置
 knife4j:
   enable: true
   setting:
@@ -48,17 +294,138 @@ knife4j:
     enableHomeCustom: true
     homeCustomLocation: classpath:markdown/home.md
     enableAfterScript: true
-    enableSwaggerAuth: true  # 启用Swagger认证
-  enableRequestCache: true
-  enableHost: false
-  openapi:
+    enableSwaggerAuth: true
+  info:
     title: PPCEX Match Service API
     description: 撮合服务API文档
     email: support@ppcex.com
     concat: PPCEX Team
     url: https://www.ppcex.com
     version: v1.0.0
-    license: MIT License
-    license-url: https://opensource.org/licenses/MIT
+    license:
+      name: MIT License
+      url: https://opensource.org/licenses/MIT
 
-debug: false
+# 线程池配置
+thread:
+  pool:
+    core-size: 8
+    max-size: 16
+    queue-capacity: 1000
+    keep-alive-seconds: 60
+    thread-name-prefix: match-service-
+
+# 缓存配置
+cache:
+  config:
+    order-book:
+      ttl: 300
+      max-size: 1000
+      key-prefix: "match:order:book:"
+    market-data:
+      ttl: 300
+      max-size: 5000
+      key-prefix: "match:market:"
+    trade-records:
+      ttl: 86400
+      max-size: 10000
+      key-prefix: "match:trade:"
+    user-orders:
+      ttl: 1800
+      max-size: 5000
+      key-prefix: "match:user:order:"
+    symbol-info:
+      ttl: 3600
+      max-size: 1000
+      key-prefix: "match:symbol:"
+    market-stats:
+      ttl: 600
+      max-size: 1000
+      key-prefix: "match:stats:"
+
+# Redis分布式锁配置
+redis:
+  lock:
+    enabled: true
+    key-prefix: "match:lock:"
+    lease-time: 30000
+    wait-time: 10000
+    retry-interval: 100
+
+# 监控配置
+info:
+  app:
+    name: ${spring.application.name}
+    description: 高性能撮合引擎服务
+    version: 1.0.0
+    encoding: UTF-8
+    java:
+      version: ${java.version}
+  build:
+    artifact: ${project.artifactId}
+    name: ${project.name}
+    version: ${project.version}
+    time: ${project.build.timestamp}
+
+# Sentinel 流控规则
+sentinel:
+  flow:
+    match-engine-process:
+      resource: match-engine-process
+      count: 10000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 10
+      maxQueueingTimeMs: 500
+    match-api-orderbook:
+      resource: match-api-orderbook
+      count: 5000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 5
+      maxQueueingTimeMs: 200
+    match-websocket:
+      resource: match-websocket
+      count: 1000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 3
+      maxQueueingTimeMs: 100
+    match-api-trade:
+      resource: match-api-trade
+      count: 2000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 5
+      maxQueueingTimeMs: 300
+  degrade:
+    match-engine-process:
+      resource: match-engine-process
+      grade: 0
+      count: 10
+      timeWindow: 60
+      minRequestAmount: 20
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
+    match-api-orderbook:
+      resource: match-api-orderbook
+      grade: 0
+      count: 5
+      timeWindow: 30
+      minRequestAmount: 10
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
+  system:
+    highestCpuUsage: 0.8
+    highestSystemLoad: 10.0
+    qps: 20000
+    avgRt: 1000
+    maxThread: 1000

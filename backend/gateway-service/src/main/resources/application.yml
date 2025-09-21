@@ -16,10 +16,7 @@ spring:
 
   config:
     import:
-      - optional:nacos:gateway-common-config.yaml
-      - optional:nacos:gateway-redis-config.yaml
-      - optional:nacos:gateway-gateway-config.yaml
-      - optional:nacos:gateway-knife4j-config.yaml
+      - optional:nacos:gateway-config.yaml
 
   cloud:
     nacos:
@@ -33,11 +30,322 @@ spring:
         server-addr: localhost:8848
         file-extension: yaml
 
-debug: false
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # 用户服务路由
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/user/api/v1/user/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=1
 
-# 网关健康检查配置
+        # 交易服务路由
+        - id: trade-service
+          uri: lb://trade-service
+          predicates:
+            - Path=/api/v1/trade/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 钱包服务路由
+        - id: wallet-service
+          uri: lb://wallet-service
+          predicates:
+            - Path=/api/v1/wallet/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 财务服务路由
+        - id: finance-service
+          uri: lb://finance-service
+          predicates:
+            - Path=/api/v1/finance/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 行情服务路由
+        - id: market-service
+          uri: lb://market-service
+          predicates:
+            - Path=/api/v1/market/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 风控服务路由
+        - id: risk-service
+          uri: lb://risk-service
+          predicates:
+            - Path=/api/v1/risk/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 通知服务路由
+        - id: notify-service
+          uri: lb://notify-service
+          predicates:
+            - Path=/api/v1/notify/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+        # 撮合服务路由
+        - id: match-service
+          uri: lb://match-service
+          predicates:
+            - Path=/api/v1/match/**
+            - Method=GET,POST,PUT,DELETE
+          filters:
+            - StripPrefix=2
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+              - "http://localhost:3000"
+              - "http://127.0.0.1:3000"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+
+    # 负载均衡配置
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+    # 监控配置 - Spring Boot 3.x 使用 Micrometer Tracing
+    # zipkin 和 sleuth 配置已迁移到 micrometer tracing
+
+  # Redis配置
+  data:
+    redis:
+      # 连接配置
+      host: localhost
+      port: 6379
+      password: "redis123456"
+      database: 1
+      username: "cex_user"
+
+      # 连接池配置
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 20
+          min-idle: 5
+          time-between-eviction-runs: 30000ms
+          min-evictable-idle-time-millis: 60000ms
+        shutdown-timeout: 100ms
+
+      # 超时配置
+      timeout: 10000ms
+      connect-timeout: 10000ms
+
+      # 客户端名称
+      client-name: gateway-service-redis-client
+
+      # 序列化配置 - Spring Boot 3.x 格式
+      serialization:
+        key-serializer: org.springframework.data.redis.serializer.StringRedisSerializer
+        value-serializer: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+
+  # Spring Cache配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 1800000  # 30分钟
+      cache-null-values: false
+      key-prefix: "gateway:"
+      use-key-prefix: true
+
+# Sentinel配置
+spring.cloud.sentinel:
+  transport:
+    dashboard: localhost:8858
+    port: 8719
+  filter:
+    enabled: true
+  # 网关流控配置
+  scg:
+    fallback:
+      mode: response
+      response-body: '{"code": 429, "message": "系统繁忙，请稍后再试"}'
+      response-status: 429
+  datasource:
+    ds1:
+      nacos:
+        server-addr: localhost:8848
+        dataId: sentinel-gateway-service-flow-rules.json
+        rule-type: flow
+    ds2:
+      nacos:
+        server-addr: localhost:8848
+        dataId: sentinel-gateway-service-degrade-rules.json
+        rule-type: degrade
+
+# 暴露监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# JWT配置
+cex:
+  jwt:
+    enabled: true
+    secret: your-jwt-secret-key-at-least-32-bytes-long-for-security
+    expiration: 86400000  # 24小时过期时间
+    refresh-expiration: 604800000  # 7天刷新token过期时间
+    issuer: PPCEX
+
+# 网关配置
 gateway:
+  # 网关健康检查配置
   health:
     check:
       interval: 60  # 健康检查间隔，单位秒（默认60秒）
       timeout: 10   # 健康检查超时时间，单位秒（默认10秒）
+
+  security:
+    # 免认证路径 - 添加完整的OpenAPI相关路径
+    permit-all:
+      - /actuator/**
+      - /api/v1/market/**
+      - /fallback/**
+      - /doc.html
+      - /doc.html/**
+      - /swagger-ui/**
+      - /swagger-ui/index.html
+      - /swagger-ui.html
+      - /swagger-resources/**
+      - /v3/api-docs/**
+      - /v3/api-docs/swagger-config
+      - /webjars/**
+      - /user/v3/api-docs/**
+      - /trade/v3/api-docs/**
+      - /wallet/v3/api-docs/**
+      - /finance/v3/api-docs/**
+      - /market/v3/api-docs/**
+      - /risk/v3/api-docs/**
+      - /notify/v3/api-docs/**
+      - /match/v3/api-docs/**
+      - /favicon.ico
+      - /error
+    # IP白名单
+    ip-whitelist:
+      - 127.0.0.1
+      - 192.168.1.0/24
+  # 限流配置
+  rate-limit:
+    default-replenish-rate: 100
+    default-burst-capacity: 200
+    user-replenish-rate: 50
+    user-burst-capacity: 100
+    ip-replenish-rate: 200
+    ip-burst-capacity: 400
+  # 缓存配置 (单位：秒)
+  cache:
+    auth-ttl: 1800
+    route-ttl: 300
+    rate-limit-ttl: 60
+
+# SpringDoc OpenAPI配置
+springdoc:
+  # Swagger UI 配置
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    doc-expansion: list
+    filter: ""
+    display-request-duration: true
+  # API文档配置
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  # 网关聚合配置
+  swagger-config:
+    url: /v3/api-docs/swagger-config
+  # 禁用默认的服务发现配置，使用自定义配置
+  enable-native: false
+
+# Knife4j 网关聚合配置
+knife4j:
+  # 开启增强配置
+  enable: true
+  # 开启生产环境屏蔽（生产环境建议关闭）
+  production: false
+  # 开启Swagger文档聚合
+  gateway:
+    # 开启网关聚合
+    enabled: true
+    # 网关聚合策略
+    strategy: discover
+    # 服务发现类型
+    discover:
+      # 开启服务发现
+      enabled: true
+      # 服务发现版本（gateway）
+      version: gateway
+      # 服务名称排序方式
+      service-name-sort-asc: true
+      # 需要聚合的服务列表
+      include-services:
+        - user-service
+        - trade-service
+        - wallet-service
+        - finance-service
+        - market-service
+        - risk-service
+        - notify-service
+        - match-service
+      # 排除的服务列表
+      exclude-services:
+        - gateway-service
+    # 聚合文档的排序方式
+    order: 1
+    # 聚合文档的标签
+    tags:
+      - name: 网关聚合文档
+        description: PPCEX网关聚合所有微服务的API文档
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    '[com.ppcex.gateway]': INFO
+    '[org.springframework.cloud.gateway]': INFO
+    '[org.springframework.cloud.gateway.route]': INFO
+    '[org.springframework.cloud.gateway.handler]': INFO
+    '[reactor.netty]': INFO
+    '[com.github.xiaoymin.knife4j]': INFO
+    '[com.ppcex.gateway.filter]': INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/gateway-service.log
+    max-size: 100MB
+    max-history: 30
+
+debug: false

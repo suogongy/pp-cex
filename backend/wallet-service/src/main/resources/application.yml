@@ -1,4 +1,11 @@
+# =================================================================
+# Spring Boot 3.1.5 + Spring Cloud 2022.0.4 + Spring Cloud Alibaba 2022.0.0.0
+# 服务名称: wallet-service
+# 环境配置: test
+# =================================================================
+
 spring:
+  # 应用基础配置
   application:
     name: wallet-service
   profiles:
@@ -8,49 +15,470 @@ spring:
     lazy-initialization: false
     banner-mode: "off"
 
+  # 配置中心
   config:
     import:
-      - optional:nacos:wallet-common-config.yaml
-      - optional:nacos:wallet-mysql-config.yaml
-      - optional:nacos:wallet-redis-config.yaml
-      - optional:nacos:wallet-rocketmq-config.yaml
+      - optional:nacos:wallet-config.yaml
 
+  # 服务注册与发现
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         metadata:
           version: 1.0.0
           context-path: /wallet
+          preserved.heart.beat.interval: 5000
+          preserved.heart.beat.timeout: 15000
+          preserved.ip.delete.timeout: 30000
       config:
         enabled: true
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         file-extension: yaml
+        refresh-enabled: true
+        shared-configs:
+          - data-id: common-config.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+
+    # Sentinel 流量控制
     sentinel:
       transport:
-        dashboard: sentinel:8080
+        dashboard: localhost:8080
         port: 8719
+        client-ip: ${spring.cloud.client.ip-address}
       eager: true
       datasource:
         flow-rules:
           nacos:
-            server-addr: nacos:8848
+            server-addr: localhost:8848
             dataId: sentinel-wallet-service-flow-rules.json
+            groupId: DEFAULT_GROUP
             rule-type: flow
             data-type: json
         degrade-rules:
           nacos:
-            server-addr: nacos:8848
+            server-addr: localhost:8848
             dataId: sentinel-wallet-service-degrade-rules.json
+            groupId: DEFAULT_GROUP
             rule-type: degrade
             data-type: json
 
+    # RocketMQ Stream 配置 (Spring Boot 3.x 兼容格式)
+    function:
+      definition: walletConsumer;assetConsumer
+    stream:
+      rocketmq:
+        binder:
+          name-server: rocketmq:9876
+          group: wallet-service-group
+          access-key: ""
+          secret-key: ""
+      bindings:
+        walletConsumer-in-0:
+          destination: wallet-topic
+          group: wallet-service-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            back-off-multiplier: 2
+            back-off-max-interval: 10000
+        walletSupplier-out-0:
+          destination: wallet-topic
+          producer:
+            group: wallet-service-producer-group
+        assetConsumer-in-0:
+          destination: asset-topic
+          group: wallet-service-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            back-off-multiplier: 2
+            back-off-max-interval: 10000
+        assetSupplier-out-0:
+          destination: asset-topic
+          producer:
+            group: wallet-service-producer-group
+  
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ppcex_wallet?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&maxReconnects=3
+    username: root
+    password: root123
+    hikari:
+      pool-name: WalletServiceHikariCP
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      minimum-idle: 10
+      maximum-pool-size: 50
+      connection-test-query: SELECT 1
+      connection-init-sql: SET NAMES utf8mb4
+      register-mbeans: true
+      allow-pool-suspension: false
+      read-only: false
+      isolate-internal-queries: false
+
+  # JPA/Hibernate 配置
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        '[jdbc.batch_size]': 25
+        '[jdbc.order_inserts]': true
+        '[jdbc.order_updates]': true
+        '[jdbc.batch_versioned_data]': true
+        '[cache.use_second_level_cache]': false
+        '[cache.use_query_cache]': false
+
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: redis123456
+      database: 0
+      username: cex_user
+      timeout: 10000ms
+      connect-timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 20
+          min-idle: 0
+          time-between-eviction-runs: 30000ms
+      client-name: wallet-service-redis-client
+
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "wallet:"
+      use-key-prefix: true
+
+  # 线程池配置 (Spring Boot 3.x 格式)
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 50
+        queue-capacity: 1000
+        keep-alive: 60s
+    scheduling:
+      pool:
+        size: 5
+
+  # Flyway 配置
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    clean-disabled: true
+    table: flyway_schema_history
+    sql-migration-separator: "__"
+    sql-migration-prefix: "V"
+    sql-migration-suffixes: ".sql"
+    encoding: UTF-8
+    placeholder-replacement: true
+    placeholders:
+      '[db_name]': ppcex_wallet
+      '[db_user]': root
+
+# Web服务器配置
 server:
   port: 8002
   servlet:
     context-path: /wallet
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
 
-# Knife4j Configuration
+# 业务配置
+cex:
+  # JWT 配置
+  jwt:
+    enabled: true
+    secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
+    expiration: 86400000
+    refresh-expiration: 604800000
+    issuer: PPCEX
+    header-name: Authorization
+    token-prefix: Bearer
+
+  # 钱包服务配置
+  wallet:
+    # 钱包基础配置
+    basic:
+      hot-wallet-min-balance: 0.1
+      hot-wallet-max-balance: 10000
+      withdraw-audit-amount: 10
+      auto-withdraw-enabled: true
+
+    # 充值配置
+    recharge:
+      auto-confirm-enabled: true
+      min-confirmations: 6
+      check-interval: 60000
+
+    # 提现配置
+    withdraw:
+      daily-limit: 100000
+      fee-amount: 0.001
+      auto-audit-enabled: false
+      max-retry-times: 3
+
+    # 监控配置
+    monitor:
+      balance-threshold: 0.1
+      check-interval: 300000
+      transaction-confirm-interval: 60000
+
+    # 支持的数字货币
+    supported-currencies:
+      - BTC
+      - ETH
+      - USDT
+      - TRX
+      - USDC
+
+    # 链配置
+    chains:
+      bitcoin:
+        enabled: true
+        min-confirmations: 6
+        fee-amount: 0.0001
+      ethereum:
+        enabled: true
+        min-confirmations: 12
+        gas-limit: 21000
+        gas-price: 20000000000
+      tron:
+        enabled: true
+        min-confirmations: 19
+        fee-limit: 1000000
+
+  # 缓存配置
+  cache:
+    local:
+      enabled: true
+      maximum-size: 2000
+      expire-after-write: 300
+      expire-after-access: 600
+    redis:
+      enabled: true
+      default-expiration: 3600
+      key-prefix: "wallet:"
+      use-key-prefix: true
+      cache-null-values: false
+      time-to-live: 3600000
+    caches:
+      wallet-balance:
+        ttl: 60
+        maximum-size: 5000
+      transaction-history:
+        ttl: 300
+        maximum-size: 1000
+      address-info:
+        ttl: 3600
+        maximum-size: 2000
+      hot-wallet-balance:
+        ttl: 30
+        maximum-size: 1000
+      cold-wallet-balance:
+        ttl: 300
+        maximum-size: 100
+      withdrawal-cache:
+        ttl: 1800
+        maximum-size: 5000
+      deposit-cache:
+        ttl: 600
+        maximum-size: 5000
+
+  # 区块链配置
+  blockchain:
+    ethereum:
+      rpc-url: ${ETH_RPC_URL:https://mainnet.infura.io/v3/YOUR_PROJECT_ID}
+      chain-id: 1
+      gas-limit: 21000
+      gas-price: 20000000000
+      confirmations-required: 12
+      transaction-timeout: 1800000
+    tron:
+      rpc-url: ${TRON_RPC_URL:https://api.trongrid.io}
+      chain-id: 1
+      fee-limit: 1000000
+      confirmations-required: 19
+      transaction-timeout: 1800000
+    bitcoin:
+      rpc-url: ${BTC_RPC_URL:http://localhost:8332}
+      rpc-username: ${BTC_RPC_USERNAME:bitcoinrpc}
+      rpc-password: ${BTC_RPC_PASSWORD:bitcoinrpcpassword}
+      confirmations-required: 6
+      transaction-timeout: 3600000
+
+  # 加密配置
+  crypto:
+    aes:
+      key: ${AES_KEY:default-aes-key-32-characters-long}
+    rsa:
+      private-key: ${RSA_PRIVATE_KEY:default-rsa-private-key}
+      public-key: ${RSA_PUBLIC_KEY:default-rsa-public-key}
+
+# 安全配置
+security:
+  permit-all:
+    - /wallet/api/v1/public/**
+    - /wallet/doc.html
+    - /wallet/doc.html/**
+    - /wallet/swagger-ui/**
+    - /wallet/swagger-ui/index.html
+    - /wallet/swagger-resources/**
+    - /wallet/v3/api-docs/**
+    - /wallet/v3/api-docs/swagger-config
+    - /wallet/webjars/**
+    - /wallet/actuator/**
+    - /wallet/favicon.ico
+    - /wallet/error
+
+  cors:
+    allowed-origins: ["*"]
+    allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed-headers: ["*"]
+    exposed-headers: ["Authorization", "Content-Disposition"]
+    allow-credentials: true
+    max-age: 3600
+
+  rate-limit:
+    enabled: true
+    global-limit: 1000
+    api-limits:
+      "/wallet/api/v1/wallet/balance": 500
+      "/wallet/api/v1/wallet/withdraw": 50
+      "/wallet/api/v1/wallet/deposit": 100
+      "/wallet/api/v1/wallet/transfer": 100
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+      base-path: /actuator
+      discovery:
+        enabled: true
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: "*"
+        readiness:
+          include: "*"
+    info:
+      enabled: true
+    env:
+      enabled: true
+    beans:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+      region: default
+    distribution:
+      percentiles-histogram:
+        '[http.server.requests]': true
+      percentiles:
+        '[http.server.requests]': 0.5, 0.95, 0.99
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    '[com.ppcex.wallet]': INFO
+    '[com.ppcex.common]': INFO
+    '[org.springframework.security]': DEBUG
+    '[org.springframework.web]': DEBUG
+    '[org.springframework.cloud]': WARN
+    '[com.alibaba.nacos.client]': WARN
+    '[io.lettuce.core]': WARN
+    '[com.zaxxer.hikari]': WARN
+    '[org.apache.rocketmq]': WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 1GB
+      clean-history-on-start: false
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.ppcex.wallet.entity
+  type-handlers-package: com.ppcex.wallet.handler
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: false
+    auto-mapping-behavior: partial
+    default-statement-timeout: 25000
+    call-setters-on-nulls: false
+    return-instance-for-empty-row: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    default-executor-type: reuse
+    local-cache-scope: statement
+  global-config:
+    db-config:
+      id-type: auto
+      table-underline: true
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      table-prefix: ""
+      capital-mode: false
+    banner: false
+    enable-sql-runner: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  packages-to-scan: com.ppcex.wallet.controller # 替换为你的控制器所在包
+
+# Knife4j 增强配置
 knife4j:
   enable: true
   setting:
@@ -64,20 +492,25 @@ knife4j:
     enableFilterMultipartMethods: false
     enableRequestCache: true
     enableHost: false
-    enableHomeCustom: true
-    homeCustomLocation: classpath:markdown/home.md
+    enableHomeCustom: false
     enableAfterScript: true
-    enableSwaggerAuth: true  # 启用Swagger认证
-  enableRequestCache: true
-  enableHost: false
-  openapi:
-    title: PPCEX Wallet Service API
-    description: 钱包服务API文档
-    email: support@ppcex.com
-    concat: PPCEX Team
-    url: https://www.ppcex.com
-    version: v1.0.0
-    license: MIT License
-    license-url: https://opensource.org/licenses/MIT
+    enableSwaggerAuth: true
+    
 
-debug: false
+# 监控配置
+info:
+  app:
+    name: ${spring.application.name}
+    description: 钱包服务
+    version: 1.0.0
+    encoding: UTF-8
+    java:
+      version: ${java.version}
+  build:
+    artifact: ${project.artifactId}
+    name: ${project.name}
+    version: ${project.version}
+    time: ${project.build.timestamp}
+
+# Sentinel 流控规则 (迁移至Nacos配置中心管理)
+# 以下规则建议通过 sentinel-wallet-service-flow-rules.json 和 sentinel-wallet-service-degrade-rules.json 配置

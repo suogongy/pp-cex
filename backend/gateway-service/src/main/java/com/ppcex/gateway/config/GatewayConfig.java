@@ -13,6 +13,15 @@ public class GatewayConfig {
 
     public static class Security {
         private String[] permitAll = {
+            "/doc.html",
+            "/doc.html/**",
+            "/swagger-ui/**",
+            "/swagger-resources/**",
+            "/v3/api-docs/**",
+            "/v3/api-docs/swagger-config",
+            "/webjars/**",
+            "/actuator/**",
+            "/api/v1/gateway/health"
         };
         private String[] ipWhitelist = {"127.0.0.1", "0:0:0:0:0:0:0:1", "192.168.0.0/16", "10.0.0.0/8"};
 

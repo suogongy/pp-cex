@@ -83,6 +83,12 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
         String clientIp = request.getRemoteAddress() != null ?
                 request.getRemoteAddress().getAddress().getHostAddress() : "unknown";
 
+        // 为Swagger相关请求添加短路逻辑，减少日志输出
+        if (isSwaggerRequest(path)) {
+            log.debug("Swagger文档请求，跳过权限检查 - 路径: {} 方法: {}", path, method);
+            return chain.filter(exchange);
+        }
+
         log.info("开始权限授权检查 - 路径: {} {} - 客户端IP: {}", method, path, clientIp);
 
         // 检查是否是免权限路径
@@ -128,6 +134,15 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
                 });
         log.debug("免权限路径检查结果 - 路径: {} 是否免权限: {}", path, isPermitAll);
         return isPermitAll;
+    }
+
+    private boolean isSwaggerRequest(String path) {
+        return path.startsWith("/doc.html") ||
+               path.startsWith("/swagger-ui/") ||
+               path.startsWith("/swagger-resources/") ||
+               path.startsWith("/v3/api-docs/") ||
+               path.startsWith("/webjars/") ||
+               path.equals("/v3/api-docs/swagger-config");
     }
 
     @SuppressWarnings("unchecked")

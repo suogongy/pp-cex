@@ -1,36 +1,431 @@
+# =================================================================
+# Spring Boot 3.1.5 + Spring Cloud 2022.0.4 + Spring Cloud Alibaba 2022.0.0.0
+# 服务名称: user-service
+# 环境配置: test
+# =================================================================
+
 spring:
+  # 应用基础配置
   application:
     name: user-service
   profiles:
     active: test
   main:
     allow-bean-definition-overriding: true
+    lazy-initialization: false
+    banner-mode: "off"
 
+  # 配置中心
   config:
     import:
-      - optional:nacos:user-common-config.yaml
-      - optional:nacos:user-mysql-config.yaml
-      - optional:nacos:user-redis-config.yaml
-      - optional:nacos:user-rocketmq-config.yaml
+      - optional:nacos:user-config.yaml
 
+  # 服务注册与发现
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         metadata:
           version: 1.0.0
           context-path: /user
+          preserved.heart.beat.interval: 5000
+          preserved.heart.beat.timeout: 15000
+          preserved.ip.delete.timeout: 30000
       config:
         enabled: true
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         file-extension: yaml
+        refresh-enabled: true
+        shared-configs:
+          - data-id: common-config.yaml
+            group: DEFAULT_GROUP
+            refresh: true
 
+    # Sentinel 流量控制
+    sentinel:
+      transport:
+        dashboard: localhost:8080
+        port: 8719
+        client-ip: ${spring.cloud.client.ip-address}
+      eager: true
+      datasource:
+        flow-rules:
+          nacos:
+            server-addr: localhost:8848
+            dataId: sentinel-user-service-flow-rules.json
+            groupId: DEFAULT_GROUP
+            rule-type: flow
+            data-type: json
+        degrade-rules:
+          nacos:
+            server-addr: localhost:8848
+            dataId: sentinel-user-service-degrade-rules.json
+            groupId: DEFAULT_GROUP
+            rule-type: degrade
+            data-type: json
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ppcex_user?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&maxReconnects=3
+    username: root
+    password: root123
+    hikari:
+      pool-name: UserServiceHikariCP
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      minimum-idle: 10
+      maximum-pool-size: 50
+      connection-test-query: SELECT 1
+      connection-init-sql: SET NAMES utf8mb4
+      register-mbeans: true
+      allow-pool-suspension: false
+      read-only: false
+      isolate-internal-queries: false
+
+  # JPA/Hibernate 配置
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 25
+          order_inserts: true
+          order_updates: true
+          batch_versioned_data: true
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis123456}
+      database: ${REDIS_DATABASE:0}
+      username: ${REDIS_USERNAME:cex_user}
+      timeout: 10000ms
+      connect-timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 20
+          min-idle: 0
+          time-between-eviction-runs: 30000ms
+      client-name: user-service-redis-client
+
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "user:"
+      use-key-prefix: true
+
+  # 线程池配置
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 50
+        queue-capacity: 1000
+        keep-alive: 60s
+        thread-name-prefix: user-service-task-
+    scheduling:
+      pool:
+        size: 5
+        thread-name-prefix: user-service-scheduling-
+
+  # Flyway 配置
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    clean-disabled: true
+    table: flyway_schema_history
+    sql-migration-separator: "__"
+    sql-migration-prefix: "V"
+    sql-migration-suffixes: ".sql"
+    encoding: UTF-8
+    placeholder-replacement: true
+    placeholders:
+      db_name: ppcex_user
+      db_user: root
+
+# Web服务器配置
 server:
   port: 8001
   servlet:
     context-path: /user
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
 
-# Knife4j Configuration
+# 业务配置
+cex:
+  jwt:
+    enabled: true
+    secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
+    expiration: 86400000
+    refresh-expiration: 604800000
+    issuer: PPCEX
+    header-name: Authorization
+    token-prefix: Bearer
+
+    password:
+      min-length: 8
+      max-length: 20
+      require-uppercase: true
+      require-lowercase: true
+      require-digits: true
+      require-special-chars: true
+      salt-length: 16
+      hash-iterations: 10
+      encoding: UTF-8
+
+    login:
+      max-failed-attempts: 5
+      lock-duration: 30
+      session-timeout: 1800
+      remember-me-duration: 604800
+      max-concurrent-sessions: 3
+
+    register:
+      enabled: true
+      require-email-verification: true
+      require-phone-verification: true
+      username-min-length: 3
+      username-max-length: 20
+      email-whitelist: []
+      phone-whitelist: []
+      reserved-usernames: ["admin", "root", "system", "test"]
+
+    kyc:
+      enabled: true
+      audit-timeout: 24
+      max-retry-count: 3
+      supported-countries: ["CN", "US", "UK", "JP", "KR", "SG"]
+      id-types: [1, 2, 3]
+      auto-approve-amount: 1000
+
+    google-auth:
+      enabled: true
+      issuer: PPCEX
+      window-size: 3
+      code-digits: 6
+      qr-code-size: 200
+      backup-codes-count: 10
+
+    email-verification:
+      enabled: true
+      expire-minutes: 30
+      max-attempts: 3
+      template-code: USER_EMAIL_VERIFY
+      rate-limit: 5
+
+    phone-verification:
+      enabled: true
+      expire-minutes: 10
+      max-attempts: 3
+      template-code: USER_PHONE_VERIFY
+      rate-limit: 3
+
+    asset:
+      supported-currencies: ["BTC", "ETH", "USDT", "USD", "CNY"]
+      crypto-currencies: ["BTC", "ETH", "USDT"]
+      fiat-currencies: ["USD", "CNY"]
+      min-withdraw-amount:
+        BTC: 0.001
+        ETH: 0.01
+        USDT: 1.0
+        USD: 10.0
+        CNY: 50.0
+      daily-withdraw-limit:
+        BTC: 1.0
+        ETH: 10.0
+        USDT: 10000.0
+
+    invite:
+      enabled: true
+      code-length: 8
+      reward-amount: 0
+      reward-currency: "USDT"
+      max-invite-count: 1000
+      invite-levels: 3
+
+    cache:
+      local:
+        enabled: true
+        maximum-size: 1000
+        expire-after-write: 300
+        expire-after-access: 600
+      redis:
+        enabled: true
+        default-expiration: 3600
+        key-prefix: "user:"
+        use-key-prefix: true
+        cache-null-values: false
+        time-to-live: 3600000
+      caches:
+        user-info:
+          ttl: 1800
+          maximum-size: 1000
+        user-asset:
+          ttl: 300
+          maximum-size: 5000
+        kyc-info:
+          ttl: 3600
+          maximum-size: 1000
+        login-token:
+          ttl: 86400
+          maximum-size: 10000
+
+# 安全配置
+security:
+  permit-all:
+    - /user/api/v1/auth/**
+    - /user/api/v1/public/**
+    - /user/doc.html
+    - /user/swagger-ui/**
+    - /user/v3/api-docs/**
+    - /user/actuator/**
+    - /user/favicon.ico
+    - /user/error
+
+  cors:
+    allowed-origins: ["*"]
+    allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed-headers: ["*"]
+    exposed-headers: ["Authorization", "Content-Disposition"]
+    allow-credentials: true
+    max-age: 3600
+
+  rate-limit:
+    enabled: true
+    global-limit: 1000
+    api-limits:
+      "/user/api/v1/auth/register": 5
+      "/user/api/v1/auth/login": 10
+      "/user/api/v1/user/info": 100
+      "/user/api/v1/kyc/submit": 3
+      "/user/api/v1/asset/**": 200
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+      base-path: /actuator
+      discovery:
+        enabled: true
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: "*"
+        readiness:
+          include: "*"
+    info:
+      enabled: true
+      git:
+        mode: full
+    env:
+      enabled: true
+    beans:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+      region: default
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.ppcex.user: INFO
+    com.ppcex.common: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.cloud: WARN
+    com.alibaba.nacos.client: WARN
+    io.lettuce.core: WARN
+    com.zaxxer.hikari: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 1GB
+      clean-history-on-start: false
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.ppcex.user.entity
+  type-handlers-package: com.ppcex.user.handler
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: false
+    auto-mapping-behavior: partial
+    default-statement-timeout: 25000
+    call-setters-on-nulls: false
+    return-instance-for-empty-row: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    default-executor-type: reuse
+    local-cache-scope: statement
+  global-config:
+    db-config:
+      id-type: auto
+      table-underline: true
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      table-prefix: ""
+      capital-mode: false
+    banner: false
+    enable-sql-runner: false
+  type-enums-package: com.ppcex.user.enums
+  sql-injector: com.ppcex.user.config.MySqlInjector
+
+# API文档配置
 knife4j:
   enable: true
   setting:
@@ -47,15 +442,14 @@ knife4j:
     enableHomeCustom: true
     homeCustomLocation: classpath:markdown/home.md
     enableAfterScript: true
-    enableSwaggerAuth: true  # 启用Swagger认证
-  enableRequestCache: true
-  enableHost: false
-  openapi:
+    enableSwaggerAuth: true
+  info:
     title: PPCEX User Service API
     description: 用户服务API文档
     email: support@ppcex.com
     concat: PPCEX Team
     url: https://www.ppcex.com
     version: v1.0.0
-    license: MIT License
-    license-url: https://opensource.org/licenses/MIT
+    license:
+      name: MIT License
+      url: https://opensource.org/licenses/MIT

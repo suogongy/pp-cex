@@ -1,4 +1,11 @@
+# =================================================================
+# Spring Boot 3.1.5 + Spring Cloud 2022.0.4 + Spring Cloud Alibaba 2022.0.0.0
+# 服务名称: trade-service
+# 环境配置: test
+# =================================================================
+
 spring:
+  # 应用基础配置
   application:
     name: trade-service
   profiles:
@@ -8,37 +15,444 @@ spring:
     lazy-initialization: false
     banner-mode: "off"
 
+  # 配置中心
   config:
     import:
-      - optional:nacos:trade-common-config.yaml
-      - optional:nacos:trade-mysql-config.yaml
-      - optional:nacos:trade-redis-config.yaml
-      - optional:nacos:trade-rocketmq-config.yaml
+      - optional:nacos:trade-config.yaml
 
+  # 服务注册与发现
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         metadata:
           version: 1.0.0
           context-path: /trade
+          preserved.heart.beat.interval: 5000
+          preserved.heart.beat.timeout: 15000
+          preserved.ip.delete.timeout: 30000
       config:
         enabled: true
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         file-extension: yaml
+        refresh-enabled: true
+        shared-configs:
+          - data-id: common-config.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+
+    # Sentinel 流量控制
+    sentinel:
+      transport:
+        dashboard: localhost:8080
+        port: 8719
+        client-ip: ${spring.cloud.client.ip-address}
+      eager: true
+      datasource:
+        flow-rules:
+          nacos:
+            server-addr: localhost:8848
+            dataId: sentinel-trade-service-flow-rules.json
+            groupId: DEFAULT_GROUP
+            rule-type: flow
+            data-type: json
+        degrade-rules:
+          nacos:
+            server-addr: localhost:8848
+            dataId: sentinel-trade-service-degrade-rules.json
+            groupId: DEFAULT_GROUP
+            rule-type: degrade
+            data-type: json
+
+    # Stream 配置
     stream:
       function:
         definition: orderTopic
       rocketmq:
         binder:
-          name-server: localhost:9876
+          name-server: rocketmq:9876
+          group: trade-service-group
 
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ppcex_trade?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&maxReconnects=3
+    username: root
+    password: root123
+    hikari:
+      pool-name: TradeServiceHikariCP
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      minimum-idle: 20
+      maximum-pool-size: 100
+      connection-test-query: SELECT 1
+      connection-init-sql: SET NAMES utf8mb4
+      register-mbeans: true
+      allow-pool-suspension: false
+      read-only: false
+      isolate-internal-queries: false
+
+  # JPA/Hibernate 配置
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
+          batch_versioned_data: true
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis123456}
+      database: ${REDIS_DATABASE:1}
+      username: ${REDIS_USERNAME:cex_user}
+      timeout: 10000ms
+      connect-timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 300
+          max-wait: -1ms
+          max-idle: 20
+          min-idle: 0
+          time-between-eviction-runs: 30000ms
+      client-name: trade-service-redis-client
+
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "trade:"
+      use-key-prefix: true
+
+  # 线程池配置
+  task:
+    execution:
+      pool:
+        core-size: 20
+        max-size: 100
+        queue-capacity: 2000
+        keep-alive: 60s
+        thread-name-prefix: trade-service-task-
+    scheduling:
+      pool:
+        size: 10
+        thread-name-prefix: trade-service-scheduling-
+
+  # Flyway 配置
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    clean-disabled: true
+    table: flyway_schema_history
+    sql-migration-separator: "__"
+    sql-migration-prefix: "V"
+    sql-migration-suffixes: ".sql"
+    encoding: UTF-8
+    placeholder-replacement: true
+    placeholders:
+      db_name: ppcex_trade
+      db_user: root
+
+# Web服务器配置
 server:
   port: 8003
   servlet:
     context-path: /trade
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
 
-# Knife4j Configuration
+# 业务配置
+cex:
+  # JWT 配置
+  jwt:
+    enabled: true
+    secret: ${JWT_SECRET:your-jwt-secret-key-at-least-32-bytes-long-for-security}
+    expiration: 86400000
+    refresh-expiration: 604800000
+    issuer: PPCEX
+    header-name: Authorization
+    token-prefix: Bearer
+
+  # 交易配置
+  trade:
+    # 交易配置
+    trading:
+      # 订单配置
+      order:
+        max-open-orders: 1000
+        min-order-amount: 0.001
+        max-order-amount: 1000000
+        price-precision: 8
+        amount-precision: 8
+        fee-rate: 0.001
+        maker-fee-rate: 0.0008
+        taker-fee-rate: 0.0012
+
+      # 撮合引擎配置
+      matching:
+        enabled: true
+        batch-size: 100
+        batch-interval: 100
+        price-tolerance: 0.00000001
+
+      # 风控配置
+      risk:
+        max-position-size: 1000000
+        max-daily-volume: 10000000
+        price-deviation-threshold: 0.1
+        volatility-threshold: 0.2
+
+    # 交易对配置
+    pairs:
+      enabled: true
+      default-pairs:
+        - symbol: "BTC/USDT"
+          base-currency: "BTC"
+          quote-currency: "USDT"
+          min-price: 0.01
+          max-price: 1000000
+          min-amount: 0.00000001
+          max-amount: 10000
+          price-precision: 2
+          amount-precision: 8
+          status: "ACTIVE"
+        - symbol: "ETH/USDT"
+          base-currency: "ETH"
+          quote-currency: "USDT"
+          min-price: 0.01
+          max-price: 10000
+          min-amount: 0.00000001
+          max-amount: 10000
+          price-precision: 2
+          amount-precision: 8
+          status: "ACTIVE"
+
+    # 缓存配置
+    cache:
+      local:
+        enabled: true
+        maximum-size: 5000
+        expire-after-write: 300
+        expire-after-access: 600
+      redis:
+        enabled: true
+        default-expiration: 3600
+        key-prefix: "trade:"
+        use-key-prefix: true
+        cache-null-values: false
+        time-to-live: 3600000
+      caches:
+        market-data:
+          ttl: 60
+          maximum-size: 10000
+        order-book:
+          ttl: 30
+          maximum-size: 5000
+        trade-history:
+          ttl: 300
+          maximum-size: 10000
+        user-orders:
+          ttl: 300
+          maximum-size: 1000
+        ticker-data:
+          ttl: 60
+          maximum-size: 1000
+        kline-data:
+          ttl: 300
+          maximum-size: 20000
+        user-positions:
+          ttl: 180
+          maximum-size: 5000
+        trading-pairs:
+          ttl: 3600
+          maximum-size: 100
+        price-data:
+          ttl: 60
+          maximum-size: 10000
+        volume-data:
+          ttl: 300
+          maximum-size: 5000
+        order-info:
+          ttl: 1800
+          maximum-size: 100000
+        matching-engine:
+          ttl: 86400
+          maximum-size: 1000000
+
+  # 线程池配置
+  thread-pool:
+    core:
+      core-size: 20
+      max-size: 100
+      queue-capacity: 2000
+      keep-alive-seconds: 60
+      thread-name-prefix: trade-service-core-
+    async:
+      core-size: 10
+      max-size: 50
+      queue-capacity: 1000
+      keep-alive-seconds: 60
+      thread-name-prefix: trade-service-async-
+    matching:
+      core-size: 5
+      max-size: 20
+      queue-capacity: 500
+      keep-alive-seconds: 60
+      thread-name-prefix: trade-service-matching-
+
+# 安全配置
+security:
+  permit-all:
+    - /trade/api/v1/public/**
+    - /trade/doc.html
+    - /trade/swagger-ui/**
+    - /trade/v3/api-docs/**
+    - /trade/actuator/**
+    - /trade/favicon.ico
+    - /trade/error
+
+  cors:
+    allowed-origins: ["*"]
+    allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed-headers: ["*"]
+    exposed-headers: ["Authorization", "Content-Disposition"]
+    allow-credentials: true
+    max-age: 3600
+
+  rate-limit:
+    enabled: true
+    global-limit: 2000
+    api-limits:
+      "/trade/api/v1/order/create": 50
+      "/trade/api/v1/order/cancel": 100
+      "/trade/api/v1/market/ticker": 1000
+      "/trade/api/v1/market/depth": 500
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+      base-path: /actuator
+      discovery:
+        enabled: true
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessStateProbe
+        readiness:
+          include: readinessStateProbe
+    info:
+      enabled: true
+      git:
+        mode: full
+    env:
+      enabled: true
+    beans:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+      region: default
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.ppcex.trade: INFO
+    com.ppcex.common: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.cloud: WARN
+    com.alibaba.nacos.client: WARN
+    io.lettuce.core: WARN
+    com.zaxxer.hikari: WARN
+    org.apache.rocketmq: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 1GB
+      clean-history-on-start: false
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.ppcex.trade.entity
+  type-handlers-package: com.ppcex.trade.handler
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: false
+    auto-mapping-behavior: partial
+    default-statement-timeout: 25000
+    call-setters-on-nulls: false
+    return-instance-for-empty-row: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    default-executor-type: reuse
+    local-cache-scope: statement
+  global-config:
+    db-config:
+      id-type: auto
+      table-underline: true
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      table-prefix: ""
+      capital-mode: false
+    banner: false
+    enable-sql-runner: false
+  type-enums-package: com.ppcex.trade.enums
+
+# API文档配置
 knife4j:
   enable: true
   setting:
@@ -55,16 +469,151 @@ knife4j:
     enableHomeCustom: true
     homeCustomLocation: classpath:markdown/home.md
     enableAfterScript: true
-    enableSwaggerAuth: true  # 启用Swagger认证
-  enableRequestCache: true
-  enableHost: false
-  openapi:
+    enableSwaggerAuth: true
+  info:
     title: PPCEX Trade Service API
     description: 交易服务API文档
     email: support@ppcex.com
     concat: PPCEX Team
     url: https://www.ppcex.com
     version: v1.0.0
-    license: MIT License
-    license-url: https://opensource.org/licenses/MIT
-debug: false
+    license:
+      name: MIT License
+      url: https://opensource.org/licenses/MIT
+
+# RocketMQ 配置
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESERVER:localhost:9876}
+  producer:
+    group: trade-producer-group
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 3
+    retry-times-when-send-async-failed: 3
+    max-message-size: 4194304
+    compress-message-body-threshold: 4096
+    retry-next-server: true
+    access-key:
+    secret-key:
+    enable-msg-trace: true
+    customized-tracker-topic: RMQ_SYS_TRACE_TOPIC
+  consumer:
+    group: trade-consumer-group
+    consume-thread-min: 20
+    consume-thread-max: 64
+    pull-batch-size: 32
+
+# 消息主题配置
+rocketmq-topics:
+  trade:
+    topic: trade-topic
+    tags:
+      - ORDER_CREATE
+      - ORDER_CANCEL
+      - ORDER_UPDATE
+      - ORDER_MATCH
+      - ORDER_PARTIAL_MATCH
+      - ORDER_FILLED
+      - ORDER_EXPIRED
+      - ORDER_REJECTED
+      - TRADE_EXECUTE
+      - POSITION_UPDATE
+      - BALANCE_UPDATE
+  market:
+    topic: market-topic
+    tags:
+      - TICKER_UPDATE
+      - DEPTH_UPDATE
+      - TRADE_UPDATE
+      - KLINE_UPDATE
+      - MARKET_OPEN
+      - MARKET_CLOSE
+      - MARKET_PAUSE
+      - MARKET_RESUME
+  risk:
+    topic: risk-topic
+    tags:
+      - RISK_ALERT
+      - POSITION_LIMIT
+      - PRICE_DEVIATION
+      - VOLUME_SPIKE
+      - ACCOUNT_FREEZE
+      - ACCOUNT_UNFREEZE
+  system:
+    topic: system-topic
+    tags:
+      - SYSTEM_STARTUP
+      - SYSTEM_SHUTDOWN
+      - MAINTENANCE_START
+      - MAINTENANCE_END
+      - CONFIG_UPDATE
+      - ERROR_NOTIFICATION
+
+# Redis分布式锁配置
+redis:
+  lock:
+    enabled: true
+    key-prefix: "trade:lock:"
+    lease-time: 30000
+    wait-time: 10000
+    retry-interval: 100
+
+# 监控配置
+info:
+  app:
+    name: ${spring.application.name}
+    description: 交易服务
+    version: 1.0.0
+    encoding: UTF-8
+    java:
+      version: ${java.version}
+  build:
+    artifact: ${project.artifactId}
+    name: ${project.name}
+    version: ${project.version}
+    time: ${project.build.timestamp}
+
+# Sentinel 流控规则
+sentinel:
+  flow:
+    trade-operation:
+      resource: trade-operation
+      count: 2000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 10
+      maxQueueingTimeMs: 500
+    trade-api-order:
+      resource: trade-api-order
+      count: 500
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 5
+      maxQueueingTimeMs: 200
+    trade-api-market:
+      resource: trade-api-market
+      count: 1000
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 3
+      maxQueueingTimeMs: 100
+  degrade:
+    trade-operation:
+      resource: trade-operation
+      grade: 0
+      count: 10
+      timeWindow: 60
+      minRequestAmount: 20
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
+  system:
+    highestCpuUsage: 0.8
+    highestSystemLoad: 10.0
+    qps: 10000
+    avgRt: 1000
+    maxThread: 800

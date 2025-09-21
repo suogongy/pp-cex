@@ -94,6 +94,12 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
         String method = request.getMethod().name();
         String clientIp = getClientIp(request);
 
+        // 为Swagger相关请求添加短路逻辑，减少不必要的限流检查
+        if (isSwaggerRequest(path)) {
+            log.debug("Swagger文档请求，跳过限流检查 - 路径: {} 方法: {}", path, method);
+            return chain.filter(exchange);
+        }
+
         // 获取用户ID
         String userId = request.getHeaders().getFirst("X-User-Id");
 
@@ -252,6 +258,15 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
 
         return request.getRemoteAddress() != null ?
                 request.getRemoteAddress().getAddress().getHostAddress() : "unknown";
+    }
+
+    private boolean isSwaggerRequest(String path) {
+        return path.startsWith("/doc.html") ||
+               path.startsWith("/swagger-ui/") ||
+               path.startsWith("/swagger-resources/") ||
+               path.startsWith("/v3/api-docs/") ||
+               path.startsWith("/webjars/") ||
+               path.equals("/v3/api-docs/swagger-config");
     }
 
     private void logRequestSuccess(String path, String method, String ip, String userId) {

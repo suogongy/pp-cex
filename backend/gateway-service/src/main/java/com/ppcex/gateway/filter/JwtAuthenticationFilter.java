@@ -49,6 +49,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String clientIp = request.getRemoteAddress() != null ?
                 request.getRemoteAddress().getAddress().getHostAddress() : "unknown";
 
+        // 为Swagger相关请求添加短路逻辑，减少日志输出
+        if (isSwaggerRequest(path)) {
+            log.debug("Swagger文档请求，跳过JWT认证 - 路径: {} 方法: {}", path, method);
+            return chain.filter(exchange);
+        }
+
         log.info("开始JWT认证处理 - 路径: {} {} - 客户端IP: {}", method, path, clientIp);
 
         // 检查是否是免认证路径

@@ -737,9 +737,9 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:mysql://mysql-master:3306/user_db?useSSL=false&characterEncoding=utf8
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://localhost:3306/ppcex_user?useSSL=false&characterEncoding=utf8
+    username: root
+    password: root123
     hikari:
       maximum-pool-size: 20
       minimum-idle: 10
