@@ -198,14 +198,14 @@ public class HealthCheckService {
      * 检查单个实例的健康状态
      */
     private boolean checkInstanceHealth(ServiceInstance instance) {
-        log.info("开始检查实例健康状态 - 实例ID: {}", instance.getInstanceId());
 
         if (instance == null) {
             log.warn("实例为null，无法进行健康检查");
             return false;
         }
+        String instanceId = generateInstanceId(instance);
+        log.info("开始检查实例健康状态 - 实例ID: {}",  generateInstanceId(instance)); 
 
-        String instanceId = instance.getInstanceId();
         String instanceUri = instance.getUri() != null ? instance.getUri().toString() : "null";
 
         log.debug("实例基本信息 - 实例ID: {} URI: {}", instanceId, instanceUri);
@@ -280,6 +280,14 @@ public class HealthCheckService {
                     instanceId, instanceUri, e.getMessage());
             return false;
         }
+    }
+
+    private String generateInstanceId(ServiceInstance instance) {
+        if (instance.getInstanceId() != null && !instance.getInstanceId().trim().isEmpty()) {
+            return instance.getInstanceId();
+        }
+        // 使用IP:端口作为实例ID
+        return instance.getHost() + ":" + instance.getPort();
     }
 
     /**
