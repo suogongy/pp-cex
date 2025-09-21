@@ -310,6 +310,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -1; // 高优先级，确保在认证相关的过滤器中最早执行，但在CORS过滤器之后
+        return -100; // 中等优先级，在CORS之后但在其他过滤器之前执行
     }
 }

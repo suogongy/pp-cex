@@ -24,6 +24,11 @@ public class GatewayConfig {
             "/actuator/**",
             "/api/v1/gateway/health",
             "/favicon.ico",
+            // 用户认证相关接口
+            "/api/v1/auth/**",
+            "/api/v1/user/info",
+            "/api/v1/user/register",
+            "/api/v1/user/login",
             // OpenAPI文档路径
             "/api/v1/user/v3/api-docs/**",
             "/api/v1/trade/v3/api-docs/**",

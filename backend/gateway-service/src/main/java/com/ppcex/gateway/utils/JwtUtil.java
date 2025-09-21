@@ -80,7 +80,20 @@ public class JwtUtil {
 
     public String getUserId(String token) {
         Claims claims = extractAllClaims(token);
-        return claims.get("userId", String.class);
+        Object userId = claims.get("userId");
+        if (userId == null) {
+            return null;
+        }
+        // 处理不同类型的userId，支持Integer和String
+        if (userId instanceof Integer) {
+            return String.valueOf(userId);
+        } else if (userId instanceof Long) {
+            return String.valueOf(userId);
+        } else if (userId instanceof String) {
+            return (String) userId;
+        } else {
+            return userId.toString();
+        }
     }
 
     public Date getExpirationDate(String token) {

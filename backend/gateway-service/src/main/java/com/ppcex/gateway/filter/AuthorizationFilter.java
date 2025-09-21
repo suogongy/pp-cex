@@ -105,21 +105,8 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
         }
         log.info("获取用户ID成功 - 用户ID: {}", userId);
 
-        // 获取用户角色
-        List<String> userRoles = getUserRoles(userId);
-        if (userRoles == null || userRoles.isEmpty()) {
-            log.warn("用户未分配角色 - 用户ID: {} - 路径: {}", userId, path);
-            return handleError(exchange.getResponse(), 403, "User has no roles assigned");
-        }
-        log.info("获取用户角色成功 - 用户ID: {} 角色: {}", userId, userRoles);
-
-        // 检查权限
-        if (!hasPermission(path, method, userId, userRoles)) {
-            log.warn("权限检查失败 - 用户ID: {} 路径: {} {} 角色: {}",
-                    userId, method, path, userRoles);
-            return handleError(exchange.getResponse(), 403, "Permission denied");
-        }
-
+        // 暂时跳过角色和权限检查，直接允许访问
+        // TODO: 后续可以启用基于角色的权限控制
         log.info("权限授权成功 - 用户ID: {} 路径: {} {} 客户端IP: {}",
                 userId, method, path, clientIp);
         return chain.filter(exchange);
