@@ -1,0 +1,63 @@
+[
+  {
+    "resource": "com.ppcex.wallet.service.impl.BlockchainServiceImpl.getTransactionStatus",
+    "grade": 0,
+    "count": 3000,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "com.ppcex.wallet.service.impl.BlockchainServiceImpl.getTransactionReceipt",
+    "grade": 0,
+    "count": 3000,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "com.ppcex.wallet.service.impl.BlockchainServiceImpl.getGasPrice",
+    "grade": 0,
+    "count": 2000,
+    "timeWindow": 60,
+    "minRequestAmount": 3,
+    "slowRatioThreshold": 0.3,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "com.ppcex.wallet.service.impl.WalletServiceImpl.withdraw",
+    "grade": 1,
+    "count": 0.5,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "com.ppcex.wallet.service.impl.WalletServiceImpl.deposit",
+    "grade": 1,
+    "count": 0.3,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "com.ppcex.wallet.service.impl.ExternalPriceServiceImpl.getPrice",
+    "grade": 0,
+    "count": 2000,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.3,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "com.ppcex.wallet.service.impl.RiskServiceImpl.checkRisk",
+    "grade": 0,
+    "count": 1000,
+    "timeWindow": 60,
+    "minRequestAmount": 3,
+    "slowRatioThreshold": 0.2,
+    "statIntervalMs": 1000
+  }
+]

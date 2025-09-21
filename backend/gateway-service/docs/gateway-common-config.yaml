@@ -88,6 +88,8 @@ logging:
     root: INFO
     com.ppcex.gateway: INFO
     org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway.route: INFO
+    org.springframework.cloud.gateway.handler: INFO
     reactor.netty: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
