@@ -1,0 +1,22 @@
+[
+  {
+    "resource": "POST:/api/notify/send",
+    "limitApp": "system",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/api/notify/batch-send",
+    "limitApp": "system",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/api/notify/retry/{notifyNo}",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "GET:/api/notify/status/{notifyNo}",
+    "limitApp": "system",
+    "strategy": 0
+  }
+]

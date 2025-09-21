@@ -1,0 +1,11 @@
+[
+  {
+    "resource": "risk-service",
+    "grade": 0,
+    "count": 0.8,
+    "maxOutputRt": 50,
+    "highestSystemLoad": 6.0,
+    "avgRt": 80,
+    "maxThread": 300
+  }
+]

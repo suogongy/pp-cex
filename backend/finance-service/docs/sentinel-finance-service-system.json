@@ -1,0 +1,11 @@
+[
+  {
+    "resource": "finance-service",
+    "grade": 0,
+    "count": 0.75,
+    "maxOutputRt": 80,
+    "highestSystemLoad": 5.0,
+    "avgRt": 120,
+    "maxThread": 200
+  }
+]

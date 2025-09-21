@@ -1,0 +1,11 @@
+[
+  {
+    "resource": "notify-service",
+    "grade": 0,
+    "count": 0.75,
+    "maxOutputRt": 100,
+    "highestSystemLoad": 4.0,
+    "avgRt": 150,
+    "maxThread": 100
+  }
+]

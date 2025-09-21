@@ -14,23 +14,21 @@ spring:
     banner-mode: "off"
   config:
     import:
-      - optional:nacos:redis-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      - optional:nacos:rocketmq-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      - optional:nacos:common-config.yaml?group=match-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:match-common-config.yaml
+      - optional:nacos:match-redis-config.yaml
+      - optional:nacos:match-rocketmq-config.yaml
+      - optional:nacos:match-sentinel-config.yaml
 
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
-        namespace: d8a0e588-e615-448b-994c-0ad931c56808
-        group: match-service
         metadata:
           version: 1.0.0
           context-path: /match
       config:
+        enabled: true
         server-addr: localhost:8848
-        namespace: d8a0e588-e615-448b-994c-0ad931c56808
-        group: match-service
         file-extension: yaml
 
 # Knife4j Configuration

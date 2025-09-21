@@ -1,0 +1,56 @@
+[
+  {
+    "resource": "POST:/match/orderbook",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 1000,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/match/price/*",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 2000,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/match/trade/history",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 500,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/match/symbols",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 1000,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/match/clear/*",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "match-websocket",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5000,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  }
+]

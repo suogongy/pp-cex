@@ -1,0 +1,65 @@
+[
+  {
+    "resource": "POST:/api/v1/wallet/withdraw",
+    "grade": 0,
+    "count": 3,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/wallet/recharge",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 8,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/wallet/balance",
+    "grade": 0,
+    "count": 10,
+    "timeWindow": 30,
+    "minRequestAmount": 20,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/wallet/balance/check",
+    "grade": 0,
+    "count": 8,
+    "timeWindow": 30,
+    "minRequestAmount": 15,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/wallet/withdraw/audit",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/wallet/monitor/balance",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 120,
+    "minRequestAmount": 3,
+    "slowRatioThreshold": 0.7,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/wallet/monitor/blockchain",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 120,
+    "minRequestAmount": 3,
+    "slowRatioThreshold": 0.7,
+    "statIntervalMs": 1000
+  }
+]

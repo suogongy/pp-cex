@@ -1,0 +1,11 @@
+[
+  {
+    "resource": "wallet-service",
+    "grade": 0,
+    "count": 0.8,
+    "maxOutputRt": 100,
+    "highestSystemLoad": 6.0,
+    "avgRt": 150,
+    "maxThread": 300
+  }
+]

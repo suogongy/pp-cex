@@ -1,0 +1,146 @@
+[
+  {
+    "resource": "POST:/api/v1/auth/register",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/auth/login",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 50,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/auth/logout",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 30,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/auth/refresh",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 20,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/auth/check-username",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/auth/check-email",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/auth/check-phone",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/kyc/submit",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/kyc/resubmit",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/kyc/info",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 20,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/kyc/status",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 30,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/kyc/audit/{kycId}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/kyc/pending-count",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 15,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/user/info",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 40,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "PUT:/api/v1/user/info",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 15,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "PUT:/api/v1/user/password",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  }
+]

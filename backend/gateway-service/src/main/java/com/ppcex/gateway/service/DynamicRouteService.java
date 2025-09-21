@@ -1,248 +1,335 @@
 package com.ppcex.gateway.service;
 
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.nacos.api.config.annotation.NacosConfigListener;
-import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.event.RefreshRoutesEvent;
 import org.springframework.cloud.gateway.route.RouteDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteDefinitionWriter;
-import org.springframework.cloud.gateway.handler.predicate.PredicateDefinition;
-import org.springframework.cloud.gateway.filter.FilterDefinition;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import jakarta.annotation.PostConstruct;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-/**
- * 动态路由管理服务
- *
- * @author PPCEX Team
- * @version 1.0.0
- */
-@Slf4j
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DynamicRouteService {
 
     private final RouteDefinitionWriter routeDefinitionWriter;
     private final RouteDefinitionLocator routeDefinitionLocator;
     private final ApplicationEventPublisher publisher;
+    private final RedisTemplate<String, Object> redisTemplate;
 
-    @NacosValue(value = "${gateway.routes.enabled:true}", autoRefreshed = true)
-    private boolean routesEnabled;
+    private static final String ROUTE_CACHE_PREFIX = "gateway:route:";
+    private static final String ROUTE_LIST_KEY = "gateway:routes:list";
+    private static final String ROUTE_LOCK_PREFIX = "gateway:route:lock:";
 
-    @PostConstruct
-    public void init() {
-        log.info("Dynamic route service initialized, routes enabled: {}", routesEnabled);
-    }
-
-    /**
-     * 监听Nacos路由配置变更
-     */
-    @NacosConfigListener(dataId = "gateway-routes.yaml", groupId = "gateway-service")
-    public void onRouteConfigChange(String config) {
-        try {
-            log.info("Route config changed, updating routes...");
-
-            List<RouteDefinition> routeDefinitions = parseRouteConfig(config);
-            updateRoutes(routeDefinitions);
-
-            log.info("Routes updated successfully, total routes: {}", routeDefinitions.size());
-        } catch (Exception e) {
-            log.error("Failed to update routes from config", e);
-        }
-    }
+    // 路由配置缓存
+    private final Map<String, RouteDefinition> routeCache = new ConcurrentHashMap<>();
 
     /**
-     * 解析路由配置
+     * 添加路由
      */
-    private List<RouteDefinition> parseRouteConfig(String config) {
-        try {
-            RouteConfig routeConfig = JSON.parseObject(config, RouteConfig.class);
+    public Mono<Void> addRoute(RouteDefinition definition) {
+        return Mono.fromRunnable(() -> {
+            try {
+                log.info("Adding route: {}", definition.getId());
 
-            if (routeConfig == null || routeConfig.getRoutes() == null) {
-                log.warn("Invalid route config: {}", config);
-                return new ArrayList<>();
-            }
+                // 验证路由配置
+                validateRouteDefinition(definition);
 
-            List<RouteDefinition> definitions = new ArrayList<>();
-
-            for (RouteInfo routeInfo : routeConfig.getRoutes()) {
-                if (Boolean.TRUE.equals(routeInfo.getEnabled())) {
-                    RouteDefinition definition = buildRouteDefinition(routeInfo);
-                    definitions.add(definition);
+                // 检查路由是否已存在
+                if (routeCache.containsKey(definition.getId())) {
+                    throw new IllegalArgumentException("Route " + definition.getId() + " already exists");
                 }
+
+                // 添加路由到网关
+                routeDefinitionWriter.save(Mono.just(definition)).subscribe();
+
+                // 缓存路由配置
+                cacheRouteDefinition(definition);
+
+                // 刷新路由
+                refreshRoutes();
+
+                log.info("Route added successfully: {}", definition.getId());
+            } catch (Exception e) {
+                log.error("Failed to add route: {}", definition.getId(), e);
+                throw new RuntimeException("Failed to add route: " + e.getMessage(), e);
             }
-
-            return definitions;
-        } catch (Exception e) {
-            log.error("Failed to parse route config: {}", config, e);
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * 构建路由定义
-     */
-    private RouteDefinition buildRouteDefinition(RouteInfo routeInfo) {
-        RouteDefinition definition = new RouteDefinition();
-        definition.setId(routeInfo.getId());
-        definition.setUri(URI.create(routeInfo.getUri()));
-        definition.setOrder(routeInfo.getOrder());
-
-        // 转换metadata类型
-        Map<String, Object> metadata = new HashMap<>();
-        if (routeInfo.getMetadata() != null) {
-            metadata.putAll(routeInfo.getMetadata());
-        }
-        definition.setMetadata(metadata);
-
-        // 构建断言
-        List<PredicateDefinition> predicates = new ArrayList<>();
-        if (routeInfo.getPredicates() != null) {
-            for (PredicateInfo predicateInfo : routeInfo.getPredicates()) {
-                PredicateDefinition predicate = new PredicateDefinition();
-                predicate.setName(predicateInfo.getName());
-                predicate.setArgs(predicateInfo.getArgs());
-                predicates.add(predicate);
-            }
-        }
-        definition.setPredicates(predicates);
-
-        // 构建过滤器
-        List<org.springframework.cloud.gateway.filter.FilterDefinition> filters = new ArrayList<>();
-        if (routeInfo.getFilters() != null) {
-            for (FilterInfo filterInfo : routeInfo.getFilters()) {
-                org.springframework.cloud.gateway.filter.FilterDefinition filter =
-                    new org.springframework.cloud.gateway.filter.FilterDefinition();
-                filter.setName(filterInfo.getName());
-                filter.setArgs(filterInfo.getArgs());
-                filters.add(filter);
-            }
-        }
-        definition.setFilters(filters);
-
-        return definition;
+        });
     }
 
     /**
      * 更新路由
      */
-    private void updateRoutes(List<RouteDefinition> routeDefinitions) {
-        try {
-            // 删除现有路由
-            routeDefinitionLocator.getRouteDefinitions()
-                .subscribe(route -> {
-                    routeDefinitionWriter.delete(Mono.just(route.getId())).subscribe();
-                });
+    public Mono<Void> updateRoute(RouteDefinition definition) {
+        return Mono.fromRunnable(() -> {
+            try {
+                log.info("Updating route: {}", definition.getId());
 
-            // 添加新路由
-            for (RouteDefinition routeDefinition : routeDefinitions) {
-                routeDefinitionWriter.save(Mono.just(routeDefinition)).subscribe();
+                // 验证路由配置
+                validateRouteDefinition(definition);
+
+                // 检查路由是否存在
+                if (!routeCache.containsKey(definition.getId())) {
+                    throw new IllegalArgumentException("Route " + definition.getId() + " not found");
+                }
+
+                // 删除旧路由
+                deleteRoute(definition.getId()).subscribe();
+
+                // 添加新路由
+                addRoute(definition).subscribe();
+
+                log.info("Route updated successfully: {}", definition.getId());
+            } catch (Exception e) {
+                log.error("Failed to update route: {}", definition.getId(), e);
+                throw new RuntimeException("Failed to update route: " + e.getMessage(), e);
             }
+        });
+    }
 
-            // 发布路由刷新事件
-            publisher.publishEvent(new RefreshRoutesEvent(this));
+    /**
+     * 删除路由
+     */
+    public Mono<Void> deleteRoute(String routeId) {
+        return Mono.fromRunnable(() -> {
+            try {
+                log.info("Deleting route: {}", routeId);
 
-            log.info("Routes updated: {} routes", routeDefinitions.size());
-        } catch (Exception e) {
-            log.error("Failed to update routes", e);
-        }
+                // 从网关删除路由
+                routeDefinitionWriter.delete(Mono.just(routeId)).subscribe();
+
+                // 从缓存删除路由
+                removeRouteFromCache(routeId);
+
+                // 刷新路由
+                refreshRoutes();
+
+                log.info("Route deleted successfully: {}", routeId);
+            } catch (Exception e) {
+                log.error("Failed to delete route: {}", routeId, e);
+                throw new RuntimeException("Failed to delete route: " + e.getMessage(), e);
+            }
+        });
     }
 
     /**
      * 获取所有路由
      */
-    public List<RouteDefinition> getAllRoutes() {
-        return routeDefinitionLocator.getRouteDefinitions().collectList().block();
+    public Flux<RouteDefinition> getAllRoutes() {
+        return routeDefinitionLocator.getRouteDefinitions()
+                .doOnNext(route -> log.debug("Found route: {}", route.getId()))
+                .doOnError(error -> log.error("Error getting routes", error));
+    }
+
+    /**
+     * 根据ID获取路由
+     */
+    public Mono<RouteDefinition> getRouteById(String routeId) {
+        return getAllRoutes()
+                .filter(route -> routeId.equals(route.getId()))
+                .next()
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Route not found: " + routeId)));
+    }
+
+    /**
+     * 获取路由统计信息
+     */
+    public Map<String, Object> getRouteStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        try {
+            List<RouteDefinition> routes = getAllRoutes().collectList().block();
+            if (routes != null) {
+                stats.put("totalRoutes", routes.size());
+                stats.put("activeRoutes", routes.stream().map(RouteDefinition::getId).collect(Collectors.toList()));
+
+                // 按服务分组统计
+                Map<String, Long> serviceStats = routes.stream()
+                        .collect(Collectors.groupingBy(
+                                route -> extractServiceName(route.getUri().toString()),
+                                Collectors.counting()
+                        ));
+                stats.put("serviceDistribution", serviceStats);
+            }
+        } catch (Exception e) {
+            log.error("Error getting route statistics", e);
+            stats.put("error", e.getMessage());
+        }
+
+        return stats;
+    }
+
+    /**
+     * 批量添加路由
+     */
+    public Mono<Void> addRoutes(List<RouteDefinition> definitions) {
+        if (CollectionUtils.isEmpty(definitions)) {
+            return Mono.empty();
+        }
+
+        return Flux.fromIterable(definitions)
+                .flatMap(this::addRoute)
+                .then();
+    }
+
+    /**
+     * 从Redis缓存加载路由
+     */
+    public void loadRoutesFromCache() {
+        try {
+            Object cached = redisTemplate.opsForValue().get(ROUTE_LIST_KEY);
+            if (cached instanceof String) {
+                JSONArray routesArray = JSON.parseArray((String) cached);
+                for (int i = 0; i < routesArray.size(); i++) {
+                    JSONObject routeJson = routesArray.getJSONObject(i);
+                    RouteDefinition definition = parseRouteDefinition(routeJson);
+                    routeCache.put(definition.getId(), definition);
+                }
+                log.info("Loaded {} routes from cache", routeCache.size());
+            }
+        } catch (Exception e) {
+            log.error("Failed to load routes from cache", e);
+        }
+    }
+
+    /**
+     * 保存路由到Redis缓存
+     */
+    public void saveRoutesToCache() {
+        try {
+            JSONArray routesArray = new JSONArray();
+            routeCache.values().forEach(route -> {
+                JSONObject routeJson = new JSONObject();
+                routeJson.put("id", route.getId());
+                routeJson.put("uri", route.getUri().toString());
+                routeJson.put("predicates", route.getPredicates());
+                routeJson.put("filters", route.getFilters());
+                routeJson.put("order", route.getOrder());
+                routeJson.put("metadata", route.getMetadata());
+                routesArray.add(routeJson);
+            });
+
+            redisTemplate.opsForValue().set(ROUTE_LIST_KEY, routesArray.toJSONString(),
+                    Duration.ofMinutes(5));
+
+            log.info("Saved {} routes to cache", routeCache.size());
+        } catch (Exception e) {
+            log.error("Failed to save routes to cache", e);
+        }
+    }
+
+    /**
+     * 验证路由配置
+     */
+    private void validateRouteDefinition(RouteDefinition definition) {
+        if (definition.getId() == null || definition.getId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Route ID cannot be empty");
+        }
+
+        if (definition.getUri() == null) {
+            throw new IllegalArgumentException("Route URI cannot be null");
+        }
+
+        if (CollectionUtils.isEmpty(definition.getPredicates())) {
+            throw new IllegalArgumentException("Route predicates cannot be empty");
+        }
+
+        // 验证URI格式
+        String uriStr = definition.getUri().toString();
+        if (!uriStr.startsWith("lb://") && !uriStr.startsWith("http://") && !uriStr.startsWith("https://")) {
+            throw new IllegalArgumentException("Route URI must start with lb://, http:// or https://");
+        }
+    }
+
+    /**
+     * 缓存路由配置
+     */
+    private void cacheRouteDefinition(RouteDefinition definition) {
+        routeCache.put(definition.getId(), definition);
+
+        String routeKey = ROUTE_CACHE_PREFIX + definition.getId();
+        redisTemplate.opsForValue().set(routeKey, JSON.toJSONString(definition),
+                Duration.ofMinutes(5));
+    }
+
+    /**
+     * 从缓存删除路由
+     */
+    private void removeRouteFromCache(String routeId) {
+        routeCache.remove(routeId);
+
+        String routeKey = ROUTE_CACHE_PREFIX + routeId;
+        redisTemplate.delete(routeKey);
     }
 
     /**
      * 刷新路由
      */
-    public void refreshRoutes() {
+    private void refreshRoutes() {
         publisher.publishEvent(new RefreshRoutesEvent(this));
-        log.info("Routes refreshed");
+        saveRoutesToCache();
     }
 
     /**
-     * 路由配置类
+     * 解析路由定义
      */
-    public static class RouteConfig {
-        private List<RouteInfo> routes;
+    private RouteDefinition parseRouteDefinition(JSONObject routeJson) {
+        RouteDefinition definition = new RouteDefinition();
+        definition.setId(routeJson.getString("id"));
+        definition.setUri(URI.create(routeJson.getString("uri")));
+        definition.setOrder(routeJson.getIntValue("order"));
 
-        public List<RouteInfo> getRoutes() {
-            return routes;
+        // 解断言和过滤器
+        // 这里简化处理，实际应该完整解析
+
+        return definition;
+    }
+
+    /**
+     * 提取服务名称
+     */
+    private String extractServiceName(String uri) {
+        if (uri.startsWith("lb://")) {
+            return uri.substring(5);
+        }
+        return "unknown";
+    }
+
+    /**
+     * 获取缓存中的路由数量
+     */
+    public int getCachedRouteCount() {
+        return routeCache.size();
+    }
+
+    /**
+     * 清空路由缓存
+     */
+    public void clearRouteCache() {
+        routeCache.clear();
+        redisTemplate.delete(ROUTE_LIST_KEY);
+
+        // 清理所有路由键
+        Set<String> keys = redisTemplate.keys(ROUTE_CACHE_PREFIX + "*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
         }
 
-        public void setRoutes(List<RouteInfo> routes) {
-            this.routes = routes;
-        }
-    }
-
-    /**
-     * 路由信息类
-     */
-    public static class RouteInfo {
-        private String id;
-        private String uri;
-        private Integer order;
-        private Boolean enabled;
-        private List<PredicateInfo> predicates;
-        private List<FilterInfo> filters;
-        private java.util.Map<String, String> metadata;
-
-        // Getters and Setters
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-        public String getUri() { return uri; }
-        public void setUri(String uri) { this.uri = uri; }
-        public Integer getOrder() { return order; }
-        public void setOrder(Integer order) { this.order = order; }
-        public Boolean getEnabled() { return enabled; }
-        public void setEnabled(Boolean enabled) { this.enabled = enabled; }
-        public List<PredicateInfo> getPredicates() { return predicates; }
-        public void setPredicates(List<PredicateInfo> predicates) { this.predicates = predicates; }
-        public List<FilterInfo> getFilters() { return filters; }
-        public void setFilters(List<FilterInfo> filters) { this.filters = filters; }
-        public java.util.Map<String, String> getMetadata() { return metadata; }
-        public void setMetadata(java.util.Map<String, String> metadata) { this.metadata = metadata; }
-    }
-
-    /**
-     * 断言信息类
-     */
-    public static class PredicateInfo {
-        private String name;
-        private java.util.Map<String, String> args;
-
-        // Getters and Setters
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public java.util.Map<String, String> getArgs() { return args; }
-        public void setArgs(java.util.Map<String, String> args) { this.args = args; }
-    }
-
-    /**
-     * 过滤器信息类
-     */
-    public static class FilterInfo {
-        private String name;
-        private java.util.Map<String, String> args;
-
-        // Getters and Setters
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public java.util.Map<String, String> getArgs() { return args; }
-        public void setArgs(java.util.Map<String, String> args) { this.args = args; }
+        log.info("Route cache cleared");
     }
 }

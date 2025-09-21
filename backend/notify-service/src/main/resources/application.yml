@@ -1,48 +1,30 @@
 spring:
+  application:
+    name: notify-service
   profiles:
     active: dev
+  main:
+    allow-bean-definition-overriding: true
+    lazy-initialization: false
+    banner-mode: "off"
+  config:
+    import:
+      - optional:nacos:notify-common-config.yaml
+      - optional:nacos:notify-mysql-config.yaml
+      - optional:nacos:notify-redis-config.yaml
+      - optional:nacos:notify-rocketmq-config.yaml
 
-  datasource:
-    url: jdbc:mysql://localhost:3306/notify_db?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root
-    password: password
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 10
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-
-  redis:
-    host: localhost
-    port: 6379
-    database: 0
-    timeout: 10000ms
-    lettuce:
-      pool:
-        max-active: 200
-        max-wait: -1ms
-        max-idle: 10
-        min-idle: 0
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: your-email@gmail.com
-    password: your-app-password
-    protocol: smtp
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
-      mail.smtp.ssl.trust: smtp.gmail.com
-
-  rocketmq:
-    name-server: localhost:9876
-    producer:
-      group: notify-producer
-      send-message-timeout: 3000
-      retry-times-when-send-failed: 3
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        metadata:
+          version: 1.0.0
+          context-path: /notify
+      config:
+        enabled: true
+        server-addr: localhost:8848
+        file-extension: yaml
 
 mybatis-plus:
   configuration:

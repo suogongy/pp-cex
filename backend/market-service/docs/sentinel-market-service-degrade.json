@@ -1,0 +1,74 @@
+[
+  {
+    "resource": "GET:/api/v1/market/ticker/{symbol}",
+    "grade": 0,
+    "count": 50,
+    "timeWindow": 30,
+    "minRequestAmount": 100,
+    "slowRatioThreshold": 0.3,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/market/tickers",
+    "grade": 0,
+    "count": 50,
+    "timeWindow": 30,
+    "minRequestAmount": 80,
+    "slowRatioThreshold": 0.3,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/market/klines",
+    "grade": 0,
+    "count": 100,
+    "timeWindow": 30,
+    "minRequestAmount": 200,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/market/trades",
+    "grade": 0,
+    "count": 80,
+    "timeWindow": 30,
+    "minRequestAmount": 150,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/market/depth",
+    "grade": 0,
+    "count": 100,
+    "timeWindow": 30,
+    "minRequestAmount": 200,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/market/ticker/update",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/market/trade/add",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 15,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/pairs",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  }
+]

@@ -10,24 +10,21 @@ spring:
 
   config:
     import:
-      - optional:nacos:mysql-config.yaml?group=risk-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      - optional:nacos:common-config.yaml?group=risk-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      - optional:nacos:rocketmq-config.yaml?group=risk-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
-      - optional:nacos:redis-config.yaml?group=risk-service&namespace=d8a0e588-e615-448b-994c-0ad931c56808&refresh=true
+      - optional:nacos:risk-common-config.yaml
+      - optional:nacos:risk-mysql-config.yaml
+      - optional:nacos:risk-redis-config.yaml
+      - optional:nacos:risk-rocketmq-config.yaml
 
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
-        namespace: d8a0e588-e615-448b-994c-0ad931c56808
-        group: risk-service
         metadata:
           version: 1.0.0
           context-path: /risk
       config:
+        enabled: true
         server-addr: localhost:8848
-        namespace: d8a0e588-e615-448b-994c-0ad931c56808
-        group: risk-service
         file-extension: yaml
     stream:
       function:

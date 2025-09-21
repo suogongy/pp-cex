@@ -1,0 +1,50 @@
+# Wallet Service Common Configuration
+spring:
+  main:
+    allow-bean-definition-overriding: true
+    banner-mode: "off"
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath:mapper/*.xml
+
+# 加密配置
+crypto:
+  aes:
+    key: ${AES_KEY:default-aes-key-32-characters-long}
+  rsa:
+    private-key: ${RSA_PRIVATE_KEY:default-rsa-private-key}
+    public-key: ${RSA_PUBLIC_KEY:default-rsa-public-key}
+
+# 监控配置
+monitor:
+  wallet:
+    balance-threshold: 0.1
+    check-interval: 300000
+  transaction:
+    confirm-check-interval: 60000
+    max-retry-times: 3
+
+# 业务配置
+business:
+  wallet:
+    hot-wallet-min-balance: 0.1
+    hot-wallet-max-balance: 10000
+    withdraw-audit-amount: 10
+    auto-withdraw-enabled: true
+  recharge:
+    auto-confirm-enabled: true
+    min-confirmations: 6
+  withdraw:
+    daily-limit: 100000
+    fee-amount: 0.001
+    auto-audit-enabled: false

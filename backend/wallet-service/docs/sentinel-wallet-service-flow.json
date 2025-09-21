@@ -1,0 +1,110 @@
+[
+  {
+    "resource": "POST:/api/v1/wallet/address",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 20,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/wallet/recharge/records",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/wallet/recharge",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 30,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/wallet/withdraw/records",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 80,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/wallet/withdraw",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 15,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/wallet/withdraw/audit",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/wallet/withdraw/pending-audit",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 25,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/wallet/balance",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 200,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/wallet/balance/check",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 150,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/wallet/monitor/balance",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/wallet/monitor/blockchain",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/wallet/health",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  }
+]

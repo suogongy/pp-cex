@@ -1,0 +1,17 @@
+[
+  {
+    "resource": "POST:/match/orderbook",
+    "limitApp": "admin,management",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/match/clear/*",
+    "limitApp": "admin,management",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/match/clear-all",
+    "limitApp": "admin",
+    "strategy": 0
+  }
+]

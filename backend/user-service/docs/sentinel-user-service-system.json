@@ -1,0 +1,11 @@
+[
+  {
+    "resource": "user-service",
+    "grade": 0,
+    "count": 0.8,
+    "maxOutputRt": 50,
+    "highestSystemLoad": 5.0,
+    "avgRt": 100,
+    "maxThread": 200
+  }
+]

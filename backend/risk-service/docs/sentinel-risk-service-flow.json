@@ -1,0 +1,83 @@
+[
+  {
+    "resource": "POST:/api/v1/check",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 200,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/batch-check",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 50,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/user/{userId}/score",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 150,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/events",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 80,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/events/{eventId}/process",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 30,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/statistics",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 40,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/whitelist/check",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 300,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/behavior/log",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/health",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 50,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  }
+]

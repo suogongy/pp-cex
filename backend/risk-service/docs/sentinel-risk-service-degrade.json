@@ -1,0 +1,47 @@
+[
+  {
+    "resource": "POST:/api/v1/check",
+    "grade": 0,
+    "count": 10,
+    "timeWindow": 30,
+    "minRequestAmount": 20,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/batch-check",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 8,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/user/{userId}/score",
+    "grade": 0,
+    "count": 8,
+    "timeWindow": 30,
+    "minRequestAmount": 15,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/whitelist/check",
+    "grade": 0,
+    "count": 20,
+    "timeWindow": 30,
+    "minRequestAmount": 50,
+    "slowRatioThreshold": 0.3,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/events/{eventId}/process",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  }
+]

@@ -1,0 +1,37 @@
+# Wallet Service RocketMQ Configuration
+spring:
+  rocketmq:
+    name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
+    producer:
+      group: wallet-producer
+      send-message-timeout: 3000
+      retry-times-when-send-failed: 3
+      retry-times-when-send-async-failed: 3
+    consumer:
+      listeners:
+        wallet-consumer:
+          group: wallet-consumer
+          topic: wallet-topic
+          selector-expression: "WALLET_RECHARGE || WALLET_WITHDRAW || WALLET_TRANSFER"
+          consume-thread-min: 20
+          consume-thread-max: 64
+          pull-batch-size: 32
+        asset-consumer:
+          group: asset-consumer
+          topic: asset-topic
+          selector-expression: "ASSET_CHANGE"
+          consume-thread-min: 20
+          consume-thread-max: 64
+          consume-mode: ORDERLY
+
+# 区块链配置
+blockchain:
+  ethereum:
+    rpc-url: ${ETH_RPC_URL:https://mainnet.infura.io/v3/YOUR_PROJECT_ID}
+    chain-id: 1
+    gas-limit: 21000
+    gas-price: 20000000000
+  tron:
+    rpc-url: ${TRON_RPC_URL:https://api.trongrid.io}
+    chain-id: 1
+    fee-limit: 1000000

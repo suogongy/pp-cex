@@ -1,0 +1,74 @@
+[
+  {
+    "resource": "POST:/api/v1/auth/login",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/auth/register",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/kyc/submit",
+    "grade": 0,
+    "count": 3,
+    "timeWindow": 120,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.7,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/kyc/resubmit",
+    "grade": 0,
+    "count": 3,
+    "timeWindow": 120,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.7,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/v1/user/info",
+    "grade": 0,
+    "count": 10,
+    "timeWindow": 30,
+    "minRequestAmount": 15,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "PUT:/api/v1/user/info",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 8,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "PUT:/api/v1/user/password",
+    "grade": 0,
+    "count": 3,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/v1/kyc/audit/{kycId}",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  }
+]

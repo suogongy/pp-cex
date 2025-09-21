@@ -1,0 +1,38 @@
+[
+  {
+    "resource": "POST:/match/orderbook",
+    "grade": 0,
+    "count": 10,
+    "timeWindow": 60,
+    "minRequestAmount": 20,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/match/price/*",
+    "grade": 0,
+    "count": 15,
+    "timeWindow": 60,
+    "minRequestAmount": 30,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/match/trade/history",
+    "grade": 0,
+    "count": 8,
+    "timeWindow": 60,
+    "minRequestAmount": 15,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "match-websocket",
+    "grade": 0,
+    "count": 20,
+    "timeWindow": 60,
+    "minRequestAmount": 50,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  }
+]

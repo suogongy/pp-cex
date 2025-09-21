@@ -1,7 +1,6 @@
 package com.ppcex.gateway.filter;
 
-import com.alibaba.fastjson2.JSON;
-import org.springframework.util.StringUtils;
+import com.ppcex.gateway.config.GatewayConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -11,7 +10,6 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -19,193 +17,175 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
+import jakarta.annotation.PostConstruct;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 限流过滤器
- *
- * @author PPCEX Team
- * @version 1.0.0
- */
-@Slf4j
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class RateLimitFilter implements GlobalFilter, Ordered {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final GatewayConfig gatewayConfig;
+    private final GatewayConfig.RateLimit rateLimitConfig;
 
-    /** 限流Lua脚本 */
-    private static final String RATE_LIMIT_SCRIPT = """
-        local key = KEYS[1]
-        local limit = tonumber(ARGV[1])
-        local window = tonumber(ARGV[2])
-        local current = redis.call('GET', key)
+    private static final String RATE_LIMIT_PREFIX = "rate_limit:";
+    private static final String IP_RATE_LIMIT_PREFIX = "ip_rate_limit:";
+    private static final String USER_RATE_LIMIT_PREFIX = "user_rate_limit:";
+    private static final String API_RATE_LIMIT_PREFIX = "api_rate_limit:";
 
-        if current == false then
-            redis.call('SET', key, 1)
-            redis.call('EXPIRE', key, window)
-            return 1
-        else
-            current = tonumber(current)
-            if current < limit then
+    // Lua脚本用于原子性的限流操作
+    private DefaultRedisScript<Long> rateLimitScript;
+
+    @PostConstruct
+    public void init() {
+        String luaScript = """
+            local key = KEYS[1]
+            local limit = tonumber(ARGV[1])
+            local window = tonumber(ARGV[2])
+            local current = redis.call('GET', key)
+
+            if current == false then
+                redis.call('SET', key, 1, 'EX', window)
+                return 1
+            end
+
+            if tonumber(current) < limit then
                 redis.call('INCR', key)
                 return 1
             else
                 return 0
             end
-        end
-        """;
+            """;
 
-    private final DefaultRedisScript<Long> rateLimitScript = new DefaultRedisScript<>(RATE_LIMIT_SCRIPT, Long.class);
-
-    /** 无需限流的路径 */
-    private static final List<String> BYPASS_PATHS = Arrays.asList(
-        "/actuator/**",
-        "/doc.html",
-        "/swagger-ui/**",
-        "/v3/api-docs/**",
-        "/favicon.ico"
-    );
+        rateLimitScript = new DefaultRedisScript<>(luaScript, Long.class);
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
+        String method = request.getMethod().name();
         String clientIp = getClientIp(request);
 
-        log.debug("Rate limit filter processing request: {} from {}", path, clientIp);
-
-        // 检查是否需要跳过限流
-        if (shouldBypassRateLimit(path)) {
-            return chain.filter(exchange);
-        }
-
-        // IP限流检查
-        if (isIpRateLimited(clientIp)) {
-            log.warn("IP {} rate limited for path: {}", clientIp, path);
-            return tooManyRequests(exchange.getResponse(), "请求过于频繁，请稍后重试");
-        }
-
-        // 用户限流检查
+        // 获取用户ID
         String userId = request.getHeaders().getFirst("X-User-Id");
-        if (userId != null && isUserRateLimited(userId)) {
-            log.warn("User {} rate limited for path: {}", userId, path);
-            return tooManyRequests(exchange.getResponse(), "用户请求过于频繁，请稍后重试");
+
+        // 1. IP限流
+        if (!checkIpRateLimit(clientIp)) {
+            return handleError(exchange.getResponse(), 429, "IP rate limit exceeded");
         }
 
-        // API限流检查
-        if (isApiRateLimited(path)) {
-            log.warn("API {} rate limited", path);
-            return tooManyRequests(exchange.getResponse(), "接口请求过于频繁，请稍后重试");
+        // 2. 用户限流
+        if (userId != null && !checkUserRateLimit(userId)) {
+            return handleError(exchange.getResponse(), 429, "User rate limit exceeded");
         }
 
-        return chain.filter(exchange);
-    }
-
-    @Override
-    public int getOrder() {
-        return -90; // 在认证过滤器之后
-    }
-
-    /**
-     * 检查是否需要跳过限流
-     */
-    private boolean shouldBypassRateLimit(String path) {
-        return BYPASS_PATHS.stream().anyMatch(pattern -> path.startsWith(pattern.replace("/**", "")));
-    }
-
-    /**
-     * IP限流检查
-     */
-    private boolean isIpRateLimited(String clientIp) {
-        String key = "rate:limit:ip:" + clientIp;
-        return checkRateLimit(key, 1000, 60); // 1000 requests per minute
-    }
-
-    /**
-     * 用户限流检查
-     */
-    private boolean isUserRateLimited(String userId) {
-        String key = "rate:limit:user:" + userId;
-        return checkRateLimit(key, 500, 60); // 500 requests per minute
-    }
-
-    /**
-     * API限流检查
-     */
-    private boolean isApiRateLimited(String path) {
-        // 不同API路径的不同限流配置
-        if (path.startsWith("/api/v1/market/")) {
-            String key = "rate:limit:api:market";
-            return checkRateLimit(key, 5000, 60); // 5000 requests per minute
-        } else if (path.startsWith("/api/v1/trade/")) {
-            String key = "rate:limit:api:trade";
-            return checkRateLimit(key, 200, 60); // 200 requests per minute
-        } else if (path.startsWith("/api/v1/wallet/")) {
-            String key = "rate:limit:api:wallet";
-            return checkRateLimit(key, 100, 60); // 100 requests per minute
-        } else {
-            String key = "rate:limit:api:other";
-            return checkRateLimit(key, 1000, 60); // 1000 requests per minute
+        // 3. API限流
+        if (!checkApiRateLimit(path, method)) {
+            return handleError(exchange.getResponse(), 429, "API rate limit exceeded");
         }
+
+        // 4. 总体限流
+        if (!checkGlobalRateLimit()) {
+            return handleError(exchange.getResponse(), 429, "Global rate limit exceeded");
+        }
+
+        return chain.filter(exchange).doOnSuccess(v -> {
+            // 记录成功的请求
+            logRequestSuccess(path, method, clientIp, userId);
+        }).doOnError(error -> {
+            // 记录失败的请求
+            logRequestError(path, method, clientIp, userId, error);
+        });
     }
 
-    /**
-     * 检查限流
-     */
-    private boolean checkRateLimit(String key, int limit, int windowSeconds) {
-        try {
-            Long result = redisTemplate.execute(
+    private boolean checkIpRateLimit(String ip) {
+        String key = IP_RATE_LIMIT_PREFIX + ip;
+        return executeRateLimitScript(key,
+                rateLimitConfig.getIpReplenishRate(),
+                gatewayConfig.getCache().getRateLimitTtl());
+    }
+
+    private boolean checkUserRateLimit(String userId) {
+        String key = USER_RATE_LIMIT_PREFIX + userId;
+        return executeRateLimitScript(key,
+                rateLimitConfig.getUserReplenishRate(),
+                gatewayConfig.getCache().getRateLimitTtl());
+    }
+
+    private boolean checkApiRateLimit(String path, String method) {
+        String key = API_RATE_LIMIT_PREFIX + method + ":" + path;
+        return executeRateLimitScript(key,
+                rateLimitConfig.getDefaultReplenishRate(),
+                gatewayConfig.getCache().getRateLimitTtl());
+    }
+
+    private boolean checkGlobalRateLimit() {
+        String key = RATE_LIMIT_PREFIX + "global";
+        return executeRateLimitScript(key,
+                rateLimitConfig.getDefaultReplenishRate() * 10,
+                gatewayConfig.getCache().getRateLimitTtl());
+    }
+
+    private boolean executeRateLimitScript(String key, int limit, int windowSeconds) {
+        Long result = redisTemplate.execute(
                 rateLimitScript,
                 Collections.singletonList(key),
                 String.valueOf(limit),
                 String.valueOf(windowSeconds)
-            );
-            return result != null && result == 0;
-        } catch (Exception e) {
-            log.error("Rate limit check failed for key: {}", key, e);
-            return false; // 限流检查失败，默认允许通过
-        }
+        );
+
+        return result != null && result > 0;
     }
 
-    /**
-     * 获取客户端IP
-     */
     private String getClientIp(ServerHttpRequest request) {
         String xForwardedFor = request.getHeaders().getFirst("X-Forwarded-For");
-        if (StringUtils.hasText(xForwardedFor)) {
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
             return xForwardedFor.split(",")[0].trim();
         }
 
         String xRealIp = request.getHeaders().getFirst("X-Real-IP");
-        if (StringUtils.hasText(xRealIp)) {
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
             return xRealIp;
         }
 
-        return request.getRemoteAddress() != null ? request.getRemoteAddress().getAddress().getHostAddress() : "unknown";
+        return request.getRemoteAddress() != null ?
+                request.getRemoteAddress().getAddress().getHostAddress() : "unknown";
     }
 
-    /**
-     * 返回请求过多响应
-     */
-    private Mono<Void> tooManyRequests(ServerHttpResponse response, String message) {
-        response.setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-        response.getHeaders().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+    private void logRequestSuccess(String path, String method, String ip, String userId) {
+        log.info("Request successful: {} {} - IP: {}, User: {}", method, path, ip, userId);
+    }
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("code", 429);
-        body.put("message", message);
-        body.put("timestamp", System.currentTimeMillis());
+    private void logRequestError(String path, String method, String ip, String userId, Throwable error) {
+        log.error("Request error: {} {} - IP: {}, User: {}, Error: {}", method, path, ip, userId, error.getMessage());
+    }
 
-        DataBuffer buffer = response.bufferFactory().wrap(
-            JSON.toJSONString(body).getBytes(StandardCharsets.UTF_8));
+    private Mono<Void> handleError(ServerHttpResponse response, int statusCode, String message) {
+        response.setStatusCode(HttpStatus.valueOf(statusCode));
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("code", statusCode);
+        errorResponse.put("message", message);
+        errorResponse.put("timestamp", System.currentTimeMillis());
+        errorResponse.put("retryAfter", "1");
+
+        String responseBody = com.alibaba.fastjson2.JSON.toJSONString(errorResponse);
+        DataBuffer buffer = response.bufferFactory().wrap(responseBody.getBytes());
+
+        log.warn("Rate limit exceeded: {}", message);
         return response.writeWith(Mono.just(buffer));
+    }
+
+    @Override
+    public int getOrder() {
+        return -80; // 在权限过滤器之后执行
     }
 }

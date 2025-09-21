@@ -1,0 +1,74 @@
+[
+  {
+    "resource": "POST:/api/trade/orders",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/trade/orders/cancel",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/trade/orderbook/{symbol}",
+    "grade": 0,
+    "count": 50,
+    "timeWindow": 30,
+    "minRequestAmount": 50,
+    "slowRatioThreshold": 0.3,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/trade/price/{symbol}",
+    "grade": 0,
+    "count": 100,
+    "timeWindow": 30,
+    "minRequestAmount": 100,
+    "slowRatioThreshold": 0.3,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "GET:/api/trade/trades/recent",
+    "grade": 0,
+    "count": 100,
+    "timeWindow": 30,
+    "minRequestAmount": 150,
+    "slowRatioThreshold": 0.4,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/trade/orderbook/{symbol}/init",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 3,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/trade/pairs",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "PUT:/api/trade/pairs/{id}",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  }
+]

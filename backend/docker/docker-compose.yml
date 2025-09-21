@@ -128,9 +128,9 @@ services:
     image: styletang/rocketmq-console-ng:latest
     container_name: rocketmq-console
     environment:
-      JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-nameserver:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false"
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-nameserver:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false -Dserver.port=8081"
     ports:
-      - "8080:8080"
+      - "8081:8081"
     networks:
       - cex-network
     depends_on:
@@ -140,6 +140,34 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Sentinel Dashboard
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.6
+    container_name: sentinel
+    environment:
+      JAVA_OPTS: "-Dserver.port=8080 -Dcsp.sentinel.dashboard.server=localhost:8080 -Dcsp.sentinel.api.port=8719 -Dcsp.sentinel.log.use.pid=true"
+      NACOS_HOST: nacos
+      NACOS_PORT: 8848
+      NACOS_NAMESPACE: public
+      NACOS_GROUP: DEFAULT_GROUP
+    ports:
+      - "8858:8080"  # Web控制台端口
+      - "8719:8719"  # Sentinel API端口
+    networks:
+      - cex-network
+    depends_on:
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    volumes:
+      - sentinel-logs:/root/logs/csp
+
 volumes:
   mysql-data:
   redis-data:
@@ -147,6 +175,7 @@ volumes:
   rocketmq-broker-logs:
   rocketmq-broker-store:
   nacos-logs:
+  sentinel-logs:
 
 networks:
   cex-network:

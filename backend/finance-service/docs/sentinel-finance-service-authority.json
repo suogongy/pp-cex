@@ -1,0 +1,52 @@
+[
+  {
+    "resource": "POST:/api/v1/finance/reports/daily",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "GET:/api/v1/finance/reports/daily",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "GET:/api/v1/finance/reports/stats",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/v1/finance/risk/ip-blacklist/add",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/v1/finance/risk/ip-blacklist/remove",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/v1/finance/flows",
+    "limitApp": "system",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/api/v1/finance/risk/check",
+    "limitApp": "system",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/v1/finance/flows/user/{userId}",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/v1/finance/flows/user/{userId}/recent",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/v1/finance/assets/user/{userId}/coin/{coinId}",
+    "limitApp": "user",
+    "strategy": 0
+  }
+]

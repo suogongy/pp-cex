@@ -1,0 +1,8 @@
+# Notify Service RocketMQ Configuration
+spring:
+  rocketmq:
+    name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
+    producer:
+      group: notify-producer
+      send-message-timeout: 3000
+      retry-times-when-send-failed: 3

@@ -1,0 +1,37 @@
+[
+  {
+    "resource": "POST:/api/v1/market/ticker/update",
+    "limitApp": "system",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/api/v1/market/trade/add",
+    "limitApp": "system",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/api/v1/market/depth/update",
+    "limitApp": "system",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/api/v1/pairs",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "PUT:/api/v1/pairs/{id}",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "DELETE:/api/v1/pairs/{id}",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/v1/pairs/sync",
+    "limitApp": "admin",
+    "strategy": 1
+  }
+]

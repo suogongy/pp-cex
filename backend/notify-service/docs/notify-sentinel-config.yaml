@@ -1,0 +1,162 @@
+# =================================================================
+# Sentinel Configuration
+# Service: notify-service
+# Group: notify-service
+# Environment: All
+# =================================================================
+
+spring:
+  cloud:
+    sentinel:
+      # Transport configuration
+      transport:
+        dashboard: sentinel:8080
+        port: 8719
+        client-ip: ${spring.cloud.client.ip-address}
+      eager: true
+
+      # Datasource configuration
+      datasource:
+        # Flow control rules
+        flow-rules:
+          nacos:
+            server-addr: nacos:8848
+            dataId: sentinel-notify-service-flow-rules.json
+            rule-type: flow
+            data-type: json
+
+        # Degrade rules
+        degrade-rules:
+          nacos:
+            server-addr: nacos:8848
+            dataId: sentinel-notify-service-degrade-rules.json
+            rule-type: degrade
+            data-type: json
+
+        # System rules
+        system-rules:
+          nacos:
+            server-addr: nacos:8848
+            dataId: sentinel-notify-service-system-rules.json
+            rule-type: system
+            data-type: json
+
+        # Authority rules
+        authority-rules:
+          nacos:
+            server-addr: nacos:8848
+            dataId: sentinel-notify-service-authority-rules.json
+            rule-type: authority
+            data-type: json
+
+      # Filter configuration
+      filter:
+        enabled: true
+        order: -2147483648
+
+      # Log configuration
+      log:
+        dir: logs/csp/
+        switch-pid: false
+
+      # Metric configuration
+      metric:
+        charset: UTF-8
+        single-file-size: 52428800
+        total-file-count: 6
+
+# Flow control rules
+sentinel:
+  flow:
+    # Email notification flow control
+    notify-email:
+      resource: notify-email
+      count: 100
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 5
+      maxQueueingTimeMs: 200
+
+    # SMS notification flow control
+    notify-sms:
+      resource: notify-sms
+      count: 50
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 5
+      maxQueueingTimeMs: 300
+
+    # Push notification flow control
+    notify-push:
+      resource: notify-push
+      count: 200
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 3
+      maxQueueingTimeMs: 100
+
+    # Webhook notification flow control
+    notify-webhook:
+      resource: notify-webhook
+      count: 150
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 5
+      maxQueueingTimeMs: 200
+
+    # Template management API flow control
+    notify-api-template:
+      resource: notify-api-template
+      count: 300
+      grade: 1
+      strategy: 0
+      controlBehavior: 0
+      clusterMode: false
+      warmUpPeriodSec: 3
+      maxQueueingTimeMs: 100
+
+  # Degrade rules
+  degrade:
+    notify-email:
+      resource: notify-email
+      grade: 0
+      count: 3
+      timeWindow: 60
+      minRequestAmount: 5
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
+
+    notify-sms:
+      resource: notify-sms
+      grade: 0
+      count: 2
+      timeWindow: 30
+      minRequestAmount: 3
+      slowRatioThreshold: 0.5
+      statIntervalMs: 1000
+
+  # System protection rules
+  system:
+    highestCpuUsage: 0.8
+    highestSystemLoad: 5.0
+    qps: 1000
+    avgRt: 1500
+    maxThread: 100
+
+# Health check configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,sentinel
+  endpoint:
+    health:
+      show-details: always

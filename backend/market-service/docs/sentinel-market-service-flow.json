@@ -1,0 +1,182 @@
+[
+  {
+    "resource": "GET:/api/v1/market/ticker/{symbol}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 800,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/market/tickers",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 600,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/market/top/gainers",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 400,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/market/top/losers",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 400,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/market/top/volume",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 400,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/market/klines",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 1000,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/market/trades",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 800,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/market/depth",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 1000,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/market/ticker/update",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 50,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/market/trade/add",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/market/depth/update",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 50,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/pairs",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 300,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/pairs/active",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 500,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/pairs/symbol/{symbol}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 400,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/pairs/{id}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 250,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/pairs",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "PUT:/api/v1/pairs/{id}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "DELETE:/api/v1/pairs/{id}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/pairs/sync",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/pairs/all",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 200,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  }
+]

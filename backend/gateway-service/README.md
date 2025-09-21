@@ -171,7 +171,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: nacos:8848
         namespace: d8a0e588-e615-448b-994c-0ad931c56808
         group: gateway-service
 
@@ -188,7 +188,7 @@ spring:
   cloud:
     sentinel:
       transport:
-        dashboard: localhost:8858
+        dashboard: sentinel:8080
 ```
 
 ## API文档

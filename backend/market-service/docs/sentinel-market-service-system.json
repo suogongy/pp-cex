@@ -1,0 +1,11 @@
+[
+  {
+    "resource": "market-service",
+    "grade": 0,
+    "count": 0.9,
+    "maxOutputRt": 20,
+    "highestSystemLoad": 10.0,
+    "avgRt": 30,
+    "maxThread": 800
+  }
+]

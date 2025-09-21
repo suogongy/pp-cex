@@ -1,0 +1,52 @@
+[
+  {
+    "resource": "POST:/api/v1/wallet/withdraw/audit",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "GET:/api/v1/wallet/withdraw/pending-audit",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/v1/wallet/monitor/balance",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/v1/wallet/monitor/blockchain",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/v1/wallet/address",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/v1/wallet/withdraw",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/v1/wallet/recharge/records",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/v1/wallet/withdraw/records",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/v1/wallet/balance",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/v1/wallet/balance/check",
+    "limitApp": "system",
+    "strategy": 0
+  }
+]

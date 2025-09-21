@@ -1,0 +1,173 @@
+[
+  {
+    "resource": "POST:/api/trade/orders",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/trade/orders/cancel",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 80,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/orders/{orderNo}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 200,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/orders",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 150,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/orders/active",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/orders/symbol/{symbol}/active",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 300,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/trades",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 200,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/trades/recent",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 500,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/trades/user",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/orderbook/{symbol}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 1000,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/price/{symbol}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 800,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/trade/orderbook/{symbol}/init",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/pairs",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 300,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/pairs/active",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 400,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/pairs/symbol/{symbol}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 350,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/trade/pairs/{id}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 250,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/trade/pairs",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "PUT:/api/trade/pairs/{id}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "DELETE:/api/trade/pairs/{id}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  }
+]

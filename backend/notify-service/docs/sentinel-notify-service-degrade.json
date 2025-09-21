@@ -1,0 +1,29 @@
+[
+  {
+    "resource": "POST:/api/notify/send",
+    "grade": 0,
+    "count": 5,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "slowRatioThreshold": 0.5,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/notify/batch-send",
+    "grade": 0,
+    "count": 3,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  },
+  {
+    "resource": "POST:/api/notify/retry/{notifyNo}",
+    "grade": 1,
+    "count": 80,
+    "timeWindow": 60,
+    "minRequestAmount": 5,
+    "slowRatioThreshold": 0.6,
+    "statIntervalMs": 1000
+  }
+]

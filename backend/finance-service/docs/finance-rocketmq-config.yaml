@@ -1,0 +1,26 @@
+# Finance Service RocketMQ Configuration
+spring:
+  rocketmq:
+    name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
+    producer:
+      group: finance-producer
+      send-message-timeout: 3000
+      retry-times-when-send-failed: 3
+      retry-next-server: true
+    consumer:
+      # 资产变动消息消费者
+      finance-asset-consumer:
+        group: finance-asset-consumer
+        topic: asset-topic
+        selector-expression: ASSET_CHANGE
+        consume-thread-min: 20
+        consume-thread-max: 64
+        pull-batch-size: 32
+      # 风控告警消息消费者
+      finance-risk-consumer:
+        group: finance-risk-consumer
+        topic: risk-topic
+        selector-expression: RISK_ALERT
+        consume-thread-min: 10
+        consume-thread-max: 32
+        pull-batch-size: 16

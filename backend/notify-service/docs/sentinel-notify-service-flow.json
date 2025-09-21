@@ -1,0 +1,38 @@
+[
+  {
+    "resource": "POST:/api/notify/send",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/notify/batch-send",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 30,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/notify/retry/{notifyNo}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 20,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/notify/status/{notifyNo}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 150,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  }
+]

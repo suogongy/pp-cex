@@ -1,0 +1,47 @@
+[
+  {
+    "resource": "POST:/api/trade/pairs",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "PUT:/api/trade/pairs/{id}",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "DELETE:/api/trade/pairs/{id}",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/trade/orderbook/{symbol}/init",
+    "limitApp": "admin",
+    "strategy": 1
+  },
+  {
+    "resource": "POST:/api/trade/orders",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "POST:/api/trade/orders/cancel",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/trade/orders",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/trade/orders/active",
+    "limitApp": "user",
+    "strategy": 0
+  },
+  {
+    "resource": "GET:/api/trade/trades/user",
+    "limitApp": "user",
+    "strategy": 0
+  }
+]

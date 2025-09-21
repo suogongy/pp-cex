@@ -1,0 +1,119 @@
+[
+  {
+    "resource": "POST:/api/v1/finance/flows",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 50,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/finance/flows/user/{userId}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 80,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/finance/flows/user/{userId}/recent",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/finance/assets/user/{userId}/coin/{coinId}",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 150,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/finance/stats/fee-income",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 30,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/finance/stats/volume",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 30,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/finance/reports/daily",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/finance/reports/daily",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 25,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/finance/reports/stats",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 20,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/finance/risk/check",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/finance/risk/ip-blacklist/add",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "POST:/api/v1/finance/risk/ip-blacklist/remove",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  },
+  {
+    "resource": "GET:/api/v1/finance/health",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 50,
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "resource": "trade-service",
+    "grade": 0,
+    "count": 0.85,
+    "maxOutputRt": 30,
+    "highestSystemLoad": 8.0,
+    "avgRt": 50,
+    "maxThread": 500
+  }
+]
