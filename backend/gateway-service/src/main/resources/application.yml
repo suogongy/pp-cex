@@ -125,9 +125,6 @@ spring:
       ribbon:
         enabled: false
 
-    # 监控配置 - Spring Boot 3.x 使用 Micrometer Tracing
-    # zipkin 和 sleuth 配置已迁移到 micrometer tracing
-
   # Redis配置
   data:
     redis:
@@ -220,54 +217,42 @@ cex:
 
 # 网关配置
 gateway:
-  # 网关健康检查配置
-  health:
-    check:
-      interval: 60  # 健康检查间隔，单位秒（默认60秒）
-      timeout: 10   # 健康检查超时时间，单位秒（默认10秒）
-
   security:
-    # 免认证路径 - 添加完整的OpenAPI相关路径
+    # 免认证路径 - 对应GatewayConfig.Security.permitAll
     permit-all:
-      - /actuator/**
-      - /api/v1/market/**
-      - /fallback/**
       - /doc.html
       - /doc.html/**
       - /swagger-ui/**
-      - /swagger-ui/index.html
-      - /swagger-ui.html
       - /swagger-resources/**
       - /v3/api-docs/**
       - /v3/api-docs/swagger-config
       - /webjars/**
-      - /user/v3/api-docs/**
-      - /trade/v3/api-docs/**
-      - /wallet/v3/api-docs/**
-      - /finance/v3/api-docs/**
-      - /market/v3/api-docs/**
-      - /risk/v3/api-docs/**
-      - /notify/v3/api-docs/**
-      - /match/v3/api-docs/**
-      - /favicon.ico
-      - /error
-    # IP白名单
+      - /actuator/**
+      - /api/v1/gateway/health
+    # IP白名单 - 对应GatewayConfig.Security.ipWhitelist
     ip-whitelist:
       - 127.0.0.1
-      - 192.168.1.0/24
-  # 限流配置
+      - 0:0:0:0:0:0:0:1
+      - 192.168.0.0/16
+      - 10.0.0.0/8
+
+  # 限流配置 - 对应GatewayConfig.RateLimit
   rate-limit:
-    default-replenish-rate: 100
-    default-burst-capacity: 200
-    user-replenish-rate: 50
-    user-burst-capacity: 100
-    ip-replenish-rate: 200
-    ip-burst-capacity: 400
-  # 缓存配置 (单位：秒)
+    # 默认限流配置
+    default-replenish-rate: 100    # 令牌填充速率（令牌/秒）
+    default-burst-capacity: 200   # 令牌桶容量
+    # 用户限流配置
+    user-replenish-rate: 50       # 用户令牌填充速率
+    user-burst-capacity: 100      # 用户令牌桶容量
+    # IP限流配置
+    ip-replenish-rate: 200        # IP令牌填充速率
+    ip-burst-capacity: 400        # IP令牌桶容量
+
+  # 缓存配置 - 对应GatewayConfig.Cache
   cache:
-    auth-ttl: 1800
-    route-ttl: 300
-    rate-limit-ttl: 60
+    auth-ttl: 3600         # 认证缓存TTL（秒）- 1小时
+    route-ttl: 1800       # 路由缓存TTL（秒）- 30分钟
+    rate-limit-ttl: 300   # 限流缓存TTL（秒）- 5分钟
 
 # SpringDoc OpenAPI配置
 springdoc:
