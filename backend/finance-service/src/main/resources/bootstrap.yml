@@ -25,7 +25,7 @@ spring:
       eager: true
 
 server:
-  port: 8004
+  port: 8005
 
 management:
   endpoints:

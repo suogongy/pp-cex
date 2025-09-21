@@ -34,7 +34,7 @@ spring:
           name-server: localhost:9876
 
 server:
-  port: 8006
+  port: 8008
   servlet:
     context-path: /risk
 
