@@ -12,8 +12,28 @@ public class GatewayConfig {
     private Cache cache;
 
     public static class Security {
-        private String[] permitAll;
-        private String[] ipWhitelist;
+        private String[] permitAll = {
+            "/doc.html",
+            "/doc.html/**",
+            "/swagger-ui/**",
+            "/swagger-resources/**",
+            "/v3/api-docs/**",
+            "/v3/api-docs/swagger-config",
+            "/webjars/**",
+            "/actuator/**",
+            "/user/v3/api-docs/**",
+            "/trade/v3/api-docs/**",
+            "/wallet/v3/api-docs/**",
+            "/finance/v3/api-docs/**",
+            "/market/v3/api-docs/**",
+            "/risk/v3/api-docs/**",
+            "/notify/v3/api-docs/**",
+            "/match/v3/api-docs/**",
+            "/api/v1/auth/**",
+            "/api/v1/public/**",
+            "/fallback/**"
+        };
+        private String[] ipWhitelist = {"127.0.0.1", "0:0:0:0:0:0:0:1", "192.168.0.0/16", "10.0.0.0/8"};
 
         public String[] getPermitAll() {
             return permitAll;
@@ -33,12 +53,12 @@ public class GatewayConfig {
     }
 
     public static class RateLimit {
-        private int defaultReplenishRate;
-        private int defaultBurstCapacity;
-        private int userReplenishRate;
-        private int userBurstCapacity;
-        private int ipReplenishRate;
-        private int ipBurstCapacity;
+        private int defaultReplenishRate = 100;
+        private int defaultBurstCapacity = 200;
+        private int userReplenishRate = 50;
+        private int userBurstCapacity = 100;
+        private int ipReplenishRate = 200;
+        private int ipBurstCapacity = 400;
 
         public int getDefaultReplenishRate() {
             return defaultReplenishRate;
@@ -90,9 +110,9 @@ public class GatewayConfig {
     }
 
     public static class Cache {
-        private int authTtl;
-        private int routeTtl;
-        private int rateLimitTtl;
+        private int authTtl = 3600; // 1小时
+        private int routeTtl = 1800; // 30分钟
+        private int rateLimitTtl = 300; // 5分钟
 
         public int getAuthTtl() {
             return authTtl;

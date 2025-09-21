@@ -107,7 +107,20 @@ gateway:
       - /api/v1/market/**
       - /fallback/**
       - /doc.html
+      - /doc.html/**
+      - /swagger-ui/**
+      - /swagger-resources/**
       - /v3/api-docs/**
+      - /v3/api-docs/swagger-config
+      - /webjars/**
+      - /user/v3/api-docs/**
+      - /trade/v3/api-docs/**
+      - /wallet/v3/api-docs/**
+      - /finance/v3/api-docs/**
+      - /market/v3/api-docs/**
+      - /risk/v3/api-docs/**
+      - /notify/v3/api-docs/**
+      - /match/v3/api-docs/**
     # IP白名单
     ip-whitelist:
       - 127.0.0.1

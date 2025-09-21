@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -45,17 +46,38 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
     @PostConstruct
     public void init() {
         String luaScript = """
+            -- 参数验证
             local key = KEYS[1]
+            if not key then
+                return -1
+            end
+
             local limit = tonumber(ARGV[1])
             local window = tonumber(ARGV[2])
+
+            if not limit or not window or limit <= 0 or window <= 0 then
+                return -2
+            end
+
+            -- 获取当前计数
             local current = redis.call('GET', key)
 
+            -- 如果key不存在，设置初始值
             if current == false then
                 redis.call('SET', key, 1, 'EX', window)
                 return 1
             end
 
-            if tonumber(current) < limit then
+            -- 转换当前值为数字
+            current = tonumber(current)
+            if not current then
+                -- 如果当前值不是数字，重置为1
+                redis.call('SET', key, 1, 'EX', window)
+                return 1
+            end
+
+            -- 检查是否超过限制
+            if current < limit then
                 redis.call('INCR', key)
                 return 1
             else
@@ -64,6 +86,7 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
             """;
 
         rateLimitScript = new DefaultRedisScript<>(luaScript, Long.class);
+        log.info("限流Lua脚本初始化完成");
     }
 
     @Override
@@ -107,44 +130,106 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
 
     private boolean checkIpRateLimit(String ip) {
         String key = IP_RATE_LIMIT_PREFIX + ip;
-        return executeRateLimitScript(key,
+        log.debug("检查IP限流 - IP: {}, Key: {}, Limit: {}, TTL: {}s",
+                 ip, key, rateLimitConfig.getIpReplenishRate(), gatewayConfig.getCache().getRateLimitTtl());
+
+        boolean result = executeRateLimitScript(key,
                 rateLimitConfig.getIpReplenishRate(),
                 gatewayConfig.getCache().getRateLimitTtl());
+
+        log.debug("IP限流检查结果 - IP: {}, 允许: {}", ip, result);
+        return result;
     }
 
     private boolean checkUserRateLimit(String userId) {
         String key = USER_RATE_LIMIT_PREFIX + userId;
-        return executeRateLimitScript(key,
+        log.debug("检查用户限流 - 用户ID: {}, Key: {}, Limit: {}, TTL: {}s",
+                 userId, key, rateLimitConfig.getUserReplenishRate(), gatewayConfig.getCache().getRateLimitTtl());
+
+        boolean result = executeRateLimitScript(key,
                 rateLimitConfig.getUserReplenishRate(),
                 gatewayConfig.getCache().getRateLimitTtl());
+
+        log.debug("用户限流检查结果 - 用户ID: {}, 允许: {}", userId, result);
+        return result;
     }
 
     private boolean checkApiRateLimit(String path, String method) {
         String key = API_RATE_LIMIT_PREFIX + method + ":" + path;
-        return executeRateLimitScript(key,
+        log.debug("检查API限流 - 路径: {} {}, Key: {}, Limit: {}, TTL: {}s",
+                 method, path, key, rateLimitConfig.getDefaultReplenishRate(), gatewayConfig.getCache().getRateLimitTtl());
+
+        boolean result = executeRateLimitScript(key,
                 rateLimitConfig.getDefaultReplenishRate(),
                 gatewayConfig.getCache().getRateLimitTtl());
+
+        log.debug("API限流检查结果 - 路径: {} {}, 允许: {}", method, path, result);
+        return result;
     }
 
     private boolean checkGlobalRateLimit() {
         String key = RATE_LIMIT_PREFIX + "global";
-        return executeRateLimitScript(key,
-                rateLimitConfig.getDefaultReplenishRate() * 10,
+        int globalLimit = rateLimitConfig.getDefaultReplenishRate() * 10;
+        log.debug("检查全局限流 - Key: {}, Limit: {}, TTL: {}s",
+                 key, globalLimit, gatewayConfig.getCache().getRateLimitTtl());
+
+        boolean result = executeRateLimitScript(key,
+                globalLimit,
                 gatewayConfig.getCache().getRateLimitTtl());
+
+        log.debug("全局限流检查结果 - Key: {}, 允许: {}", key, result);
+        return result;
     }
 
     private boolean executeRateLimitScript(String key, int limit, int windowSeconds) {
-        Long result = redisTemplate.execute(
-                rateLimitScript,
-                Collections.singletonList(key),
-                String.valueOf(limit),
-                String.valueOf(windowSeconds)
-        );
+        try {
+            log.debug("执行限流脚本 - Key: {}, Limit: {}, Window: {}s", key, limit, windowSeconds);
 
-        return result != null && result > 0;
+            // 参数验证
+            if (key == null || key.trim().isEmpty()) {
+                log.warn("限流脚本参数无效 - Key为空");
+                return true;
+            }
+
+            if (limit <= 0 || windowSeconds <= 0) {
+                log.warn("限流脚本参数无效 - Limit: {}, Window: {}", limit, windowSeconds);
+                return true;
+            }
+
+            // 确保参数类型正确
+            List<String> keys = Collections.singletonList(key);
+            List<String> args = Arrays.asList(String.valueOf(limit), String.valueOf(windowSeconds));
+
+            Long result = redisTemplate.execute(rateLimitScript, keys, args);
+
+            log.debug("限流脚本执行结果 - Key: {}, Result: {}", key, result);
+
+            // 处理Lua脚本返回的错误码
+            if (result == null) {
+                log.warn("限流脚本返回null - Key: {}", key);
+                return true;
+            }
+
+            if (result == -1) {
+                log.error("限流脚本参数错误 - Key为空");
+                return true;
+            }
+
+            if (result == -2) {
+                log.error("限流脚本参数错误 - Limit或Window无效: {}, {}", limit, windowSeconds);
+                return true;
+            }
+
+            return result > 0;
+        } catch (Exception e) {
+            log.error("限流脚本执行失败 - Key: {}, Limit: {}, Window: {}s, Error: {}",
+                     key, limit, windowSeconds, e.getMessage(), e);
+            // 出现异常时默认允许通过，避免误拦截
+            return true;
+        }
     }
 
-    private String getClientIp(ServerHttpRequest request) {
+    String getClientIp(ServerHttpRequest request) {
         String xForwardedFor = request.getHeaders().getFirst("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
             return xForwardedFor.split(",")[0].trim();

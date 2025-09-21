@@ -14,6 +14,9 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
+
+import com.ppcex.gateway.config.GatewayConfig;
+
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -28,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class AuthorizationFilter implements GlobalFilter, Ordered {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final GatewayConfig gatewayConfig;
 
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
@@ -122,7 +126,7 @@ public class AuthorizationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPermitAllPath(String path) {
-        boolean isPermitAll = PERMIT_ALL_PATHS.stream()
+        boolean isPermitAll = Arrays.asList(gatewayConfig.getSecurity().getPermitAll()) .stream()
                 .anyMatch(pattern -> {
                     boolean matches = antPathMatcher.match(pattern, path);
                     log.debug("免权限路径检查 - 路径: {} 模式: {} 匹配: {}", path, pattern, matches);

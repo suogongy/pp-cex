@@ -2,8 +2,9 @@ package com.ppcex.gateway.utils;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import com.ppcex.gateway.config.JwtProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -13,19 +14,25 @@ import java.util.Map;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class JwtUtil {
 
-    @Value("${cex.jwt.secret}")
-    private String secret;
+    private final JwtProperties jwtProperties;
 
-    @Value("${cex.jwt.expiration}")
-    private Long expiration;
+    private String getSecret() {
+        return jwtProperties.getSecret();
+    }
 
-    @Value("${cex.jwt.refresh-expiration}")
-    private Long refreshExpiration;
+    private Long getExpiration() {
+        return jwtProperties.getExpiration();
+    }
+
+    private Long getRefreshExpiration() {
+        return jwtProperties.getRefreshExpiration();
+    }
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(getSecret().getBytes());
     }
 
     public String generateToken(String username, String userId) {
@@ -40,11 +47,11 @@ public class JwtUtil {
         claims.put("userId", userId);
         claims.put("username", username);
         claims.put("type", "refresh");
-        return createToken(claims, username, refreshExpiration);
+        return createToken(claims, username, getRefreshExpiration());
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
-        return createToken(claims, subject, expiration);
+        return createToken(claims, subject, getExpiration());
     }
 
     private String createToken(Map<String, Object> claims, String subject, Long expirationTime) {

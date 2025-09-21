@@ -52,8 +52,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         // 检查是否是免认证路径
         if (isPermitAllPath(path)) {
-            log.info("路径在免认证列表中，跳过认证 - 路径: {}", path);
+            log.info("路径在免认证列表中，跳过JWT认证 - 路径: {} 方法: {} 客户端IP: {}", path, method, clientIp);
             return chain.filter(exchange);
+        } else {
+            log.warn("路径不在免认证列表中，需要进行JWT认证 - 路径: {} 方法: {} 客户端IP: {}", path, method, clientIp);
         }
 
         // 获取Authorization头
@@ -129,14 +131,24 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPermitAllPath(String path) {
-        boolean isPermitAll = Arrays.stream(gatewayConfig.getSecurity().getPermitAll())
-                .anyMatch(pattern -> {
-                    boolean matches = antPathMatcher.match(pattern, path);
-                    log.debug("检查免认证路径 - 路径: {} 模式: {} 匹配: {}", path, pattern, matches);
-                    return matches;
-                });
-        log.debug("免认证路径检查结果 - 路径: {} 是否免认证: {}", path, isPermitAll);
-        return isPermitAll;
+        log.debug("开始检查免认证路径 - 路径: {}", path);
+
+        String[] permitAllPaths = gatewayConfig.getSecurity().getPermitAll();
+        log.debug("配置的免认证路径数量: {}", permitAllPaths != null ? permitAllPaths.length : 0);
+
+        if (permitAllPaths != null) {
+            for (String pattern : permitAllPaths) {
+                boolean matches = antPathMatcher.match(pattern, path);
+                log.debug("检查免认证路径 - 路径: {} 模式: {} 匹配: {}", path, pattern, matches);
+                if (matches) {
+                    log.info("路径匹配免认证模式 - 路径: {} 匹配模式: {}", path, pattern);
+                    return true;
+                }
+            }
+        }
+
+        log.debug("路径未匹配任何免认证模式 - 路径: {}", path);
+        return false;
     }
 
     private boolean isTokenBlacklisted(String token) {
@@ -153,7 +165,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         log.debug("IP白名单检查 - 客户端IP: {}", clientIp);
 
-        boolean isAllowed = Arrays.stream(gatewayConfig.getSecurity().getIpWhitelist())
+        // 如果是Swagger相关请求，允许本地访问
+        String path = request.getPath().value();
+        if (isSwaggerRequest(path) && (clientIp.equals("127.0.0.1") || clientIp.equals("0:0:0:0:0:0:0:1"))) {
+            log.info("Swagger文档本地访问 - 路径: {} 客户端IP: {}, 允许访问", path, clientIp);
+            return true;
+        }
+
+        String[] ipWhitelist = gatewayConfig.getSecurity().getIpWhitelist();
+        if (ipWhitelist == null || ipWhitelist.length == 0) {
+            log.debug("IP白名单未配置，默认允许访问 - 客户端IP: {}", clientIp);
+            return true;
+        }
+
+        boolean isAllowed = Arrays.stream(ipWhitelist)
                 .anyMatch(whitelist -> {
                     boolean matches;
                     if (whitelist.contains("/")) {
@@ -172,6 +197,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         log.info("IP白名单检查结果 - 客户端IP: {} 是否允许: {}", clientIp, isAllowed);
         return isAllowed;
+    }
+
+    private boolean isSwaggerRequest(String path) {
+        return path.startsWith("/doc.html") ||
+               path.startsWith("/swagger-ui/") ||
+               path.startsWith("/swagger-resources/") ||
+               path.startsWith("/v3/api-docs/") ||
+               path.startsWith("/webjars/") ||
+               path.equals("/v3/api-docs/swagger-config");
     }
 
     private boolean isIpInCidr(String ip, String cidrIp, int prefix) {
