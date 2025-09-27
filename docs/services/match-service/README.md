@@ -35,6 +35,7 @@ graph TB
     subgraph "业务层"
         BUSINESS[业务层总节点]
         MatchEngine[撮合引擎<br>Match Engine]
+        DisruptorProc[Disruptor处理器<br>Order Processor]
         OrderBook[订单簿管理<br>OrderBook Mgr]
         PriceDisc[价格发现<br>Price Disc]
         TradeProc[成交处理<br>Trade Proc]
@@ -80,15 +81,16 @@ graph TB
     classDef infraLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
 
     class INTERFACE,REST,WS,Admin,Health interfaceLayer
-    class BUSINESS,MatchEngine,OrderBook,PriceDisc,TradeProc,Algorithm,PerfOpt,Monitor,Disaster businessLayer
+    class BUSINESS,MatchEngine,DisruptorProc,OrderBook,PriceDisc,TradeProc,Algorithm,PerfOpt,Monitor,Disaster businessLayer
     class DATA,OrderDAO,TradeDAO,OrderBookDAO,StatsDAO,MemoryDB,Cache,MQProducer,ExternalAPI dataLayer
     class INFRA,MySQL,Redis,RocketMQ,Nacos,MemoryCalc,RedisLock,SkyWalking,Cluster infraLayer
 ```
 
 ### 2.2 技术栈
-- **框架**: Spring Boot 3.2.x
+- **框架**: Spring Boot 3.1.5
+- **高性能队列**: LMAX Disruptor 3.4.4
 - **内存计算**: 自研内存订单簿
-- **并发控制**: Java并发包 + Disruptor
+- **并发控制**: Java并发包 + Disruptor无锁队列
 - **数据库**: MySQL 8.0 + MyBatis Plus
 - **缓存**: Redis 7.x
 - **消息队列**: RocketMQ 4.9.x
@@ -101,6 +103,7 @@ match-service
 ├── Redis (缓存 + 分布式锁)
 ├── MySQL (数据存储)
 ├── RocketMQ (消息队列)
+├── Disruptor (高性能无锁队列)
 ├── trade-service (订单服务)
 ├── wallet-service (资产服务)
 ├── market-service (行情服务)
@@ -715,31 +718,218 @@ graph TD
     style AB fill:#fff3e0
 ```
 
-## 5. 性能优化设计
+## 5. Disruptor高性能队列设计
 
-### 4.5 撮合算法设计
+### 5.1 Disruptor架构概述
 
-### 5.1 内存优化
+撮合服务采用LMAX Disruptor作为核心的订单处理队列，实现无锁的高性能订单处理。Disruptor通过环形缓冲区(Ring Buffer)和事件驱动模型，显著提升了订单处理的吞吐量和减少延迟。
+
+### 5.2 Disruptor组件设计
+
+#### 5.2.1 核心组件结构
+```mermaid
+graph TD
+    A[订单请求] --> B[DisruptorOrderProcessor]
+    B --> C[RingBuffer<OrderEvent>]
+    C --> D[OrderEventHandler]
+    D --> E[MatchingEngine]
+    E --> F[订单簿处理]
+
+    B --> G[OrderEventFactory]
+    G --> H[OrderEvent对象池]
+
+    subgraph "事件类型"
+        I[NEW_ORDER]
+        J[CANCEL_ORDER]
+        K[MODIFY_ORDER]
+    end
+
+    style B fill:#e3f2fd
+    style C fill:#f3e5f5
+    style D fill:#e8f5e8
+    style E fill:#fff3e0
+```
+
+#### 5.2.2 Disruptor配置参数
+```java
+@PostConstruct
+public void init() {
+    disruptor = new Disruptor<>(
+            new OrderEventFactory(),        // 事件工厂
+            1024,                          // Ring Buffer大小
+            Executors.defaultThreadFactory(), // 线程工厂
+            ProducerType.MULTI,            // 多生产者模式
+            new BlockingWaitStrategy()     // 阻塞等待策略
+    );
+
+    disruptor.handleEventsWith(new OrderEventHandler(matchingEngine));
+    disruptor.start();
+
+    ringBuffer = disruptor.getRingBuffer();
+}
+```
+
+### 5.3 OrderEvent事件模型
+
+#### 5.3.1 事件对象设计
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class OrderEvent {
+    private MatchOrder order;
+    private OrderEventType type;
+
+    public enum OrderEventType {
+        NEW_ORDER,      // 新订单
+        CANCEL_ORDER,   // 取消订单
+        MODIFY_ORDER    // 修改订单
+    }
+}
+```
+
+#### 5.3.2 事件工厂
+```java
+public class OrderEventFactory implements EventFactory<OrderEvent> {
+    @Override
+    public OrderEvent newInstance() {
+        return new OrderEvent();
+    }
+}
+```
+
+### 5.4 事件处理器设计
+
+#### 5.4.1 OrderEventHandler实现
+```java
+@Slf4j
+@RequiredArgsConstructor
+public class OrderEventHandler implements EventHandler<OrderEvent>, WorkHandler<OrderEvent> {
+
+    private final MatchingEngine matchingEngine;
+
+    @Override
+    public void onEvent(OrderEvent event, long sequence, boolean endOfBatch) {
+        processEvent(event);
+    }
+
+    private void processEvent(OrderEvent event) {
+        try {
+            MatchOrder order = event.getOrder();
+            switch (event.getType()) {
+                case NEW_ORDER:
+                    matchingEngine.processOrder(order);
+                    break;
+                case CANCEL_ORDER:
+                    matchingEngine.cancelOrder(order);
+                    break;
+                case MODIFY_ORDER:
+                    matchingEngine.cancelOrder(order);
+                    matchingEngine.processOrder(order);
+                    break;
+            }
+        } catch (Exception e) {
+            log.error("处理订单事件失败", e);
+        }
+    }
+}
+```
+
+### 5.5 性能优化策略
+
+#### 5.5.1 无锁设计优势
+- **避免锁竞争**: 使用CAS操作和内存屏障，避免传统锁机制
+- **减少上下文切换**: 最小化线程间切换开销
+- **缓存友好**: 环形缓冲区设计对CPU缓存友好
+
+#### 5.5.2 批处理优化
+- **批量事件处理**: 支持批量处理多个订单事件
+- **内存预分配**: 事件对象预分配，避免GC压力
+- **零拷贝**: 事件在环形缓冲区中重复使用
+
+#### 5.5.3 等待策略选择
+```java
+// 不同等待策略的选择
+BlockingWaitStrategy     // 低延迟，低CPU使用率（当前采用）
+BusySpinWaitStrategy    // 最低延迟，高CPU使用率
+YieldingWaitStrategy    // 平衡延迟和CPU使用率
+SleepingWaitStrategy    // 节能模式，适合低频交易
+```
+
+### 5.6 Disruptor集成流程
+
+#### 5.6.1 订单处理流程
+```mermaid
+sequenceDiagram
+    participant API as API接口
+    participant OS as OrderService
+    participant DOP as DisruptorOrderProcessor
+    participant RB as RingBuffer
+    participant EH as EventHandler
+    participant ME as MatchingEngine
+
+    API->>OS: 创建订单请求
+    OS->>OS: 订单预处理和验证
+    OS->>DOP: publishOrderEvent()
+    DOP->>RB: 获取下一个序列号
+    DOP->>RB: 设置事件数据
+    DOP->>RB: 发布事件
+    RB->>EH: 触发事件处理
+    EH->>ME: 调用撮合引擎
+    ME->>ME: 执行订单匹配
+    ME-->>API: 异步返回处理结果
+```
+
+#### 5.6.2 事件发布机制
+```java
+public void publishOrderEvent(MatchOrder order, OrderEvent.OrderEventType type) {
+    long sequence = ringBuffer.next();    // 获取下一个可用序列
+    try {
+        OrderEvent event = ringBuffer.get(sequence);
+        event.setOrder(order);
+        event.setType(type);
+    } finally {
+        ringBuffer.publish(sequence);     // 发布事件
+    }
+}
+```
+
+### 5.7 监控和调试
+
+#### 5.7.1 性能指标监控
+- **吞吐量监控**: 每秒处理的订单事件数量
+- **延迟监控**: 从事件发布到处理完成的时间
+- **队列深度**: Ring Buffer中待处理事件数量
+- **处理器状态**: EventHandler的处理状态
+
+#### 5.7.2 故障处理
+- **异常隔离**: 单个事件异常不影响整体处理
+- **事件重试**: 支持失败事件的重试机制
+- **监控告警**: 处理异常和性能指标告警
+
+## 6. 传统性能优化设计
+
+### 6.1 内存优化
 - **对象池**: 使用对象池减少GC压力
 - **内存管理**: 合理管理内存使用
 - **数据压缩**: 压缩历史订单数据
 - **分片存储**: 订单簿分片存储
 
-### 5.2 并发优化
+### 6.2 并发优化
 - **无锁设计**: 使用CAS操作减少锁竞争
 - **读写分离**: 读写锁优化并发性能
 - **分片处理**: 按交易对分片处理
 - **异步处理**: 异步处理非关键路径
 
-### 5.3 算法优化
+### 6.3 算法优化
 - **索引优化**: 使用TreeMap快速查找
 - **批量处理**: 批量处理多个订单
 - **缓存优化**: 缓存热点数据
 - **延迟更新**: 延迟更新订单簿
 
-## 6. 接口设计
+## 7. 接口设计
 
-### 6.1 核心接口清单
+### 7.1 核心接口清单
 
 | 接口路径 | 方法 | 描述 | 权限要求 |
 |---------|------|------|----------|
@@ -751,9 +941,9 @@ graph TD
 | `/api/v1/match/engine/start` | POST | 启动引擎 | 管理员 |
 | `/api/v1/match/engine/stop` | POST | 停止引擎 | 管理员 |
 
-### 6.2 接口详细设计
+### 7.2 接口详细设计
 
-#### 6.2.1 订单撮合接口
+#### 7.2.1 订单撮合接口
 ```http
 POST /api/v1/match/order
 Content-Type: application/json
@@ -837,15 +1027,15 @@ Authorization: Bearer {admin_token}
 }
 ```
 
-## 7. 缓存设计
+## 8. 缓存设计
 
-### 7.1 缓存策略
+### 8.1 缓存策略
 - **订单簿缓存**: 缓存订单簿深度数据，TTL 1秒
 - **成交缓存**: 缓存最新成交记录，TTL 1分钟
 - **统计缓存**: 缓存撮合统计数据，TTL 5分钟
 - **引擎缓存**: 缓存引擎状态信息，TTL 10秒
 
-### 7.2 缓存键设计
+### 8.2 缓存键设计
 ```
 match:orderbook:{symbol}          - 订单簿数据
 match:trades:{symbol}:{limit}     - 成交记录
@@ -855,26 +1045,26 @@ match:price:{symbol}              - 最新价格
 match:snapshot:{symbol}:{time}    - 订单簿快照
 ```
 
-### 7.3 缓存更新策略
+### 8.3 缓存更新策略
 - **实时更新**: 订单簿实时更新
 - **批量更新**: 统计数据批量更新
 - **定时更新**: 引擎状态定时更新
 - **事件驱动**: 事件驱动缓存更新
 
-## 8. 消息队列设计
+## 9. 消息队列设计
 
-### 8.1 消息Topic
+### 9.1 消息Topic
 - **match-topic**: 撮合相关消息
 - **trade-topic**: 成交相关消息
 - **orderbook-topic**: 订单簿相关消息
 
-### 8.2 消息类型
+### 9.2 消息类型
 - **成交消息**: 新成交时发送
 - **订单消息**: 订单状态变更时发送
 - **订单簿消息**: 订单簿更新时发送
 - **引擎消息**: 引擎状态变更时发送
 
-### 8.3 消息格式
+### 9.3 消息格式
 ```json
 {
   "header": {
@@ -900,35 +1090,35 @@ match:snapshot:{symbol}:{time}    - 订单簿快照
 }
 ```
 
-## 9. 监控设计
+## 10. 监控设计
 
-### 9.1 业务监控
+### 10.1 业务监控
 - **撮合延迟**: 撮合处理延迟监控
 - **成交率**: 订单成交率监控
 - **订单簿深度**: 订单簿深度监控
 - **价格监控**: 价格异常监控
 
-### 9.2 技术监控
+### 10.2 技术监控
 - **引擎性能**: 撮合引擎性能监控
 - **内存使用**: 内存使用率监控
 - **CPU使用**: CPU使用率监控
 - **网络延迟**: 网络延迟监控
 
-### 9.3 告警规则
+### 10.3 告警规则
 - **撮合延迟**: 撮合延迟超过10ms
 - **引擎异常**: 撮合引擎异常
 - **内存异常**: 内存使用率超过80%
 - **价格异常**: 价格波动超过10%
 
-## 10. 容灾设计
+## 11. 容灾设计
 
-### 10.1 故障恢复
+### 11.1 故障恢复
 - **主备切换**: 主备引擎切换
 - **数据恢复**: 订单簿数据恢复
 - **状态同步**: 引擎状态同步
 - **故障转移**: 自动故障转移
 
-### 10.2 数据一致性
+### 11.2 数据一致性
 - **事务消息**: 保证消息一致性
 - **幂等设计**: 防止重复处理
 - **数据校验**: 数据一致性校验

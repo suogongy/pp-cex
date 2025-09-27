@@ -1,4 +1,11 @@
+# =================================================================
+# Spring Boot 3.1.5 + Spring Cloud 2022.0.4 + Spring Cloud Alibaba 2022.0.0.0
+# 服务名称: risk-service
+# 环境配置: test
+# =================================================================
+
 spring:
+  # 应用基础配置
   application:
     name: risk-service
   profiles:
@@ -8,35 +15,492 @@ spring:
     lazy-initialization: false
     banner-mode: "off"
 
-  config:
-    import:
-      - optional:nacos:risk-common-config.yaml
-      - optional:nacos:risk-mysql-config.yaml
-      - optional:nacos:risk-redis-config.yaml
-      - optional:nacos:risk-rocketmq-config.yaml
-
+  # 服务注册与发现
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         metadata:
           version: 1.0.0
           context-path: /risk
+          preserved.heart.beat.interval: 5000
+          preserved.heart.beat.timeout: 15000
+          preserved.ip.delete.timeout: 30000
       config:
         enabled: true
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
         file-extension: yaml
+        refresh-enabled: true
+        shared-configs:
+          - data-id: common-config.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+
+    # Sentinel 流量控制
+    sentinel:
+      transport:
+        dashboard: localhost:8080
+        port: 8719
+        client-ip: ${spring.cloud.client.ip-address}
+      eager: true
+      datasource:
+        flow-rules:
+          nacos:
+            server-addr: localhost:8848
+            dataId: sentinel-risk-service-flow.json
+            groupId: DEFAULT_GROUP
+            rule-type: flow
+            data-type: json
+        degrade-rules:
+          nacos:
+            server-addr: localhost:8848
+            dataId: sentinel-risk-service-degrade.json
+            groupId: DEFAULT_GROUP
+            rule-type: degrade
+            data-type: json
+
+    # Spring Cloud Stream 配置
     stream:
       function:
         definition: riskTopic;userTopic;tradeTopic;assetTopic
+      default-binder: rocketmq
       rocketmq:
         binder:
           name-server: localhost:9876
+          # 生产者配置
+          producer:
+            group: risk-service-producer-group
+            send-message-timeout: 3000
+            compress-message-body-threshold: 4096
+            max-message-size: 4194304
+            retry-times-when-send-failed: 2
+            retry-next-server: true
+            enable-msg-trace: true
+            customized-trace-topic: RMQ_SYS_TRACE_TOPIC
+          # 消费者配置
+          consumer:
+            group: risk-service-consumer-group
+            subscription: risk-service-subscription
+            message-model: CLUSTERING
+            pull-batch-size: 10
+            pull-interval: 1000
+            consume-thread-min: 20
+            consume-thread-max: 64
+            consume-concurrently-max-span: 2000
+            pull-threshold-for-queue: 1000
+            pull-threshold-size-for-queue: 100
+            pull-threshold-for-topic: 100000
+            pull-threshold-size-for-topic: 1000000
 
+      # 绑定配置
+      bindings:
+        # 风控主题
+        riskTopic-in-0:
+          destination: risk-topic
+          group: risk-service-risk-group
+          content-type: application/json
+          consumer:
+            concurrency: 3
+            max-attempts: 3
+            back-off-initial-delay: 1000
+            back-off-multiplier: 2.0
+            back-off-max-delay: 10000
+
+        riskTopic-out-0:
+          destination: risk-topic
+          group: risk-service-risk-group
+          content-type: application/json
+          producer:
+            group: risk-service-risk-producer-group
+
+        # 用户主题
+        userTopic-in-0:
+          destination: user-topic
+          group: risk-service-user-group
+          content-type: application/json
+          consumer:
+            concurrency: 2
+            max-attempts: 3
+            back-off-initial-delay: 1000
+            back-off-multiplier: 2.0
+            back-off-max-delay: 10000
+
+        userTopic-out-0:
+          destination: user-topic
+          group: risk-service-user-group
+          content-type: application/json
+          producer:
+            group: risk-service-user-producer-group
+
+        # 交易主题
+        tradeTopic-in-0:
+          destination: trade-topic
+          group: risk-service-trade-group
+          content-type: application/json
+          consumer:
+            concurrency: 5
+            max-attempts: 3
+            back-off-initial-delay: 1000
+            back-off-multiplier: 2.0
+            back-off-max-delay: 10000
+
+        tradeTopic-out-0:
+          destination: trade-topic
+          group: risk-service-trade-group
+          content-type: application/json
+          producer:
+            group: risk-service-trade-producer-group
+
+        # 资产主题
+        assetTopic-in-0:
+          destination: asset-topic
+          group: risk-service-asset-group
+          content-type: application/json
+          consumer:
+            concurrency: 3
+            max-attempts: 3
+            back-off-initial-delay: 1000
+            back-off-multiplier: 2.0
+            back-off-max-delay: 10000
+
+        assetTopic-out-0:
+          destination: asset-topic
+          group: risk-service-asset-group
+          content-type: application/json
+          producer:
+            group: risk-service-asset-producer-group
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ppcex_risk?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&maxReconnects=3
+    username: root
+    password: root123
+    hikari:
+      pool-name: RiskServiceHikariCP
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      minimum-idle: 10
+      maximum-pool-size: 50
+      connection-test-query: SELECT 1
+      connection-init-sql: SET NAMES utf8mb4
+      register-mbeans: true
+      allow-pool-suspension: false
+      read-only: false
+      isolate-internal-queries: false
+
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis123456}
+      database: ${REDIS_DATABASE:6}
+      username: ${REDIS_USERNAME:cex_risk}
+      timeout: 10000ms
+      connect-timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 20
+          min-idle: 0
+          time-between-eviction-runs: 30000ms
+      client-name: risk-service-redis-client
+
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+      key-prefix: "risk:"
+      use-key-prefix: true
+
+  # 线程池配置
+  task:
+    execution:
+      pool:
+        core-size: 16
+        max-size: 50
+        queue-capacity: 1000
+        keep-alive: 60s
+        thread-name-prefix: risk-service-task-
+    scheduling:
+      pool:
+        size: 5
+        thread-name-prefix: risk-service-scheduling-
+
+  # 事务配置
+  transaction:
+    rollback-on-commit-failure: true
+    default-timeout: 30
+
+# Web服务器配置
 server:
   port: 8008
   servlet:
     context-path: /risk
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+
+# 业务配置
+cex:
+  # JWT 配置
+  jwt:
+    enabled: true
+    secret: ${JWT_SECRET:risk-jwt-secret-key-at-least-32-bytes-long-for-security}
+    expiration: 86400000
+    refresh-expiration: 604800000
+    issuer: PPCEX
+    header-name: Authorization
+    token-prefix: Bearer
+
+  # 风控配置
+  risk:
+    # 风控引擎配置
+    engine:
+      enabled: true
+      rule-cache-ttl: 300
+      strategy-cache-ttl: 600
+      whitelist-cache-ttl: 900
+      max-concurrent-rules: 100
+      rule-execution-timeout: 1000
+
+    # 风险评分配置
+    scoring:
+      enabled: true
+      base-score-weight: 0.4
+      behavior-score-weight: 0.3
+      context-score-weight: 0.2
+      history-score-weight: 0.1
+      time-decay-factor: 0.95
+      max-score: 100
+      score-cache-ttl: 1800
+
+    # 风险等级配置
+    levels:
+      low:
+        min-score: 0
+        max-score: 20
+        action: NONE
+        description: "低风险"
+      medium:
+        min-score: 21
+        max-score: 50
+        action: ENHANCED_VERIFICATION
+        description: "中风险"
+      high:
+        min-score: 51
+        max-score: 80
+        action: LIMIT_FUNCTION
+        description: "高风险"
+      severe:
+        min-score: 81
+        max-score: 100
+        action: FREEZE_ACCOUNT
+        description: "严重风险"
+
+    # 实时风控配置
+    realtime:
+      enabled: true
+      batch-size: 100
+      batch-timeout: 1000
+      max-queue-size: 10000
+      worker-threads: 10
+
+    # 统计配置
+    statistics:
+      enabled: true
+      daily-statistics-cron: "0 0 0 * * ?"
+      retain-days: 90
+
+    # 告警配置
+    alert:
+      enabled: true
+      high-risk-threshold: 10
+      severe-risk-threshold: 5
+      alert-interval: 300
+      notification-channels: ["EMAIL", "SMS", "WEBHOOK"]
+
+    # 白名单配置
+    whitelist:
+      enabled: true
+      cache-ttl: 600
+      max-whitelist-size: 10000
+
+    cache:
+      local:
+        enabled: true
+        maximum-size: 10000
+        expire-after-write: 300
+        expire-after-access: 600
+      redis:
+        enabled: true
+        default-expiration: 3600
+        key-prefix: "risk:"
+        use-key-prefix: true
+        cache-null-values: false
+        time-to-live: 3600000
+      caches:
+        risk-rules:
+          ttl: 300
+          maximum-size: 1000
+        risk-strategies:
+          ttl: 600
+          maximum-size: 500
+        risk-whitelist:
+          ttl: 900
+          maximum-size: 2000
+        user-risk-score:
+          ttl: 1800
+          maximum-size: 5000
+        user-risk-status:
+          ttl: 600
+          maximum-size: 5000
+        risk-statistics:
+          ttl: 3600
+          maximum-size: 100
+
+# 安全配置
+security:
+  permit-all:
+    - /risk/api/v1/public/**
+    - /risk/doc.html
+    - /risk/swagger-ui/**
+    - /risk/v3/api-docs/**
+    - /risk/actuator/**
+    - /risk/favicon.ico
+    - /risk/error
+
+  cors:
+    allowed-origins: ["*"]
+    allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed-headers: ["*"]
+    exposed-headers: ["Authorization", "Content-Disposition"]
+    allow-credentials: true
+    max-age: 3600
+
+  rate-limit:
+    enabled: true
+    global-limit: 1000
+    api-limits:
+      "/risk/api/v1/check": 200
+      "/risk/api/v1/rules": 100
+      "/risk/api/v1/events": 50
+      "/risk/api/v1/statistics": 30
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+      base-path: /actuator
+      discovery:
+        enabled: true
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: "*"
+        readiness:
+          include: "*"
+    info:
+      enabled: true
+      git:
+        mode: full
+    env:
+      enabled: true
+    beans:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active}
+      region: default
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.ppcex.risk: INFO
+    com.ppcex.common: INFO
+    org.springframework.web: DEBUG
+    org.springframework.cloud: WARN
+    com.alibaba.nacos.client: WARN
+    io.lettuce.core: WARN
+    com.zaxxer.hikari: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 1GB
+      clean-history-on-start: false
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.ppcex.risk.entity
+  type-handlers-package: com.ppcex.risk.handler
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    use-generated-keys: false
+    auto-mapping-behavior: partial
+    default-statement-timeout: 25000
+    call-setters-on-nulls: false
+    return-instance-for-empty-row: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    default-executor-type: reuse
+    local-cache-scope: statement
+  global-config:
+    db-config:
+      id-type: auto
+      table-underline: true
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      table-prefix: ""
+      capital-mode: false
+    banner: false
+    enable-sql-runner: false
+  type-enums-package: com.ppcex.risk.enums
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui/index.html
 
 # Knife4j Configuration
 knife4j:
