@@ -204,14 +204,14 @@ export function MarketOverview() {
       {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search
+          <Input.Search
             placeholder="搜索交易对..."
-            allowClear
+            allowClear={true}
             enterButton={<Search className="h-4 w-4" />}
             size="large"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            loading={searchLoading}
+            loading={searchLoading ? true : undefined}
           />
         </div>
 
@@ -261,7 +261,7 @@ export function MarketOverview() {
       <Table
         columns={columns}
         dataSource={displayData}
-        loading={loading || searchLoading}
+        loading={(loading || searchLoading) ? true : undefined}
         rowKey="symbol"
         pagination={{
           pageSize: 20,

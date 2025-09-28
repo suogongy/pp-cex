@@ -27,8 +27,12 @@ export const metadata: Metadata = {
     title: 'CEX - 加密货币交易平台',
     description: '安全、稳定、高效的加密货币交易平台',
   },
-  viewport: 'width=device-width, initial-scale=1',
   robots: 'index, follow',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 const antdTheme = {

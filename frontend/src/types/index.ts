@@ -1,176 +1,26 @@
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  phone?: string;
-  avatar?: string;
-  status: number;
-  kycStatus: number;
-  level: number;
-  inviteCode?: string;
-  referrerId?: number;
-  apiKey?: string;
-  googleAuthEnabled: boolean;
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface UserAsset {
-  id: number;
-  userId: number;
-  currency: string;
-  available: string;
-  frozen: string;
-  total: string;
-  btcValue: string;
-  usdValue: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TradePair {
-  id: number;
-  symbol: string;
-  baseCurrency: string;
-  quoteCurrency: string;
-  pricePrecision: number;
-  amountPrecision: number;
-  minAmount: string;
-  maxAmount: string;
-  status: number;
-  sort: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TradeOrder {
-  id: number;
-  userId: number;
-  symbol: string;
-  type: number; // 1-buy, 2-sell
-  orderType: number; // 1-limit, 2-market
-  price: string;
-  amount: string;
-  executedAmount: string;
-  executedValue: string;
-  fee: string;
-  status: number; // 1-pending, 2-partial, 3-completed, 4-cancelled
-  timeInForce: number; // 1-GTC, 2-IOC, 3-FOK
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TradeDetail {
-  id: number;
-  orderId: number;
-  symbol: string;
-  type: number;
-  price: string;
-  amount: string;
-  fee: string;
-  createdAt: string;
-}
-
-export interface MarketData {
-  symbol: string;
-  price: string;
-  priceChange: string;
-  priceChangePercent: string;
-  high24h: string;
-  low24h: string;
-  volume24h: string;
-  quoteVolume24h: string;
-  lastUpdate: string;
-}
-
-export interface KlineData {
-  timestamp: number;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
-}
-
-export interface WalletAddress {
-  id: number;
-  userId: number;
-  currency: string;
-  address: string;
-  memo?: string;
-  network: string;
-  type: number; // 1-hot, 2-cold
-  status: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface RechargeRecord {
-  id: number;
-  userId: number;
-  currency: string;
-  txHash: string;
-  amount: string;
-  fromAddress: string;
-  toAddress: string;
-  confirmations: number;
-  requiredConfirmations: number;
-  status: number; // 1-pending, 2-completed, 3-failed
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface WithdrawRecord {
-  id: number;
-  userId: number;
-  currency: string;
-  txHash?: string;
-  amount: string;
-  fee: string;
-  toAddress: string;
-  network: string;
-  memo?: string;
-  status: number; // 1-pending, 2-processing, 3-completed, 4-failed
-  auditStatus: number; // 1-pending, 2-approved, 3-rejected
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface FinancialFlow {
-  id: number;
-  userId: number;
-  type: number; // 1-recharge, 2-withdraw, 3-trade, 4-fee, 5-transfer
-  currency: string;
-  amount: string;
-  balance: string;
-  description: string;
-  referenceId?: string;
-  createdAt: string;
-}
-
+// API Response Types
 export interface ApiResponse<T = any> {
   code: number;
   message: string;
   data: T;
-  timestamp: number;
 }
 
-export interface PaginatedResponse<T> {
-  list: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-export interface LoginForm {
+// User Types
+export interface User {
+  id: string;
   username: string;
+  email: string;
+  avatar?: string;
+  isKycVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Auth Types
+export interface LoginForm {
+  email: string;
   password: string;
   captcha?: string;
-  captchaId?: string;
-  googleCode?: string;
-  rememberMe?: boolean;
 }
 
 export interface RegisterForm {
@@ -178,26 +28,113 @@ export interface RegisterForm {
   email: string;
   password: string;
   confirmPassword: string;
-  phone?: string;
-  inviteCode?: string;
   captcha?: string;
-  captchaId?: string;
+  inviteCode?: string;
 }
 
-export interface UserSettings {
-  notificationEnabled: boolean;
-  emailNotification: boolean;
-  smsNotification: boolean;
-  language: string;
-  timezone: string;
-  theme: 'light' | 'dark' | 'auto';
+// Trading Types
+export interface TradingPair {
+  id: string;
+  baseAsset: string;
+  quoteAsset: string;
+  symbol: string;
+  price: number;
+  change24h: number;
+  volume24h: number;
+  high24h: number;
+  low24h: number;
 }
 
-export interface SecuritySettings {
-  googleAuthEnabled: boolean;
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  withdrawalWhitelist: string[];
-  withdrawalEnabled: boolean;
-  apiEnabled: boolean;
+export interface Order {
+  id: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  type: 'market' | 'limit';
+  amount: number;
+  price: number;
+  filled: number;
+  status: 'pending' | 'filled' | 'cancelled';
+  createdAt: string;
+}
+
+export interface Trade {
+  id: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  amount: number;
+  price: number;
+  fee: number;
+  createdAt: string;
+}
+
+// Asset Types
+export interface Asset {
+  id: string;
+  symbol: string;
+  name: string;
+  icon?: string;
+  totalBalance: number;
+  availableBalance: number;
+  frozenBalance: number;
+  btcValue: number;
+  usdValue: number;
+}
+
+// Market Data Types
+export interface MarketData {
+  id: string;
+  name: string;
+  symbol: string;
+  price: number;
+  change24h: number;
+  volume24h: number;
+  marketCap: number;
+}
+
+export interface MarketTicker {
+  symbol: string;
+  price: number;
+  change24h: number;
+  volume24h: number;
+  high24h: number;
+  low24h: number;
+}
+
+export interface KlineData {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+// Wallet Types
+export interface WalletAddress {
+  id: string;
+  currency: string;
+  address: string;
+  tag?: string;
+  createdAt: string;
+}
+
+export interface DepositRecord {
+  id: string;
+  currency: string;
+  amount: number;
+  address: string;
+  txHash: string;
+  status: 'pending' | 'confirmed' | 'failed';
+  createdAt: string;
+}
+
+export interface WithdrawRecord {
+  id: string;
+  currency: string;
+  amount: number;
+  address: string;
+  fee: number;
+  txHash?: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  createdAt: string;
 }

@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { Table, Typography, Tag, Space, Button, Card, Row, Col, Progress } from 'antd';
 import { TrendingUp, TrendingDown, DollarSign, Bitcoin, Eye } from 'lucide-react';
-import { UserAsset } from '@/types';
+import { Asset } from '@/types';
 
 const { Text, Title } = Typography;
 
 interface AssetOverviewProps {
-  assets: UserAsset[];
+  assets: Asset[];
   loading: boolean;
 }
 
@@ -47,6 +47,11 @@ export function AssetOverview({ assets, loading }: AssetOverviewProps) {
   };
 
   const getAssetIcon = (currency: string) => {
+    if (!currency) {
+      return <div className="h-6 w-6 bg-gray-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+        ?
+      </div>;
+    }
     switch (currency.toLowerCase()) {
       case 'btc':
         return <Bitcoin className="h-6 w-6 text-orange-500" />;
@@ -60,12 +65,13 @@ export function AssetOverview({ assets, loading }: AssetOverviewProps) {
         </div>;
       default:
         return <div className="h-6 w-6 bg-gray-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-          {currency.charAt(0).toUpperCase()}
+          {currency?.charAt(0)?.toUpperCase() || '?'}
         </div>;
     }
   };
 
   const getAssetColor = (currency: string) => {
+    if (!currency) return 'gray';
     switch (currency.toLowerCase()) {
       case 'btc':
         return 'orange';
@@ -79,57 +85,57 @@ export function AssetOverview({ assets, loading }: AssetOverviewProps) {
   };
 
   const calculateTotalValue = () => {
-    return assets.reduce((sum, asset) => sum + parseFloat(asset.usdValue), 0);
+    return assets.reduce((sum, asset) => sum + asset.usdValue, 0);
   };
 
   const calculateBtcValue = () => {
-    return assets.reduce((sum, asset) => sum + parseFloat(asset.btcValue), 0);
+    return assets.reduce((sum, asset) => sum + asset.btcValue, 0);
   };
 
   const columns = [
     {
       title: '资产',
       key: 'currency',
-      render: (record: UserAsset) => (
+      render: (record: Asset) => (
         <div className="flex items-center space-x-3">
-          {getAssetIcon(record.currency)}
+          {getAssetIcon(record.symbol)}
           <div>
-            <div className="font-medium">{record.currency}</div>
-            <div className="text-xs text-gray-500">{record.currency}</div>
+            <div className="font-medium">{record.symbol}</div>
+            <div className="text-xs text-gray-500">{record.name}</div>
           </div>
         </div>
       ),
     },
     {
       title: '可用',
-      dataIndex: 'available',
-      key: 'available',
-      render: (available: string, record: UserAsset) => (
+      dataIndex: 'availableBalance',
+      key: 'availableBalance',
+      render: (availableBalance: number, record: Asset) => (
         <div>
-          <div className="font-medium">{formatNumber(available)}</div>
+          <div className="font-medium">{formatNumber(availableBalance.toString())}</div>
           <div className="text-xs text-gray-500">
-            {formatCurrency(record.usdValue)}
+            {formatCurrency(record.usdValue.toString())}
           </div>
         </div>
       ),
     },
     {
       title: '冻结',
-      dataIndex: 'frozen',
-      key: 'frozen',
-      render: (frozen: string) => (
-        <Text type="secondary">{formatNumber(frozen)}</Text>
+      dataIndex: 'frozenBalance',
+      key: 'frozenBalance',
+      render: (frozenBalance: number) => (
+        <Text type="secondary">{formatNumber(frozenBalance.toString())}</Text>
       ),
     },
     {
       title: '总价值',
-      dataIndex: 'total',
-      key: 'total',
-      render: (total: string, record: UserAsset) => (
+      dataIndex: 'totalBalance',
+      key: 'totalBalance',
+      render: (totalBalance: number, record: Asset) => (
         <div>
-          <div className="font-medium">{formatNumber(total)}</div>
+          <div className="font-medium">{formatNumber(totalBalance.toString())}</div>
           <div className="text-sm text-gray-600">
-            {formatCurrency(record.usdValue)}
+            {formatCurrency(record.usdValue.toString())}
           </div>
         </div>
       ),
@@ -137,16 +143,16 @@ export function AssetOverview({ assets, loading }: AssetOverviewProps) {
     {
       title: '占比',
       key: 'percentage',
-      render: (record: UserAsset) => {
+      render: (record: Asset) => {
         const totalValue = calculateTotalValue();
-        const percentage = totalValue > 0 ? (parseFloat(record.usdValue) / totalValue) * 100 : 0;
+        const percentage = totalValue > 0 ? (record.usdValue / totalValue) * 100 : 0;
         return (
           <div className="flex items-center space-x-2">
             <div className="w-16">
               <Progress
                 percent={percentage}
                 size="small"
-                strokeColor={getAssetColor(record.currency)}
+                strokeColor={getAssetColor(record.symbol)}
                 showInfo={false}
               />
             </div>
@@ -158,7 +164,7 @@ export function AssetOverview({ assets, loading }: AssetOverviewProps) {
     {
       title: '操作',
       key: 'action',
-      render: (record: UserAsset) => (
+      render: (record: Asset) => (
         <Space size="small">
           <Button type="link" size="small">
             充值
@@ -192,7 +198,7 @@ export function AssetOverview({ assets, loading }: AssetOverviewProps) {
             </div>
           </div>
           <Button
-            type="ghost"
+            type="default"
             icon={<Eye className="h-4 w-4" />}
             onClick={() => setShowHidden(!showHidden)}
           >
@@ -266,13 +272,13 @@ export function AssetOverview({ assets, loading }: AssetOverviewProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {assets.slice(0, 6).map((asset) => {
             const totalValue = calculateTotalValue();
-            const percentage = totalValue > 0 ? (parseFloat(asset.usdValue) / totalValue) * 100 : 0;
+            const percentage = totalValue > 0 ? (asset.usdValue / totalValue) * 100 : 0;
             return (
-              <div key={asset.currency} className="flex items-center space-x-3">
-                {getAssetIcon(asset.currency)}
+              <div key={asset.symbol} className="flex items-center space-x-3">
+                {getAssetIcon(asset.symbol)}
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium">{asset.currency}</span>
+                    <span className="font-medium">{asset.symbol}</span>
                     <span className="text-sm text-gray-600">{percentage.toFixed(2)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -293,8 +299,8 @@ export function AssetOverview({ assets, loading }: AssetOverviewProps) {
         <Table
           columns={columns}
           dataSource={assets}
-          loading={loading}
-          rowKey="currency"
+          loading={loading ? true : undefined}
+          rowKey="symbol"
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useAccount, useBalance } from 'wagmi';
 import { Button, Card, Row, Col, Statistic, Typography, Space, Spin } from 'antd';
-import { Bitcoin, Ethereum, TrendingUp, Users, Shield, Zap } from 'lucide-react';
+import { Bitcoin, Coins, TrendingUp, Users, Shield, Zap } from 'lucide-react';
 import { MarketDataProvider } from '@/providers/MarketDataProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { useMarketData } from '@/hooks/useMarketData';
 import { useUserAssets } from '@/hooks/useUserAssets';
-import { TradingViewWidget } from '@/components/TradingViewWidget';
+import { SimpleChart } from '@/components/SimpleChart';
 import { MarketOverview } from '@/components/MarketOverview';
 import { TradeForm } from '@/components/TradeForm';
 import { AssetOverview } from '@/components/AssetOverview';
@@ -87,7 +87,7 @@ export default function Home() {
                 ) : (
                   <Space>
                     <Button onClick={() => open()}>
-                      {isConnected ? '断开钱包' : '连接钱包'}
+                      {isConnected ? '断开MetaMask' : '连接MetaMask'}
                     </Button>
                     <Button type="primary">
                       登录
@@ -163,7 +163,7 @@ export default function Home() {
             {/* Trading Chart */}
             <Col xs={24} lg={16}>
               <Card title="BTC/USDT" className="h-96">
-                <TradingViewWidget symbol="BTCUSDT" />
+                <SimpleChart symbol="BTC/USDT" />
               </Card>
             </Col>
 

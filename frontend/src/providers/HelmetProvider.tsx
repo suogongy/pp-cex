@@ -1,11 +1,11 @@
 'use client';
 
-import { HelmetProvider } from 'react-helmet-async';
+import { HelmetProvider as ReactHelmetProvider } from 'react-helmet-async';
 
 export function HelmetProvider({ children }: { children: React.ReactNode }) {
   return (
-    <HelmetProvider>
+    <ReactHelmetProvider>
       {children}
-    </HelmetProvider>
+    </ReactHelmetProvider>
   );
 }
